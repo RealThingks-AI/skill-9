@@ -207,17 +207,22 @@ export const useApprovals = () => {
     }
   };
 
-  const handleRejectRating = async (approvalId: string, comment?: string) => {
+  const handleUpdateRating = async (
+    approvalId: string, 
+    newRating: 'high' | 'medium' | 'low', 
+    comment?: string
+  ) => {
     try {
       if (!user?.id) {
-        toast.error('You must be logged in to reject ratings');
+        toast.error('You must be logged in to update ratings');
         return;
       }
 
       const { error } = await supabase
         .from('employee_ratings')
         .update({
-          status: 'rejected',
+          rating: newRating,
+          status: 'approved',
           approved_by: user.id,
           approved_at: new Date().toISOString(),
           approver_comment: comment
@@ -229,12 +234,12 @@ export const useApprovals = () => {
         throw error;
       }
 
-      toast.success('Rating rejected');
+      toast.success('Rating updated and approved');
       fetchPendingApprovals();
       fetchRecentActions();
     } catch (error) {
-      console.error('Error rejecting rating:', error);
-      toast.error('Failed to reject rating');
+      console.error('Error updating rating:', error);
+      toast.error('Failed to update rating');
     }
   };
 
@@ -253,7 +258,7 @@ export const useApprovals = () => {
     recentActions,
     loading,
     handleApproveRating,
-    handleRejectRating,
+    handleUpdateRating,
     refetch: () => {
       fetchPendingApprovals();
       fetchRecentActions();

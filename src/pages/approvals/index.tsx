@@ -17,7 +17,7 @@ const Approvals = () => {
     recentActions, 
     loading, 
     handleApproveRating, 
-    handleRejectRating 
+    handleUpdateRating 
   } = useApprovals();
 
   const [selectedEmployee, setSelectedEmployee] = useState<GroupedApproval | null>(null);
@@ -204,13 +204,13 @@ const Approvals = () => {
       </div>
 
       {/* Employee Detail Modal */}
-      <EmployeeApprovalDetail
-        employee={selectedEmployee}
-        open={detailOpen}
-        onOpenChange={setDetailOpen}
-        onApprove={handleApproveRating}
-        onReject={handleRejectRating}
-      />
+        <EmployeeApprovalDetail
+          employee={selectedEmployee}
+          open={detailOpen}
+          onOpenChange={setDetailOpen}
+          onApprove={handleApproveRating}
+          onUpdateRating={handleUpdateRating}
+        />
     </div>
   );
 };

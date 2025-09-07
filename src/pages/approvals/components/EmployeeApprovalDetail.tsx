@@ -3,7 +3,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle, XCircle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CheckCircle, Edit3 } from "lucide-react";
 import type { GroupedApproval } from "../hooks/useApprovals";
 
 interface EmployeeApprovalDetailProps {
@@ -11,7 +12,7 @@ interface EmployeeApprovalDetailProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onApprove: (approvalId: string) => void;
-  onReject: (approvalId: string, comment?: string) => void;
+  onUpdateRating: (approvalId: string, newRating: 'high' | 'medium' | 'low', comment?: string) => void;
 }
 
 export const EmployeeApprovalDetail = ({
@@ -19,10 +20,11 @@ export const EmployeeApprovalDetail = ({
   open,
   onOpenChange,
   onApprove,
-  onReject
+  onUpdateRating
 }: EmployeeApprovalDetailProps) => {
   const [selectedRating, setSelectedRating] = useState<string | null>(null);
-  const [rejectComment, setRejectComment] = useState("");
+  const [updateComment, setUpdateComment] = useState("");
+  const [newRating, setNewRating] = useState<'high' | 'medium' | 'low'>('medium');
 
   if (!employee) return null;
 
@@ -46,10 +48,11 @@ export const EmployeeApprovalDetail = ({
     onOpenChange(false);
   };
 
-  const handleReject = (ratingId: string) => {
-    onReject(ratingId, rejectComment);
-    setRejectComment("");
+  const handleUpdateRating = (ratingId: string) => {
+    onUpdateRating(ratingId, newRating, updateComment);
+    setUpdateComment("");
     setSelectedRating(null);
+    setNewRating('medium');
   };
 
   return (
@@ -102,37 +105,54 @@ export const EmployeeApprovalDetail = ({
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => setSelectedRating(rating.id)}
+                    onClick={() => {
+                      setSelectedRating(rating.id);
+                      setNewRating(rating.rating);
+                    }}
                     className="flex-1"
                   >
-                    <XCircle className="mr-1 h-3 w-3" />
-                    Reject
+                    <Edit3 className="mr-1 h-3 w-3" />
+                    Update Rating
                   </Button>
                 </div>
 
-                {/* Reject Comment Section */}
+                {/* Update Rating Section */}
                 {selectedRating === rating.id && (
-                  <div className="mt-3 space-y-2">
+                  <div className="mt-3 space-y-3">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Update Rating:</label>
+                      <Select value={newRating} onValueChange={(value) => setNewRating(value as 'high' | 'medium' | 'low')}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="high">HIGH</SelectItem>
+                          <SelectItem value="medium">MEDIUM</SelectItem>
+                          <SelectItem value="low">LOW</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <Textarea
-                      placeholder="Add a comment explaining why this rating is being rejected..."
-                      value={rejectComment}
-                      onChange={(e) => setRejectComment(e.target.value)}
+                      placeholder="Add a comment explaining the rating update..."
+                      value={updateComment}
+                      onChange={(e) => setUpdateComment(e.target.value)}
                       className="min-h-[80px]"
                     />
                     <div className="flex gap-2">
                       <Button
                         size="sm"
-                        variant="destructive"
-                        onClick={() => handleReject(rating.id)}
+                        onClick={() => handleUpdateRating(rating.id)}
+                        className="bg-blue-600 hover:bg-blue-700"
                       >
-                        Confirm Reject
+                        Update & Approve
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => {
                           setSelectedRating(null);
-                          setRejectComment("");
+                          setUpdateComment("");
+                          setNewRating('medium');
                         }}
                       >
                         Cancel
