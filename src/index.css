@@ -1,0 +1,128 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Skill Matrix Design System - Professional Corporate Theme */
+
+@layer base {
+  :root {
+    /* Typography */
+    --font-sans: 'Inter', system-ui, sans-serif;
+    
+    /* Core Color Palette - Professional minimal theme */
+    --background: 0 0% 98%; /* Clean white background */
+    --foreground: 220 14% 11%; /* Dark charcoal text */
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 14% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 14% 11%;
+
+    /* Primary Professional Blue */
+    --primary: 216 34% 17%; /* Deep navy blue */
+    --primary-light: 216 34% 27%; /* Lighter navy */
+    --primary-dark: 216 34% 12%; /* Darker navy */
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary Neutral */
+    --secondary: 220 13% 91%; /* Light gray */
+    --secondary-light: 220 13% 95%; /* Very light gray */
+    --secondary-foreground: 220 14% 11%;
+
+    /* Neutral Grays */
+    --muted: 220 13% 95%; /* Very light gray */
+    --muted-foreground: 220 9% 46%; /* Medium gray */
+
+    --accent: 220 13% 95%;
+    --accent-foreground: 220 14% 11%;
+
+    /* Status Colors */
+    --success: 142 71% 45%; /* green-600 */
+    --success-foreground: 0 0% 100%;
+    
+    --warning: 38 92% 50%; /* amber-500 */
+    --warning-foreground: 0 0% 100%;
+    
+    --destructive: 0 84% 60%; /* red-500 */
+    --destructive-foreground: 0 0% 100%;
+
+    /* Borders and Inputs */
+    --border: 220 13% 91%; /* gray-200 */
+    --input: 220 13% 91%;
+    --ring: 224 76% 48%;
+
+    /* Skill Rating Colors */
+    --skill-high: 142 71% 45%; /* green-600 */
+    --skill-medium: 38 92% 50%; /* amber-500 */
+    --skill-low: 20 91% 48%; /* orange-600 */
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(224 76% 48%), hsl(263 70% 50%));
+    --gradient-secondary: linear-gradient(135deg, hsl(262 68% 56%), hsl(224 86% 42%));
+    --gradient-success: linear-gradient(135deg, hsl(142 71% 45%), hsl(155 62% 48%));
+    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(240 5% 98%));
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.06);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.1), 0 4px 6px -2px hsl(0 0% 0% / 0.05);
+    --shadow-glow: 0 0 20px hsl(224 76% 48% / 0.3);
+
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-fast: all 0.15s ease-out;
+
+    --radius: 0.75rem;
+
+    /* Sidebar Colors */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 220 14% 11%;
+    --sidebar-primary: 216 34% 17%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 13% 95%;
+    --sidebar-accent-foreground: 220 14% 11%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 216 34% 17%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+}
