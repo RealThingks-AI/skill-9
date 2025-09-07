@@ -77,6 +77,42 @@ export type Database = {
           },
         ]
       }
+      import_export_logs: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          entity_name: string
+          entity_type: string
+          id: string
+          log_level: string
+          operation_type: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          entity_name: string
+          entity_type: string
+          id?: string
+          log_level: string
+          operation_type: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          entity_name?: string
+          entity_type?: string
+          id?: string
+          log_level?: string
+          operation_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
