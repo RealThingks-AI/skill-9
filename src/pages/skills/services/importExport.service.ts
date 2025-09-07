@@ -303,7 +303,7 @@ export class ImportExportService {
         action: 'reused',
         details: { existing_id: dbSubskill.id, skill_id: skillId, found_in_db: true }
       });
-      return { subskill: dbSubskill, isNew: true };
+      return { subskill: dbSubskill, isNew: false };
     }
 
     // Create new subskill
@@ -428,6 +428,14 @@ export class ImportExportService {
         success++;
       } catch (error) {
         console.error('Error processing row:', error, row);
+        await this.logOperation({
+          operation_type: 'import',
+          log_level: 'error',
+          entity_type: 'category',
+          entity_name: row.Category || 'unknown',
+          action: 'failed',
+          details: { error: error instanceof Error ? error.message : String(error), row }
+        });
         errors++;
       }
     }
