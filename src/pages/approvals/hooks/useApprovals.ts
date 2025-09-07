@@ -179,16 +179,24 @@ export const useApprovals = () => {
 
   const handleApproveRating = async (approvalId: string) => {
     try {
+      if (!user?.id) {
+        toast.error('You must be logged in to approve ratings');
+        return;
+      }
+
       const { error } = await supabase
         .from('employee_ratings')
         .update({
           status: 'approved',
-          approved_by: user?.id,
+          approved_by: user.id,
           approved_at: new Date().toISOString()
         })
         .eq('id', approvalId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
 
       toast.success('Rating approved successfully');
       fetchPendingApprovals();
@@ -201,17 +209,25 @@ export const useApprovals = () => {
 
   const handleRejectRating = async (approvalId: string, comment?: string) => {
     try {
+      if (!user?.id) {
+        toast.error('You must be logged in to reject ratings');
+        return;
+      }
+
       const { error } = await supabase
         .from('employee_ratings')
         .update({
           status: 'rejected',
-          approved_by: user?.id,
+          approved_by: user.id,
           approved_at: new Date().toISOString(),
           approver_comment: comment
         })
         .eq('id', approvalId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
 
       toast.success('Rating rejected');
       fetchPendingApprovals();
