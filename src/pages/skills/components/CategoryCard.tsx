@@ -145,7 +145,6 @@ export const CategoryCard = ({
           y: -8,
           transition: { duration: 0.2 }
         }}
-        whileTap={{ scale: 0.98 }}
         className="group"
       >
         <Card 
@@ -227,12 +226,16 @@ export const CategoryCard = ({
             </div>
           </CardHeader>
 
-          <CardContent className="space-y-4 pt-0">
+          <CardContent className="space-y-4 pt-0 relative z-10">
             {/* Statistics Grid */}
             <div className="grid grid-cols-3 gap-2">
               <button
-                onClick={(e) => handleRatingClick('high', e)}
-                className="text-center p-2 bg-background/50 rounded-lg border border-border/50 hover:bg-background/80 transition-colors cursor-pointer"
+                onClick={(e) => {
+                  console.log('High button clicked');
+                  handleRatingClick('high', e);
+                }}
+                className="text-center p-2 bg-background/50 rounded-lg border border-border/50 hover:bg-background/80 transition-colors cursor-pointer relative z-20"
+                type="button"
               >
                 <div className="flex items-center justify-center mb-1">
                   <Target className="h-3 w-3 text-green-500" />
@@ -242,8 +245,12 @@ export const CategoryCard = ({
               </button>
               
               <button
-                onClick={(e) => handleRatingClick('medium', e)}
-                className="text-center p-2 bg-background/50 rounded-lg border border-border/50 hover:bg-background/80 transition-colors cursor-pointer"
+                onClick={(e) => {
+                  console.log('Medium button clicked');
+                  handleRatingClick('medium', e);
+                }}
+                className="text-center p-2 bg-background/50 rounded-lg border border-border/50 hover:bg-background/80 transition-colors cursor-pointer relative z-20"
+                type="button"
               >
                 <div className="flex items-center justify-center mb-1">
                   <TrendingUp className="h-3 w-3 text-yellow-500" />
@@ -253,8 +260,12 @@ export const CategoryCard = ({
               </button>
               
               <button
-                onClick={(e) => handleRatingClick('low', e)}
-                className="text-center p-2 bg-background/50 rounded-lg border border-border/50 hover:bg-background/80 transition-colors cursor-pointer"
+                onClick={(e) => {
+                  console.log('Low button clicked');
+                  handleRatingClick('low', e);
+                }}
+                className="text-center p-2 bg-background/50 rounded-lg border border-border/50 hover:bg-background/80 transition-colors cursor-pointer relative z-20"
+                type="button"
               >
                 <div className="flex items-center justify-center mb-1">
                   <Users className="h-3 w-3 text-blue-500" />
@@ -265,30 +276,40 @@ export const CategoryCard = ({
             </div>
 
             {/* Status Information and Update Button */}
-            <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center justify-between text-xs relative z-20">
               <div className="flex items-center gap-2">
-                <Badge 
-                  variant="outline" 
-                  className="text-xs px-2 py-0.5 cursor-pointer hover:bg-background/80 transition-colors"
-                  onClick={handleApprovedClick}
+                <button
+                  onClick={(e) => {
+                    console.log('Approved badge clicked');
+                    handleApprovedClick(e);
+                  }}
+                  className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold transition-colors cursor-pointer hover:bg-background/80 border-border bg-background text-foreground"
+                  type="button"
                 >
                   {approvedCount} Approved
-                </Badge>
+                </button>
                 {pendingCount > 0 && (
-                  <Badge 
-                    variant="secondary" 
-                    className="text-xs px-2 py-0.5 bg-yellow-500/10 text-yellow-600 cursor-pointer hover:bg-yellow-500/20 transition-colors"
-                    onClick={handlePendingClick}
+                  <button
+                    onClick={(e) => {
+                      console.log('Pending badge clicked');
+                      handlePendingClick(e);
+                    }}
+                    className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold transition-colors cursor-pointer hover:bg-yellow-500/20 bg-yellow-500/10 text-yellow-600 border-yellow-500/20"
+                    type="button"
                   >
                     {pendingCount} Pending
-                  </Badge>
+                  </button>
                 )}
               </div>
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={handleUpdateClick}
-                className="h-6 px-2 text-xs hover:bg-primary/10"
+                onClick={(e) => {
+                  console.log('Update button clicked');
+                  handleUpdateClick(e);
+                }}
+                className="h-6 px-2 text-xs hover:bg-primary/10 relative z-30"
+                type="button"
               >
                 <Settings className="h-3 w-3 mr-1" />
                 Update
