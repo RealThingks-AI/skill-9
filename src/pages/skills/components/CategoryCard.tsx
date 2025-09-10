@@ -4,8 +4,10 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Edit, Trash2, TrendingUp, Users, Target, X } from "lucide-react";
+import { Edit, Trash2, TrendingUp, Users, Target, X, Settings } from "lucide-react";
 import { AddCategoryModal } from "./admin/AddCategoryModal";
+import { ApprovedRatingsModal } from "./ApprovedRatingsModal";
+import { PendingRatingsModal } from "./PendingRatingsModal";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { SkillsService } from "../services/skills.service";
@@ -40,6 +42,9 @@ export const CategoryCard = ({
   onHide
 }: CategoryCardProps) => {
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showApprovedModal, setShowApprovedModal] = useState(false);
+  const [showPendingModal, setShowPendingModal] = useState(false);
+  const [selectedRatingFilter, setSelectedRatingFilter] = useState<'high' | 'medium' | 'low' | undefined>();
   const { toast } = useToast();
 
   // Calculate user-specific statistics using new progress rules
@@ -99,6 +104,32 @@ export const CategoryCard = ({
     }
   };
 
+  const handleRatingClick = (rating: 'high' | 'medium' | 'low', e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setSelectedRatingFilter(rating);
+    setShowApprovedModal(true);
+  };
+
+  const handleApprovedClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setSelectedRatingFilter(undefined);
+    setShowApprovedModal(true);
+  };
+
+  const handlePendingClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowPendingModal(true);
+  };
+
+  const handleUpdateClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onClick();
+  };
+
   return (
     <>
       <motion.div
@@ -118,17 +149,7 @@ export const CategoryCard = ({
         className="group"
       >
         <Card 
-          className="relative h-80 w-full cursor-pointer border-0 bg-gradient-to-br from-card via-card to-card/90 hover:shadow-2xl transition-all duration-300 overflow-hidden"
-          role="button"
-          tabIndex={0}
-          aria-label={`Open ${category.name} category`}
-          onClick={onClick}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              onClick();
-            }
-          }}
+          className="relative h-80 w-full border-0 bg-gradient-to-br from-card via-card to-card/90 hover:shadow-2xl transition-all duration-300 overflow-hidden"
         >
           {/* Background Pattern */}
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -209,43 +230,69 @@ export const CategoryCard = ({
           <CardContent className="space-y-4 pt-0">
             {/* Statistics Grid */}
             <div className="grid grid-cols-3 gap-2">
-              <div className="text-center p-2 bg-background/50 rounded-lg border border-border/50">
+              <button
+                onClick={(e) => handleRatingClick('high', e)}
+                className="text-center p-2 bg-background/50 rounded-lg border border-border/50 hover:bg-background/80 transition-colors cursor-pointer"
+              >
                 <div className="flex items-center justify-center mb-1">
                   <Target className="h-3 w-3 text-green-500" />
                 </div>
                 <div className="text-xs font-semibold text-foreground">{ratingCounts.high}</div>
                 <div className="text-xs text-muted-foreground">High</div>
-              </div>
+              </button>
               
-              <div className="text-center p-2 bg-background/50 rounded-lg border border-border/50">
+              <button
+                onClick={(e) => handleRatingClick('medium', e)}
+                className="text-center p-2 bg-background/50 rounded-lg border border-border/50 hover:bg-background/80 transition-colors cursor-pointer"
+              >
                 <div className="flex items-center justify-center mb-1">
                   <TrendingUp className="h-3 w-3 text-yellow-500" />
                 </div>
                 <div className="text-xs font-semibold text-foreground">{ratingCounts.medium}</div>
                 <div className="text-xs text-muted-foreground">Medium</div>
-              </div>
+              </button>
               
-              <div className="text-center p-2 bg-background/50 rounded-lg border border-border/50">
+              <button
+                onClick={(e) => handleRatingClick('low', e)}
+                className="text-center p-2 bg-background/50 rounded-lg border border-border/50 hover:bg-background/80 transition-colors cursor-pointer"
+              >
                 <div className="flex items-center justify-center mb-1">
                   <Users className="h-3 w-3 text-blue-500" />
                 </div>
                 <div className="text-xs font-semibold text-foreground">{ratingCounts.low}</div>
                 <div className="text-xs text-muted-foreground">Low</div>
-              </div>
+              </button>
             </div>
 
-            {/* Status Information */}
+            {/* Status Information and Update Button */}
             <div className="flex items-center justify-between text-xs">
               <div className="flex items-center gap-2">
-                <Badge variant="outline" className="text-xs px-2 py-0.5">
+                <Badge 
+                  variant="outline" 
+                  className="text-xs px-2 py-0.5 cursor-pointer hover:bg-background/80 transition-colors"
+                  onClick={handleApprovedClick}
+                >
                   {approvedCount} Approved
                 </Badge>
                 {pendingCount > 0 && (
-                  <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-yellow-500/10 text-yellow-600">
+                  <Badge 
+                    variant="secondary" 
+                    className="text-xs px-2 py-0.5 bg-yellow-500/10 text-yellow-600 cursor-pointer hover:bg-yellow-500/20 transition-colors"
+                    onClick={handlePendingClick}
+                  >
                     {pendingCount} Pending
                   </Badge>
                 )}
               </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleUpdateClick}
+                className="h-6 px-2 text-xs hover:bg-primary/10"
+              >
+                <Settings className="h-3 w-3 mr-1" />
+                Update
+              </Button>
             </div>
 
             {/* Hover indicator */}
@@ -256,8 +303,6 @@ export const CategoryCard = ({
             />
           </CardContent>
 
-          {/* Click ripple effect */}
-          <div className="absolute inset-0 bg-primary/5 opacity-0 group-active:opacity-100 transition-opacity duration-150" />
         </Card>
       </motion.div>
 
@@ -269,6 +314,25 @@ export const CategoryCard = ({
           setShowEditModal(false);
           onRefresh();
         }}
+      />
+
+      <ApprovedRatingsModal
+        open={showApprovedModal}
+        onOpenChange={setShowApprovedModal}
+        categoryName={category.name}
+        ratings={userSkills}
+        skills={skills}
+        subskills={subskills}
+        filterRating={selectedRatingFilter}
+      />
+
+      <PendingRatingsModal
+        open={showPendingModal}
+        onOpenChange={setShowPendingModal}
+        categoryName={category.name}
+        ratings={userSkills}
+        skills={skills}
+        subskills={subskills}
       />
     </>
   );
