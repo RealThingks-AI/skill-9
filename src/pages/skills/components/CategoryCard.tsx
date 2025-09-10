@@ -67,6 +67,7 @@ export const CategoryCard = ({
   };
 
   const handleRatingClick = (rating: 'high' | 'medium' | 'low', e: React.MouseEvent) => {
+    console.log('Rating click triggered:', rating);
     e.preventDefault();
     e.stopPropagation();
     setSelectedRatingFilter(rating);
@@ -74,6 +75,7 @@ export const CategoryCard = ({
   };
 
   const handleApprovedClick = (e: React.MouseEvent) => {
+    console.log('Approved click triggered');
     e.preventDefault();
     e.stopPropagation();
     setSelectedRatingFilter(null);
@@ -81,12 +83,14 @@ export const CategoryCard = ({
   };
 
   const handlePendingClick = (e: React.MouseEvent) => {
+    console.log('Pending click triggered');
     e.preventDefault();
     e.stopPropagation();
     setShowPendingModal(true);
   };
 
   const handleUpdateClick = (e: React.MouseEvent) => {
+    console.log('Update click triggered');
     e.preventDefault();
     e.stopPropagation();
     onClick(); // Open the skills modal for this category
@@ -144,7 +148,6 @@ export const CategoryCard = ({
           y: -8,
           transition: { duration: 0.2 }
         }}
-        whileTap={{ scale: 0.98 }}
         className="group"
       >
         <Card 
@@ -300,8 +303,6 @@ export const CategoryCard = ({
             />
           </CardContent>
 
-          {/* Click ripple effect */}
-          <div className="absolute inset-0 bg-primary/5 opacity-0 group-active:opacity-100 transition-opacity duration-150" />
         </Card>
       </motion.div>
 
