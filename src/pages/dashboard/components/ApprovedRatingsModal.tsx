@@ -26,12 +26,13 @@ interface ApprovedRatingsModalProps {
   onClose: () => void;
   categoryId: string;
   categoryName: string;
+  ratingFilter?: 'high' | 'medium' | 'low' | null;
 }
 
-export const ApprovedRatingsModal = ({ isOpen, onClose, categoryId, categoryName }: ApprovedRatingsModalProps) => {
+export const ApprovedRatingsModal = ({ isOpen, onClose, categoryId, categoryName, ratingFilter }: ApprovedRatingsModalProps) => {
   const [ratings, setRatings] = useState<ApprovedRating[]>([]);
   const [loading, setLoading] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'high' | 'medium' | 'low'>(ratingFilter || 'all');
   const { profile } = useAuth();
   const { toast } = useToast();
 
@@ -114,6 +115,12 @@ export const ApprovedRatingsModal = ({ isOpen, onClose, categoryId, categoryName
       fetchApprovedRatings();
     }
   }, [isOpen, categoryId]);
+
+  useEffect(() => {
+    if (ratingFilter) {
+      setActiveFilter(ratingFilter);
+    }
+  }, [ratingFilter]);
 
   const filteredRatings = activeFilter === 'all' 
     ? ratings 
