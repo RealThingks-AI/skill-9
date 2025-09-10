@@ -143,10 +143,10 @@ const Skills = () => {
         {/* Category Cards Grid */}
         <div className="flex-1 overflow-y-auto">
           <motion.div 
-            className="grid gap-4 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 p-6 h-fit" 
+            className="grid gap-4 grid-cols-3 p-6 h-fit" 
             layout
             style={{ 
-              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+              gridTemplateRows: 'repeat(3, 1fr)',
               maxWidth: '100%'
             }}
           >
@@ -154,7 +154,7 @@ const Skills = () => {
               {/* Empty State */}
               {visibleCategories.length === 0 ? (
                 <motion.div 
-                  className="col-span-full flex flex-col items-center justify-center py-16 text-center" 
+                  className="col-span-full row-span-full flex flex-col items-center justify-center py-16 text-center" 
                   initial={{ opacity: 0, y: 20 }} 
                   animate={{ opacity: 1, y: 0 }} 
                   exit={{ opacity: 0, y: -20 }}
@@ -187,7 +187,7 @@ const Skills = () => {
                 </motion.div>
               ) : filteredCategories.length === 0 ? (
                 <motion.div 
-                  className="col-span-full flex flex-col items-center justify-center py-16 text-center" 
+                  className="col-span-full row-span-full flex flex-col items-center justify-center py-16 text-center" 
                   initial={{ opacity: 0, y: 20 }} 
                   animate={{ opacity: 1, y: 0 }} 
                   exit={{ opacity: 0, y: -20 }}
@@ -203,22 +203,44 @@ const Skills = () => {
                   </p>
                 </motion.div>
               ) : (
-                filteredCategories.map((category, index) => (
-                  <CategoryCard 
-                    key={category.id} 
-                    category={category} 
-                    skillCount={skills.filter(skill => skill.category_id === category.id).length}
-                    subskills={subskills}
-                    isManagerOrAbove={isManagerOrAbove} 
-                    onClick={() => handleCategoryClick(category)} 
-                    onRefresh={fetchData} 
-                    index={index}
-                    userSkills={userSkills}
-                    skills={skills}
-                    showHideButton={!isManagerOrAbove}
-                    onHide={!isManagerOrAbove ? handleHideCategory : undefined}
-                  />
-                ))
+                <>
+                  {/* Render actual category cards */}
+                  {filteredCategories.map((category, index) => (
+                    <CategoryCard 
+                      key={category.id} 
+                      category={category} 
+                      skillCount={skills.filter(skill => skill.category_id === category.id).length}
+                      subskills={subskills}
+                      isManagerOrAbove={isManagerOrAbove} 
+                      onClick={() => handleCategoryClick(category)} 
+                      onRefresh={fetchData} 
+                      index={index}
+                      userSkills={userSkills}
+                      skills={skills}
+                      showHideButton={!isManagerOrAbove}
+                      onHide={!isManagerOrAbove ? handleHideCategory : undefined}
+                    />
+                  ))}
+                  
+                  {/* Render empty placeholder cards to fill up to 9 slots */}
+                  {Array.from({ length: Math.max(0, 9 - filteredCategories.length) }, (_, index) => (
+                    <motion.div
+                      key={`placeholder-${index}`}
+                      className="aspect-[4/3] border-2 border-dashed border-muted-foreground/20 rounded-lg bg-muted/10 flex items-center justify-center"
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      transition={{ delay: filteredCategories.length * 0.05 + index * 0.05 }}
+                    >
+                      <div className="text-muted-foreground/40 text-sm text-center">
+                        <div className="w-8 h-8 mx-auto mb-2 rounded-full bg-muted-foreground/10 flex items-center justify-center">
+                          <Plus className="w-4 h-4" />
+                        </div>
+                        Available Slot
+                      </div>
+                    </motion.div>
+                  ))}
+                </>
               )}
             </AnimatePresence>
           </motion.div>
