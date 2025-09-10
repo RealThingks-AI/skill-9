@@ -11,13 +11,13 @@
     
     /* Core Color Palette - Professional minimal theme */
     --background: 0 0% 98%; /* Clean white background */
-    --foreground: 220 14% 11%; /* Dark charcoal text */
+    --foreground: 230 50% 25%; /* Dark blue text */
 
     --card: 0 0% 100%;
-    --card-foreground: 220 14% 11%;
+    --card-foreground: 230 50% 25%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 14% 11%;
+    --popover-foreground: 230 50% 25%;
 
     /* Primary Professional Blue */
     --primary: 216 34% 17%; /* Deep navy blue */
@@ -28,14 +28,14 @@
     /* Secondary Neutral */
     --secondary: 220 13% 91%; /* Light gray */
     --secondary-light: 220 13% 95%; /* Very light gray */
-    --secondary-foreground: 220 14% 11%;
+    --secondary-foreground: 230 50% 25%;
 
     /* Neutral Grays */
     --muted: 220 13% 95%; /* Very light gray */
-    --muted-foreground: 220 9% 46%; /* Medium gray */
+    --muted-foreground: 230 40% 35%; /* Lighter dark blue for muted text */
 
     --accent: 220 13% 95%;
-    --accent-foreground: 220 14% 11%;
+    --accent-foreground: 230 50% 25%;
 
     /* Status Colors */
     --success: 142 71% 45%; /* green-600 */
@@ -62,26 +62,39 @@
     --gradient-secondary: linear-gradient(135deg, hsl(262 68% 56%), hsl(224 86% 42%));
     --gradient-success: linear-gradient(135deg, hsl(142 71% 45%), hsl(155 62% 48%));
     --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(240 5% 98%));
+    --gradient-skill-progress: linear-gradient(90deg, hsl(var(--skill-high)), hsl(var(--skill-medium)));
+
+    /* Category-specific gradients for skill cards */
+    --gradient-autosar: linear-gradient(135deg, hsl(216 87% 50%), hsl(243 75% 59%));
+    --gradient-database: linear-gradient(135deg, hsl(142 71% 45%), hsl(155 62% 48%));
+    --gradient-security: linear-gradient(135deg, hsl(0 84% 60%), hsl(14 91% 54%));
+    --gradient-performance: linear-gradient(135deg, hsl(38 92% 50%), hsl(54 91% 46%));
 
     /* Shadows */
     --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.05);
     --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.06);
     --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.1), 0 4px 6px -2px hsl(0 0% 0% / 0.05);
     --shadow-glow: 0 0 20px hsl(224 76% 48% / 0.3);
+    --shadow-skill: 0 4px 12px -2px hsl(var(--primary) / 0.1);
 
     /* Animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-fast: all 0.15s ease-out;
+    --transition-progress: all 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 
     --radius: 0.75rem;
 
+    /* Text Colors - Dark Blue Theme */
+    --text-primary: 230 50% 25%; /* Main dark blue text */
+    --text-secondary: 230 40% 35%; /* Lighter dark blue for secondary text */
+
     /* Sidebar Colors */
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 220 14% 11%;
+    --sidebar-foreground: 230 50% 25%;
     --sidebar-primary: 216 34% 17%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 13% 95%;
-    --sidebar-accent-foreground: 220 14% 11%;
+    --sidebar-accent-foreground: 230 50% 25%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 216 34% 17%;
   }

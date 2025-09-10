@@ -116,7 +116,9 @@ export default function UserAccess({
   const getStatusColor = (status: string) => {
     return status === USER_STATUS.ACTIVE ? 'bg-success text-success-foreground' : 'bg-muted text-muted-foreground';
   };
-  const filteredUsers = users.filter(user => user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) || user.email.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredUsers = users
+    .filter(user => user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) || user.email.toLowerCase().includes(searchTerm.toLowerCase()))
+    .sort((a, b) => a.full_name.localeCompare(b.full_name));
   return <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">

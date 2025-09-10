@@ -98,6 +98,7 @@ export const ImportExportBar = ({
   const handleImport = async () => {
     if (!importData.length) return;
     
+    console.log('🚀 Starting import process with', importData.length, 'rows');
     setImporting(true);
     setImportResult(null);
     
@@ -109,6 +110,7 @@ export const ImportExportBar = ({
         subskills
       );
       
+      console.log('✅ Import completed:', result);
       setImportResult(result);
       
       if (result.errors === 0) {
@@ -124,17 +126,19 @@ export const ImportExportBar = ({
         });
       }
       
-      setShowImportDialog(false);
-      setImportData([]);
-      setImportFile(null);
+      // Don't close dialog immediately, let user see results
+      // setShowImportDialog(false);
+      // setImportData([]);
+      // setImportFile(null);
       onRefresh();
     } catch (error) {
-      console.error('Import error:', error);
+      console.error('❌ Import error:', error);
       toast({
         title: "Import Failed",
-        description: "Failed to import data",
+        description: `Failed to import data: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
+      setImportResult({ success: 0, errors: importData.length });
     } finally {
       setImporting(false);
     }
@@ -215,6 +219,33 @@ export const ImportExportBar = ({
                       {importResult.errors > 0 && (
                         <div>⚠️ Errors encountered: {importResult.errors} items</div>
                       )}
+                    </div>
+                    <div className="flex gap-2 mt-3">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          setShowImportDialog(false);
+                          setImportData([]);
+                          setImportFile(null);
+                          setImportResult(null);
+                        }}
+                      >
+                        Close
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          setImportData([]);
+                          setImportFile(null);
+                          setImportResult(null);
+                          const input = document.getElementById('csvFile') as HTMLInputElement;
+                          if (input) input.value = '';
+                        }}
+                      >
+                        Import Another
+                      </Button>
                     </div>
                   </div>
                 )}

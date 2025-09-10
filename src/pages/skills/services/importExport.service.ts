@@ -352,6 +352,8 @@ export class ImportExportService {
     let success = 0;
     let errors = 0;
     
+    console.log('📊 ImportExportService: Starting CSV import with', csvData.length, 'rows');
+    
     await this.logOperation({
       operation_type: 'import',
       log_level: 'info',
@@ -373,7 +375,10 @@ export class ImportExportService {
         const subskillName = row.Subskill?.trim();
         const description = row.Description?.trim();
 
+        console.log('🔄 Processing row:', { categoryName, skillName, subskillName });
+
         if (!categoryName) {
+          console.warn('⚠️ Skipping row - missing category name:', row);
           await this.logOperation({
             operation_type: 'import',
             log_level: 'error',
@@ -395,6 +400,9 @@ export class ImportExportService {
         
         if (categoryIsNew) {
           updatedCategories.push(category);
+          console.log('✅ Created new category:', category.name);
+        } else {
+          console.log('🔄 Reused existing category:', category.name);
         }
 
         // Handle skill (if provided)
@@ -408,6 +416,9 @@ export class ImportExportService {
           
           if (skillIsNew) {
             updatedSkills.push(skill);
+            console.log('✅ Created new skill:', skill.name);
+          } else {
+            console.log('🔄 Reused existing skill:', skill.name);
           }
 
           // Handle subskill (if provided)
@@ -421,13 +432,16 @@ export class ImportExportService {
             
             if (subskillIsNew) {
               updatedSubskills.push(subskill);
+              console.log('✅ Created new subskill:', subskill.name);
+            } else {
+              console.log('🔄 Reused existing subskill:', subskill.name);
             }
           }
         }
 
         success++;
       } catch (error) {
-        console.error('Error processing row:', error, row);
+        console.error('❌ Error processing row:', error, row);
         await this.logOperation({
           operation_type: 'import',
           log_level: 'error',
@@ -439,6 +453,8 @@ export class ImportExportService {
         errors++;
       }
     }
+
+    console.log('📊 Import completed:', { success, errors, total: csvData.length });
 
     await this.logOperation({
       operation_type: 'import',

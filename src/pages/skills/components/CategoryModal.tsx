@@ -11,6 +11,7 @@ import { AddSkillModal } from "./admin/AddSkillModal";
 import { AddSubskillModal } from "./admin/AddSubskillModal";
 import { EditSkillModal } from "./admin/EditSkillModal";
 import { DeleteSkillDialog } from "./admin/DeleteSkillDialog";
+import { RatingSubmissionDialog } from "./RatingSubmissionDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { SkillCategory, Skill, Subskill, UserSkill, Profile } from "@/types/database";
@@ -25,7 +26,7 @@ interface CategoryModalProps {
   onClose: () => void;
   onSkillRate: (skillId: string, rating: 'high' | 'medium' | 'low') => void;
   onSubskillRate: (subskillId: string, rating: 'high' | 'medium' | 'low') => void;
-  onSaveRatings: () => void;
+  onSaveRatings: (ratingsWithComments: Array<{id: string, type: 'skill' | 'subskill', rating: 'high' | 'medium' | 'low', comment: string}>) => void;
   onRefresh: () => void;
 }
 export const CategoryModal = ({
@@ -50,6 +51,7 @@ export const CategoryModal = ({
   const [skillToEdit, setSkillToEdit] = useState<Skill | null>(null);
   const [skillToDelete, setSkillToDelete] = useState<Skill | null>(null);
   const [pendingSubmit, setPendingSubmit] = useState<string[]>([]);
+  const [showSubmissionDialog, setShowSubmissionDialog] = useState(false);
   const { toast } = useToast();
 
   // Close modal on Escape key
@@ -225,7 +227,7 @@ export const CategoryModal = ({
               
               {/* Save Ratings button for pending ratings */}
               {!selectedSkill && !isManagerOrAbove && pendingRatings.size > 0 && (
-                <Button onClick={onSaveRatings} className="bg-green-600 hover:bg-green-700">
+                <Button onClick={() => setShowSubmissionDialog(true)} className="bg-green-600 hover:bg-green-700">
                   Save Ratings ({pendingRatings.size})
                 </Button>
               )}
@@ -327,5 +329,23 @@ export const CategoryModal = ({
       setShowAddSubskill(false);
       onRefresh();
     }} />
+
+      {/* Rating Submission Dialog */}
+      <RatingSubmissionDialog
+        open={showSubmissionDialog}
+        onOpenChange={setShowSubmissionDialog}
+        pendingRatings={Array.from(pendingRatings.entries()).map(([id, rating]) => {
+          const skill = skills.find(s => s.id === rating.id);
+          const subskill = subskills.find(s => s.id === rating.id);
+          
+          return {
+            id,
+            type: rating.type,
+            rating: rating.rating,
+            name: rating.type === 'skill' ? (skill?.name || 'Unknown Skill') : (subskill?.name || 'Unknown Subskill')
+          };
+        })}
+        onSubmit={onSaveRatings}
+      />
     </motion.div>;
 };

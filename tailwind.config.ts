@@ -71,6 +71,10 @@ export default {
 					medium: 'hsl(var(--skill-medium))',
 					low: 'hsl(var(--skill-low))'
 				},
+				text: {
+					primary: 'hsl(var(--text-primary))',
+					secondary: 'hsl(var(--text-secondary))'
+				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',

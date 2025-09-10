@@ -23,11 +23,35 @@ export const authHelpers = {
       .from('profiles')
       .select('*')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('Error fetching user profile:', error);
       return null;
+    }
+
+    // If no profile exists, create one
+    if (!profile) {
+      console.log('No profile found for user, creating one...');
+      const newProfile = {
+        user_id: user.id,
+        email: user.email || '',
+        full_name: user.user_metadata?.full_name || user.email || 'User',
+        role: 'employee' as const
+      };
+
+      const { data: createdProfile, error: createError } = await supabase
+        .from('profiles')
+        .insert(newProfile)
+        .select()
+        .single();
+
+      if (createError) {
+        console.error('Error creating user profile:', createError);
+        return null;
+      }
+
+      return createdProfile;
     }
 
     return profile;

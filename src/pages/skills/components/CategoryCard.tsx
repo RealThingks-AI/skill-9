@@ -1,14 +1,16 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash2 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Edit, Trash2, TrendingUp, Users, Target, X } from "lucide-react";
 import { AddCategoryModal } from "./admin/AddCategoryModal";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { SkillsService } from "../services/skills.service";
-import type { SkillCategory } from "@/types/database";
+import { calculateCategoryProgress } from "../utils/skillHelpers";
+import type { SkillCategory, EmployeeRating, Skill } from "@/types/database";
 
 interface CategoryCardProps {
   category: SkillCategory;
@@ -17,6 +19,11 @@ interface CategoryCardProps {
   onClick: () => void;
   onRefresh: () => void;
   index: number;
+  userSkills?: EmployeeRating[];
+  skills?: Skill[];
+  subskills?: any[];
+  showHideButton?: boolean;
+  onHide?: (categoryId: string, categoryName: string) => void;
 }
 
 export const CategoryCard = ({
@@ -25,10 +32,29 @@ export const CategoryCard = ({
   isManagerOrAbove,
   onClick,
   onRefresh,
-  index
+  index,
+  userSkills = [],
+  skills = [],
+  subskills = [],
+  showHideButton = false,
+  onHide
 }: CategoryCardProps) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const { toast } = useToast();
+
+  // Calculate user-specific statistics using new progress rules
+  const progressData = React.useMemo(() => {
+    return calculateCategoryProgress(category.id, skills, subskills, userSkills);
+  }, [category.id, skills, subskills, userSkills]);
+
+  const { 
+    totalItems, 
+    ratedItems, 
+    progressPercentage, 
+    ratingCounts, 
+    approvedCount, 
+    pendingCount 
+  } = progressData;
 
   const handleEdit = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -92,7 +118,7 @@ export const CategoryCard = ({
         className="group"
       >
         <Card 
-          className="relative h-48 w-full max-w-[400px] mx-auto cursor-pointer border-0 bg-gradient-to-br from-card via-card to-card/90 hover:shadow-2xl transition-all duration-300 overflow-hidden"
+          className="relative h-80 w-full cursor-pointer border-0 bg-gradient-to-br from-card via-card to-card/90 hover:shadow-2xl transition-all duration-300 overflow-hidden"
           role="button"
           tabIndex={0}
           aria-label={`Open ${category.name} category`}
@@ -107,71 +133,132 @@ export const CategoryCard = ({
           {/* Background Pattern */}
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           
-          {/* Admin Actions */}
-          {isManagerOrAbove && (
-            <div 
-              className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1 z-10"
-              onClick={(e) => e.stopPropagation()}
-            >
+          {/* Action Buttons */}
+          <div 
+            className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1 z-10"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Hide Category Button for Employee/Tech Lead */}
+            {showHideButton && onHide && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  handleEdit(e);
-                }}
-                className="h-8 w-8 p-0 bg-background/80 backdrop-blur-sm hover:bg-primary/10 border border-border/50"
-                aria-label={`Edit ${category.name}`}
-              >
-                <Edit className="h-3 w-3" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleDelete(e);
+                  onHide(category.id, category.name);
                 }}
                 className="h-8 w-8 p-0 bg-background/80 backdrop-blur-sm hover:bg-destructive/10 text-destructive border border-border/50"
-                aria-label={`Delete ${category.name}`}
+                aria-label={`Hide ${category.name}`}
               >
-                <Trash2 className="h-3 w-3" />
+                <X className="h-3 w-3" />
               </Button>
-            </div>
-          )}
-
-          <CardContent className="relative h-full p-6 flex flex-col items-center justify-center text-center z-10">
-            {/* Category Name */}
-            <motion.h3 
-              className="text-xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors duration-200 line-clamp-2"
-              whileHover={{ scale: 1.05 }}
-              transition={{ duration: 0.2 }}
-            >
-              {category.name}
-            </motion.h3>
-
-            {/* Description */}
-            {category.description && (
-              <p className="text-sm text-muted-foreground mb-4 line-clamp-3 leading-relaxed">
-                {category.description}
-              </p>
             )}
+            
+            {/* Admin Actions */}
+            {isManagerOrAbove && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleEdit(e);
+                  }}
+                  className="h-8 w-8 p-0 bg-background/80 backdrop-blur-sm hover:bg-primary/10 border border-border/50"
+                  aria-label={`Edit ${category.name}`}
+                >
+                  <Edit className="h-3 w-3" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleDelete(e);
+                  }}
+                  className="h-8 w-8 p-0 bg-background/80 backdrop-blur-sm hover:bg-destructive/10 text-destructive border border-border/50"
+                  aria-label={`Delete ${category.name}`}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </>
+            )}
+          </div>
 
-            {/* Skill Count Badge */}
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.1 }}
-            >
-              <Badge 
-                variant="secondary" 
-                className="text-xs font-medium bg-primary/10 text-primary border-primary/20 px-3 py-1"
+          <CardHeader className="pb-3">
+            <div className="space-y-2">
+              <motion.h3 
+                className="text-xl font-bold text-foreground group-hover:text-primary transition-colors duration-200 line-clamp-2"
+                whileHover={{ scale: 1.02 }}
+                transition={{ duration: 0.2 }}
               >
-                {skillCount} {skillCount === 1 ? 'skill' : 'skills'}
-              </Badge>
-            </motion.div>
+                {category.name}
+              </motion.h3>
+              
+              {category.description && (
+                <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                  {category.description}
+                </p>
+              )}
+            </div>
+          </CardHeader>
+
+          <CardContent className="space-y-4 pt-0">
+            {/* Progress Overview */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-foreground">Progress</span>
+                <span className="text-sm text-muted-foreground">{ratedItems}/{totalItems}</span>
+              </div>
+              <Progress value={progressPercentage} className="h-2" />
+              <div className="text-xs text-muted-foreground text-center">
+                {progressPercentage}% Complete
+              </div>
+            </div>
+
+            {/* Statistics Grid */}
+            <div className="grid grid-cols-3 gap-2">
+              <div className="text-center p-2 bg-background/50 rounded-lg border border-border/50">
+                <div className="flex items-center justify-center mb-1">
+                  <Target className="h-3 w-3 text-green-500" />
+                </div>
+                <div className="text-xs font-semibold text-foreground">{ratingCounts.high}</div>
+                <div className="text-xs text-muted-foreground">High</div>
+              </div>
+              
+              <div className="text-center p-2 bg-background/50 rounded-lg border border-border/50">
+                <div className="flex items-center justify-center mb-1">
+                  <TrendingUp className="h-3 w-3 text-yellow-500" />
+                </div>
+                <div className="text-xs font-semibold text-foreground">{ratingCounts.medium}</div>
+                <div className="text-xs text-muted-foreground">Medium</div>
+              </div>
+              
+              <div className="text-center p-2 bg-background/50 rounded-lg border border-border/50">
+                <div className="flex items-center justify-center mb-1">
+                  <Users className="h-3 w-3 text-blue-500" />
+                </div>
+                <div className="text-xs font-semibold text-foreground">{ratingCounts.low}</div>
+                <div className="text-xs text-muted-foreground">Low</div>
+              </div>
+            </div>
+
+            {/* Status Information */}
+            <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="text-xs px-2 py-0.5">
+                  {approvedCount} Approved
+                </Badge>
+                {pendingCount > 0 && (
+                  <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-yellow-500/10 text-yellow-600">
+                    {pendingCount} Pending
+                  </Badge>
+                )}
+              </div>
+            </div>
 
             {/* Hover indicator */}
             <motion.div 

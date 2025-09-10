@@ -117,16 +117,15 @@ export const useSkills = () => {
     });
   };
 
-  const handleSaveRatings = async () => {
-    if (!profile?.user_id || pendingRatings.size === 0) return;
+  const handleSaveRatings = async (ratingsWithComments: Array<{id: string, type: 'skill' | 'subskill', rating: 'high' | 'medium' | 'low', comment: string}>) => {
+    if (!profile?.user_id || ratingsWithComments.length === 0) return;
 
     try {
-      const ratingsToSave = Array.from(pendingRatings.values());
-      console.log('🔄 Saving ratings:', ratingsToSave);
+      console.log('🔄 Saving ratings with comments:', ratingsWithComments);
       console.log('👤 User ID:', profile.user_id);
       
       // Prepare data for UPSERT
-      const ratingsData = ratingsToSave.map(rating => {
+      const ratingsData = ratingsWithComments.map(rating => {
         if (rating.type === 'skill') {
           return {
             user_id: profile.user_id,
@@ -134,6 +133,7 @@ export const useSkills = () => {
             subskill_id: null,
             rating: rating.rating,
             status: 'submitted' as const,
+            self_comment: rating.comment,
             submitted_at: new Date().toISOString()
           };
         } else {
@@ -147,6 +147,7 @@ export const useSkills = () => {
             subskill_id: rating.id,
             rating: rating.rating,
             status: 'submitted' as const,
+            self_comment: rating.comment,
             submitted_at: new Date().toISOString()
           };
         }
@@ -167,29 +168,68 @@ export const useSkills = () => {
 
       if (error) throw error;
 
-      // Send notification to tech lead if user has one
-      if (profile.tech_lead_id && ratingsToSave.length > 0) {
-        console.log('📨 Sending notification to tech lead:', profile.tech_lead_id);
-        
+      // Notify all tech leads for submissions (including self-ratings by tech leads)
+      const isCurrentUserTechLead = profile.role === 'tech_lead';
+      
+      if (isCurrentUserTechLead) {
+        // If current user is a tech lead rating themselves, notify all other tech leads
         const { error: notificationError } = await supabase
           .from('notifications')
-          .insert({
-            user_id: profile.tech_lead_id,
-            title: 'New Skill Ratings Submitted',
-            message: `${profile.full_name} has submitted ${ratingsToSave.length} skill rating${ratingsToSave.length > 1 ? 's' : ''} for your review.`,
-            type: 'info'
-          });
+          .insert(
+            (await supabase
+              .from('profiles')
+              .select('user_id')
+              .eq('role', 'tech_lead')
+              .neq('user_id', profile.user_id)
+            ).data?.map(techLead => ({
+              user_id: techLead.user_id,
+              title: 'Tech Lead Self-Rating Submitted',
+              message: `${profile.full_name} has submitted ${ratingsWithComments.length} self-rating${ratingsWithComments.length > 1 ? 's' : ''} for peer review.`,
+              type: 'info' as const
+            })) || []
+          );
 
         if (notificationError) {
-          console.error('❌ Error creating notification:', notificationError);
-        } else {
-          console.log('✅ Notification sent successfully');
+          console.error('❌ Error creating tech lead notifications:', notificationError);
+        }
+      } else {
+        // For ALL employees (including those without assigned tech leads)
+        // Send notifications to ALL active tech leads
+        console.log('📧 Sending notifications to all active tech leads for employee rating submission');
+        
+        const { data: allTechLeads, error: techLeadsError } = await supabase
+          .from('profiles')
+          .select('user_id, full_name')
+          .eq('role', 'tech_lead')
+          .eq('status', 'active');
+
+        if (techLeadsError) {
+          console.error('❌ Error fetching tech leads:', techLeadsError);
+        } else if (allTechLeads && allTechLeads.length > 0) {
+          console.log(`📧 Sending notifications to ${allTechLeads.length} tech leads:`, allTechLeads.map(tl => tl.full_name));
+          
+          const notifications = allTechLeads.map(techLead => ({
+            user_id: techLead.user_id,
+            title: 'New Skill Ratings Submitted',
+            message: `${profile.full_name} has submitted ${ratingsWithComments.length} skill rating${ratingsWithComments.length > 1 ? 's' : ''} for your review.`,
+            type: 'info' as const
+          }));
+
+          const { error: notificationError } = await supabase
+            .from('notifications')
+            .insert(notifications);
+
+          if (notificationError) {
+            console.error('❌ Error creating notifications:', notificationError);
+          } else {
+            console.log('✅ Notifications sent to all tech leads successfully');
+          }
         }
       }
 
       toast({
         title: "✅ Ratings submitted successfully",
-        description: `${ratingsToSave.length} rating${ratingsToSave.length > 1 ? 's' : ''} submitted for approval`,
+        description: `${ratingsWithComments.length} rating${ratingsWithComments.length > 1 ? 's' : ''} submitted for approval`,
       });
 
       setPendingRatings(new Map());
@@ -214,7 +254,7 @@ export const useSkills = () => {
     fetchData,
     handleSkillRate,
     handleSubskillRate,
-    handleSaveRatings,
+    handleSaveRatings: handleSaveRatings,
     setPendingRatings
   };
 };

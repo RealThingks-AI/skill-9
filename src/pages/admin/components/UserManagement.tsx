@@ -37,33 +37,34 @@ interface UserManagementProps {
 export function UserManagement({ onBack }: UserManagementProps) {
   const [searchTerm, setSearchTerm] = useState("");
 
+  // Dummy data for now - will be replaced with actual data from useAdmin hook
   const users = [
     {
-      id: 1,
-      name: "John Smith",
-      email: "john.smith@company.com",
-      role: "Admin",
-      status: "Active",
-      lastLogin: "2 hours ago",
-      createdAt: "2024-01-15"
+      id: '1',
+      name: 'John Doe',
+      email: 'john.doe@company.com',
+      role: 'Admin',
+      status: 'Active',
+      lastLogin: '2 hours ago',
+      created: 'Jan 15, 2024'
     },
     {
-      id: 2,
-      name: "Sarah Johnson",
-      email: "sarah.johnson@company.com",
-      role: "Manager",
-      status: "Active",
-      lastLogin: "1 day ago",
-      createdAt: "2024-01-10"
+      id: '2', 
+      name: 'Jane Smith',
+      email: 'jane.smith@company.com',
+      role: 'Manager',
+      status: 'Active',
+      lastLogin: '1 day ago',
+      created: 'Jan 12, 2024'
     },
     {
-      id: 3,
-      name: "Mike Chen",
-      email: "mike.chen@company.com",
-      role: "Employee",
-      status: "Inactive",
-      lastLogin: "1 week ago",
-      createdAt: "2024-01-05"
+      id: '3',
+      name: 'Bob Johnson',
+      email: 'bob.johnson@company.com', 
+      role: 'Employee',
+      status: 'Inactive',
+      lastLogin: '1 week ago',
+      created: 'Jan 10, 2024'
     }
   ];
 
@@ -210,7 +211,7 @@ export function UserManagement({ onBack }: UserManagementProps) {
                     </Badge>
                   </TableCell>
                   <TableCell>{user.lastLogin}</TableCell>
-                  <TableCell>{user.createdAt}</TableCell>
+                  <TableCell>{user.created}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

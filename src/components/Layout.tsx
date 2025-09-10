@@ -63,8 +63,8 @@ export function Layout({
           
 
           {/* Main Content */}
-          <main className="flex-1 min-h-0 max-h-full p-6 overflow-auto">
-            <div className="max-w-full">
+          <main className="flex-1 min-h-0 max-h-full overflow-auto">
+            <div className="h-full">
               {children}
             </div>
           </main>

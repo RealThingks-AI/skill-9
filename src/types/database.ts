@@ -110,3 +110,56 @@ export interface Notification {
   read: boolean;
   created_at: string;
 }
+
+export interface PersonalGoal {
+  id: string;
+  user_id: string;
+  skill_id: string;
+  target_rating: 'high' | 'medium' | 'low';
+  current_rating: 'high' | 'medium' | 'low';
+  target_date: string;
+  status: 'active' | 'completed' | 'overdue' | 'cancelled';
+  motivation_notes?: string;
+  progress_percentage: number;
+  completed_at?: string;
+  created_at: string;
+  updated_at: string;
+  skill?: Skill;
+}
+
+export interface UserAchievement {
+  id: string;
+  user_id: string;
+  achievement_type: string;
+  achievement_name: string;
+  description?: string;
+  badge_icon?: string;
+  earned_at: string;
+  goal_id?: string;
+  metadata?: any;
+}
+
+export interface UserGamification {
+  id: string;
+  user_id: string;
+  total_xp: number;
+  level: number;
+  goals_set_count: number;
+  goals_achieved_count: number;
+  current_streak: number;
+  best_streak: number;
+  last_goal_achieved_date?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GoalProgressHistory {
+  id: string;
+  goal_id: string;
+  previous_rating?: string;
+  new_rating: 'high' | 'medium' | 'low';
+  progress_percentage: number;
+  milestone_reached?: string;
+  notes?: string;
+  created_at: string;
+}

@@ -8,8 +8,6 @@ import {
   BarChart3, 
   Settings,
   Users,
-  Bell,
-  Palette,
   ChevronLeft,
   User,
   BarChart3 as SkillIcon
@@ -17,7 +15,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/hooks/useAuth';
-import { useTheme } from '@/components/theme-provider';
+import { usePendingApprovals } from '@/hooks/usePendingApprovals';
 import { useToast } from '@/hooks/use-toast';
 
 const items = [
@@ -25,7 +23,7 @@ const items = [
     title: 'Dashboard', 
     url: '/', 
     icon: LayoutDashboard,
-    roles: ['employee', 'tech_lead', 'manager', 'admin'] 
+    roles: ['manager', 'admin'] 
   },
   { 
     title: 'Skills', 
@@ -37,20 +35,7 @@ const items = [
     title: 'Approvals', 
     url: '/approvals', 
     icon: CheckCircle,
-    roles: ['tech_lead', 'manager', 'admin'],
-    badge: 3 // This would be dynamic in real app
-  },
-  { 
-    title: 'Projects', 
-    url: '/projects', 
-    icon: FolderKanban,
-    roles: ['employee', 'tech_lead', 'manager', 'admin'] 
-  },
-  { 
-    title: 'Reports', 
-    url: '/reports', 
-    icon: BarChart3,
-    roles: ['tech_lead', 'manager', 'admin'] 
+    roles: ['tech_lead', 'manager', 'admin']
   },
   { 
     title: 'Admin', 
@@ -60,37 +45,21 @@ const items = [
   },
 ];
 
-const bottomItems = [
-  { 
-    title: 'Notifications', 
-    url: '/notifications', 
-    icon: Bell,
-    roles: ['employee', 'tech_lead', 'manager', 'admin'],
-    badge: 3
-  },
-  { 
-    title: 'Theme', 
-    icon: Palette,
-    action: 'theme'
-  },
-];
+const bottomItems: any[] = [];
 
 export function AppSidebar() {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
   const { profile, signOut } = useAuth();
-  const { theme, setTheme } = useTheme();
   const { toast } = useToast();
+  const { pendingCount } = usePendingApprovals();
   const currentPath = location.pathname;
 
   const toggleSidebar = () => {
     setCollapsed(!collapsed);
   };
 
-  const toggleTheme = () => {
-    setTheme(theme === 'light' ? 'dark' : 'light');
-  };
 
   const isActive = (path: string) => {
     if (path === '/') {
@@ -134,7 +103,7 @@ return (
               collapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto'
             }`}
           >
-            RealThings
+            RealThingks
           </div>
         </div>
       </div>
@@ -165,9 +134,9 @@ return (
                   }`}
                 >
                   <span className="text-sm font-medium">{item.title}</span>
-                  {item.badge && (
+                  {item.title === 'Approvals' && pendingCount > 0 && (
                     <Badge variant="secondary" className="ml-2 text-xs bg-sidebar-accent text-sidebar-foreground/70 flex-shrink-0">
-                      {item.badge}
+                      {pendingCount}
                     </Badge>
                   )}
                 </div>
@@ -196,63 +165,6 @@ return (
 
       {/* Bottom Section */}
       <div className="border-t border-sidebar-border p-3 space-y-1">
-        {filteredBottomItems.map((item) => {
-          const bottomButton = (
-            <button
-              onClick={item.action === 'theme' ? toggleTheme : undefined}
-              className="flex items-center h-10 w-full rounded-lg transition-colors font-medium text-sidebar-foreground/70 hover:text-sidebar-primary hover:bg-sidebar-accent/50"
-            >
-              <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
-                <item.icon className="w-5 h-5" />
-              </div>
-              <div 
-                className={`transition-all duration-300 overflow-hidden whitespace-nowrap flex items-center justify-between flex-1 ${
-                  collapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-0'
-                }`}
-              >
-                <span className="text-sm font-medium">{item.title}</span>
-                {item.badge && (
-                  <Badge variant="secondary" className="ml-2 text-xs bg-destructive/10 text-destructive flex-shrink-0">
-                    {item.badge}
-                  </Badge>
-                )}
-              </div>
-            </button>
-          );
-
-          if (collapsed) {
-            return (
-              <TooltipProvider key={item.title}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    {item.url ? (
-                      <NavLink to={item.url} className="block">
-                        {bottomButton}
-                      </NavLink>
-                    ) : (
-                      bottomButton
-                    )}
-                  </TooltipTrigger>
-                  <TooltipContent side="right" className="ml-2">
-                    <p>{item.title}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return (
-            <div key={item.title}>
-              {item.url ? (
-                <NavLink to={item.url} className="block">
-                  {bottomButton}
-                </NavLink>
-              ) : (
-                bottomButton
-              )}
-            </div>
-          );
-        })}
 
         {/* Collapse Toggle */}
         <div>
@@ -331,7 +243,7 @@ return (
                 >
                   <div className="text-left">
                     <div className="text-sm font-medium truncate max-w-32">{displayName}</div>
-                    <div className="text-xs text-sidebar-foreground/50">Click to logout</div>
+                    <div className="text-xs text-sidebar-foreground/50"></div>
                   </div>
                 </div>
               </button>
@@ -347,7 +259,7 @@ return (
                     <TooltipContent side="right" className="ml-2">
                       <div className="text-center">
                         <p className="font-medium">{displayName}</p>
-                        <p className="text-xs text-muted-foreground">Click to logout</p>
+                        <p className="text-xs text-muted-foreground"></p>
                       </div>
                     </TooltipContent>
                   </Tooltip>

@@ -49,7 +49,8 @@ export const useApprovals = () => {
     
     setLoading(true);
     try {
-      // Fetch employee ratings that need approval for tech leads
+      // Fetch ALL employee ratings that need approval for ANY tech lead
+      // This allows any tech lead to approve any employee's ratings
       const { data: ratings, error } = await supabase
         .from('employee_ratings')
         .select(`
@@ -71,33 +72,42 @@ export const useApprovals = () => {
         `)
         .eq('status', 'submitted');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching ratings:', error);
+        throw error;
+      }
 
-      // Get profiles for tech lead filtering
+      console.log('📊 Fetched ratings:', ratings?.length || 0, 'ratings');
+
+      // Get ALL profiles to map user info (including tech leads for self-ratings)
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('user_id, full_name, email, tech_lead_id')
-        .eq('tech_lead_id', user.id);
+        .select('user_id, full_name, email, tech_lead_id, role')
+        .in('role', ['employee', 'tech_lead', 'management', 'admin']);
 
-      if (profilesError) throw profilesError;
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        throw profilesError;
+      }
 
-      // Filter ratings for employees under this tech lead
-      const userIds = profiles?.map(p => p.user_id) || [];
-      const filteredRatings = ratings?.filter(rating => 
-        userIds.includes(rating.user_id)
-      ) || [];
+      // Create approvals for ALL submitted ratings (not filtered by tech lead assignment)
+      const filteredRatings = ratings || [];
 
       const approvals: ApprovalRequest[] = [];
 
       for (const rating of filteredRatings) {
         const employeeProfile = profiles?.find(p => p.user_id === rating.user_id);
         
+        // Determine the type based on the role of the person who submitted the rating
+        const submitterRole = employeeProfile?.role || 'employee';
+        const isTeamLead = submitterRole === 'tech_lead';
+        
         approvals.push({
           id: rating.id,
-          type: "Skill Assessment",
-          requester: employeeProfile?.full_name || 'Unknown Employee',
+          type: isTeamLead ? "Tech Lead Self-Assessment" : "Skill Assessment",
+          requester: employeeProfile?.full_name || 'Unknown User',
           title: `${rating.skills?.name}${rating.subskills ? ` - ${rating.subskills.name}` : ''}`,
-          description: `Employee self-rated as ${rating.rating.toUpperCase()} level${rating.self_comment ? `: "${rating.self_comment}"` : ''}`,
+          description: `${isTeamLead ? 'Tech Lead' : 'Employee'} self-rated as ${rating.rating.toUpperCase()} level${rating.self_comment ? `: "${rating.self_comment}"` : ''}`,
           priority: rating.rating === 'high' ? 'High' : rating.rating === 'medium' ? 'Medium' : 'Low',
           submitDate: new Date(rating.submitted_at || rating.created_at).toLocaleDateString(),
           dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString(),
@@ -108,11 +118,13 @@ export const useApprovals = () => {
         });
       }
 
+      console.log('✅ Created approvals:', approvals.length, 'approval requests');
+
       setPendingApprovals(approvals);
 
-      // Group approvals by employee
+      // Group approvals by user (including tech leads)
       const grouped = profiles?.map(profile => {
-        const employeeRatings = approvals.filter(approval => 
+        const userRatings = approvals.filter(approval => 
           approval.requester === profile.full_name
         );
         
@@ -120,11 +132,13 @@ export const useApprovals = () => {
           employeeId: profile.user_id,
           employeeName: profile.full_name,
           email: profile.email,
-          pendingCount: employeeRatings.length,
-          submitDate: employeeRatings.length > 0 ? employeeRatings[0].submitDate : '',
-          ratings: employeeRatings
+          pendingCount: userRatings.length,
+          submitDate: userRatings.length > 0 ? userRatings[0].submitDate : '',
+          ratings: userRatings
         };
       }).filter(group => group.pendingCount > 0) || [];
+
+      console.log('📊 Grouped approvals:', grouped.length, 'groups with pending ratings');
 
       setGroupedApprovals(grouped);
     } catch (error) {
@@ -147,9 +161,8 @@ export const useApprovals = () => {
           subskills (name)
         `)
         .in('status', ['approved', 'rejected'])
-        .eq('approved_by', user.id)
         .order('approved_at', { ascending: false })
-        .limit(5);
+        .limit(20);
 
       if (error) throw error;
 
@@ -177,7 +190,39 @@ export const useApprovals = () => {
     }
   };
 
-  const handleApproveRating = async (approvalId: string) => {
+  // Get approved today count
+  const getApprovedTodayCount = () => {
+    const today = new Date().toDateString();
+    return recentActions.filter(action => 
+      action.action === 'Approved' && new Date(action.date).toDateString() === today
+    ).length;
+  };
+
+  // Get rejected today count
+  const getRejectedTodayCount = () => {
+    const today = new Date().toDateString();
+    return recentActions.filter(action => 
+      action.action === 'Rejected' && new Date(action.date).toDateString() === today
+    ).length;
+  };
+
+  // Get approved today actions
+  const getApprovedTodayActions = () => {
+    const today = new Date().toDateString();
+    return recentActions.filter(action => 
+      action.action === 'Approved' && new Date(action.date).toDateString() === today
+    );
+  };
+
+  // Get rejected today actions
+  const getRejectedTodayActions = () => {
+    const today = new Date().toDateString();
+    return recentActions.filter(action => 
+      action.action === 'Rejected' && new Date(action.date).toDateString() === today
+    );
+  };
+
+  const handleApproveRating = async (approvalId: string, comment?: string) => {
     try {
       if (!user?.id) {
         toast.error('You must be logged in to approve ratings');
@@ -189,7 +234,8 @@ export const useApprovals = () => {
         .update({
           status: 'approved',
           approved_by: user.id,
-          approved_at: new Date().toISOString()
+          approved_at: new Date().toISOString(),
+          approver_comment: comment || null
         })
         .eq('id', approvalId);
 
@@ -197,6 +243,17 @@ export const useApprovals = () => {
         console.error('Supabase error:', error);
         throw error;
       }
+
+      // Log the approval action
+      await supabase
+        .from('approval_logs')
+        .insert({
+          rating_id: approvalId,
+          approver_id: user.id,
+          action: 'approved',
+          approver_comment: comment || '',
+          created_at: new Date().toISOString()
+        });
 
       toast.success('Rating approved successfully');
       fetchPendingApprovals();
@@ -207,22 +264,22 @@ export const useApprovals = () => {
     }
   };
 
-  const handleUpdateRating = async (
-    approvalId: string, 
-    newRating: 'high' | 'medium' | 'low', 
-    comment?: string
-  ) => {
+  const handleRejectRating = async (approvalId: string, comment: string) => {
     try {
       if (!user?.id) {
-        toast.error('You must be logged in to update ratings');
+        toast.error('You must be logged in to reject ratings');
+        return;
+      }
+
+      if (!comment.trim()) {
+        toast.error('Comment is required when rejecting ratings');
         return;
       }
 
       const { error } = await supabase
         .from('employee_ratings')
         .update({
-          rating: newRating,
-          status: 'approved',
+          status: 'rejected',
           approved_by: user.id,
           approved_at: new Date().toISOString(),
           approver_comment: comment
@@ -234,12 +291,23 @@ export const useApprovals = () => {
         throw error;
       }
 
-      toast.success('Rating updated and approved');
+      // Log the rejection action
+      await supabase
+        .from('approval_logs')
+        .insert({
+          rating_id: approvalId,
+          approver_id: user.id,
+          action: 'rejected',
+          approver_comment: comment,
+          created_at: new Date().toISOString()
+        });
+
+      toast.success('Rating rejected');
       fetchPendingApprovals();
       fetchRecentActions();
     } catch (error) {
-      console.error('Error updating rating:', error);
-      toast.error('Failed to update rating');
+      console.error('Error rejecting rating:', error);
+      toast.error('Failed to reject rating');
     }
   };
 
@@ -258,7 +326,11 @@ export const useApprovals = () => {
     recentActions,
     loading,
     handleApproveRating,
-    handleUpdateRating,
+    handleRejectRating,
+    getApprovedTodayCount,
+    getRejectedTodayCount,
+    getApprovedTodayActions,
+    getRejectedTodayActions,
     refetch: () => {
       fetchPendingApprovals();
       fetchRecentActions();
