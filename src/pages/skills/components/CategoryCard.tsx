@@ -207,18 +207,6 @@ export const CategoryCard = ({
           </CardHeader>
 
           <CardContent className="space-y-4 pt-0">
-            {/* Progress Overview */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-foreground">Progress</span>
-                <span className="text-sm text-muted-foreground">{ratedItems}/{totalItems}</span>
-              </div>
-              <Progress value={progressPercentage} className="h-2" />
-              <div className="text-xs text-muted-foreground text-center">
-                {progressPercentage}% Complete
-              </div>
-            </div>
-
             {/* Statistics Grid */}
             <div className="grid grid-cols-3 gap-2">
               <div className="text-center p-2 bg-background/50 rounded-lg border border-border/50">
