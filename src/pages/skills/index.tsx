@@ -140,88 +140,133 @@ const Skills = () => {
           </div>
         </div>
 
-        {/* Category Cards Grid */}
+        {/* Category Cards Grid - Fixed 3x3 Layout */}
         <div className="flex-1 overflow-y-auto">
-          <motion.div 
-            className="grid gap-4 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 p-6 h-fit" 
-            layout
-            style={{ 
-              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-              maxWidth: '100%'
-            }}
-          >
-            <AnimatePresence mode="popLayout">
-              {/* Empty State */}
-              {visibleCategories.length === 0 ? (
-                <motion.div 
-                  className="col-span-full flex flex-col items-center justify-center py-16 text-center" 
-                  initial={{ opacity: 0, y: 20 }} 
-                  animate={{ opacity: 1, y: 0 }} 
-                  exit={{ opacity: 0, y: -20 }}
-                >
-                  <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
-                    <Plus className="w-8 h-8 text-muted-foreground" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-2">
-                    {isManagerOrAbove ? "No Categories Yet" : "No Categories Selected"}
-                  </h3>
-                  <p className="text-muted-foreground max-w-md">
-                    {isManagerOrAbove 
-                      ? "Get started by creating your first skill category." 
-                      : "Add categories to your dashboard to start tracking your skills. Click the '+ Add Category' button to get started."
-                    }
-                  </p>
-                  {isManagerOrAbove ? (
-                    skillCategories.length === 0 && (
-                      <Button onClick={() => setShowAddCategory(true)} className="mt-4">
-                        <Plus className="w-4 h-4 mr-2" />
-                        Create First Category
-                      </Button>
-                    )
-                  ) : (
-                    <Button onClick={() => setShowCategorySelection(true)} className="mt-4">
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Category
-                    </Button>
-                  )}
-                </motion.div>
-              ) : filteredCategories.length === 0 ? (
-                <motion.div 
-                  className="col-span-full flex flex-col items-center justify-center py-16 text-center" 
-                  initial={{ opacity: 0, y: 20 }} 
-                  animate={{ opacity: 1, y: 0 }} 
-                  exit={{ opacity: 0, y: -20 }}
-                >
-                  <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
-                    <Search className="w-8 h-8 text-muted-foreground" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-2">
-                    No Results Found
-                  </h3>
-                  <p className="text-muted-foreground max-w-md">
-                    Try adjusting your search terms to find what you're looking for.
-                  </p>
-                </motion.div>
+          {visibleCategories.length === 0 ? (
+            /* Empty State */
+            <motion.div 
+              className="flex flex-col items-center justify-center h-full py-16 text-center" 
+              initial={{ opacity: 0, y: 20 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              exit={{ opacity: 0, y: -20 }}
+            >
+              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+                <Plus className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">
+                {isManagerOrAbove ? "No Categories Yet" : "No Categories Selected"}
+              </h3>
+              <p className="text-muted-foreground max-w-md">
+                {isManagerOrAbove 
+                  ? "Get started by creating your first skill category." 
+                  : "Add categories to your dashboard to start tracking your skills. Click the '+ Add Category' button to get started."
+                }
+              </p>
+              {isManagerOrAbove ? (
+                skillCategories.length === 0 && (
+                  <Button onClick={() => setShowAddCategory(true)} className="mt-4">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create First Category
+                  </Button>
+                )
               ) : (
-                filteredCategories.map((category, index) => (
-                  <CategoryCard 
-                    key={category.id} 
-                    category={category} 
-                    skillCount={skills.filter(skill => skill.category_id === category.id).length}
-                    subskills={subskills}
-                    isManagerOrAbove={isManagerOrAbove} 
-                    onClick={() => handleCategoryClick(category)} 
-                    onRefresh={fetchData} 
-                    index={index}
-                    userSkills={userSkills}
-                    skills={skills}
-                    showHideButton={!isManagerOrAbove}
-                    onHide={!isManagerOrAbove ? handleHideCategory : undefined}
-                  />
-                ))
+                <Button onClick={() => setShowCategorySelection(true)} className="mt-4">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Category
+                </Button>
               )}
-            </AnimatePresence>
-          </motion.div>
+            </motion.div>
+          ) : filteredCategories.length === 0 ? (
+            /* No Search Results */
+            <motion.div 
+              className="flex flex-col items-center justify-center h-full py-16 text-center" 
+              initial={{ opacity: 0, y: 20 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              exit={{ opacity: 0, y: -20 }}
+            >
+              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+                <Search className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">
+                No Results Found
+              </h3>
+              <p className="text-muted-foreground max-w-md">
+                Try adjusting your search terms to find what you're looking for.
+              </p>
+            </motion.div>
+          ) : (
+            /* Fixed 3x3 Grid */
+            <div className="p-6 h-full flex items-center justify-center">
+              <motion.div 
+                className="grid grid-cols-3 gap-4 w-full max-w-6xl mx-auto"
+                style={{
+                  gridTemplateRows: 'repeat(3, minmax(200px, 1fr))',
+                  aspectRatio: '3/2'
+                }}
+                layout
+              >
+                <AnimatePresence mode="popLayout">
+                  {/* Render exactly 9 slots */}
+                  {Array.from({ length: 9 }, (_, index) => {
+                    const category = filteredCategories[index];
+                    const isAddButtonSlot = !category && index === filteredCategories.length && !isManagerOrAbove && filteredCategories.length < 9;
+                    
+                    if (category) {
+                      // Show category card
+                      return (
+                        <CategoryCard 
+                          key={category.id} 
+                          category={category} 
+                          skillCount={skills.filter(skill => skill.category_id === category.id).length}
+                          subskills={subskills}
+                          isManagerOrAbove={isManagerOrAbove} 
+                          onClick={() => handleCategoryClick(category)} 
+                          onRefresh={fetchData} 
+                          index={index}
+                          userSkills={userSkills}
+                          skills={skills}
+                          showHideButton={!isManagerOrAbove}
+                          onHide={!isManagerOrAbove ? handleHideCategory : undefined}
+                        />
+                      );
+                    } else if (isAddButtonSlot) {
+                      // Show add category button in the next empty slot
+                      return (
+                        <motion.div
+                          key={`add-${index}`}
+                          className="border-2 border-dashed border-muted-foreground/30 rounded-lg flex flex-col items-center justify-center p-6 hover:border-muted-foreground/50 transition-colors cursor-pointer group"
+                          onClick={() => setShowCategorySelection(true)}
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.9 }}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-3 group-hover:bg-muted-foreground/10 transition-colors">
+                            <Plus className="w-6 h-6 text-muted-foreground" />
+                          </div>
+                          <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+                            Add Category
+                          </span>
+                        </motion.div>
+                      );
+                    } else {
+                      // Show empty slot
+                      return (
+                        <motion.div
+                          key={`empty-${index}`}
+                          className="rounded-lg bg-muted/20 border border-muted/40"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                        />
+                      );
+                    }
+                  })}
+                </AnimatePresence>
+              </motion.div>
+            </div>
+          )}
         </div>
       </div>
 
