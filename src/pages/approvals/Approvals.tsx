@@ -120,138 +120,136 @@ const Approvals = () => {
         </Button>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Pending Approvals */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Pending Approvals</CardTitle>
-            <CardDescription>
-              Items awaiting your review and approval
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {pendingApprovals && pendingApprovals.length > 0 ? (
-                pendingApprovals.map((approval) => (
-                  <Collapsible
-                    key={approval.id}
-                    open={expandedApproval === approval.id}
-                    onOpenChange={(open) => setExpandedApproval(open ? approval.id : null)}
-                  >
-                    <div className="border rounded-lg overflow-hidden">
-                      <CollapsibleTrigger className="w-full p-4 hover:bg-muted/50 transition-colors text-left">
-                        <div className="flex items-start justify-between">
-                          <div className="space-y-1 flex-1">
-                            <div className="flex items-center gap-2">
-                              <p className="font-medium">{approval.title}</p>
-                              <Badge className={getPriorityColor(approval.priority)}>
-                                {approval.priority}
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-muted-foreground">{approval.description}</p>
+      {/* Pending Approvals - Full Width */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Pending Approvals</CardTitle>
+          <CardDescription>
+            Items awaiting your review and approval
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {pendingApprovals && pendingApprovals.length > 0 ? (
+              pendingApprovals.map((approval) => (
+                <Collapsible
+                  key={approval.id}
+                  open={expandedApproval === approval.id}
+                  onOpenChange={(open) => setExpandedApproval(open ? approval.id : null)}
+                >
+                  <div className="border rounded-lg overflow-hidden">
+                    <CollapsibleTrigger className="w-full p-4 hover:bg-muted/50 transition-colors text-left">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">{approval.title}</p>
+                            <Badge className={getPriorityColor(approval.priority)}>
+                              {approval.priority}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">{approval.description}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <ChevronDown className="h-4 w-4 transition-transform data-[state=open]:rotate-180" />
+                        </div>
+                      </div>
+                    </CollapsibleTrigger>
+                    
+                    <CollapsibleContent className="border-t bg-muted/20">
+                      <div className="p-4 space-y-4">
+                        {/* Employee Comment */}
+                        {approval.self_comment && (
+                          <div className="p-3 bg-background rounded border">
+                            <p className="text-sm font-medium mb-1">Employee Comment:</p>
+                            <p className="text-sm text-muted-foreground">{approval.self_comment}</p>
+                          </div>
+                        )}
+                        
+                        {/* Request Details */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-muted-foreground">Requester:</span>
+                            <span className="font-medium">{approval.requester}</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <ChevronDown className="h-4 w-4 transition-transform data-[state=open]:rotate-180" />
+                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-muted-foreground">Submitted:</span>
+                            <span className="font-medium">{approval.submitDate}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Clock className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-muted-foreground">Due:</span>
+                            <span className="font-medium">{approval.dueDate}</span>
                           </div>
                         </div>
-                      </CollapsibleTrigger>
-                      
-                      <CollapsibleContent className="border-t bg-muted/20">
-                        <div className="p-4 space-y-4">
-                          {/* Employee Comment */}
-                          {approval.self_comment && (
-                            <div className="p-3 bg-background rounded border">
-                              <p className="text-sm font-medium mb-1">Employee Comment:</p>
-                              <p className="text-sm text-muted-foreground">{approval.self_comment}</p>
-                            </div>
-                          )}
-                          
-                          {/* Request Details */}
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                            <div className="flex items-center gap-2">
-                              <User className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-muted-foreground">Requester:</span>
-                              <span className="font-medium">{approval.requester}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Calendar className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-muted-foreground">Submitted:</span>
-                              <span className="font-medium">{approval.submitDate}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Clock className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-muted-foreground">Due:</span>
-                              <span className="font-medium">{approval.dueDate}</span>
-                            </div>
-                          </div>
-                          
-                          {/* Action Buttons */}
-                          <div className="flex gap-2 pt-2">
-                            <Button 
-                              size="sm"
-                              onClick={() => handleApproveRating(approval.id)}
-                              className="bg-green-600 hover:bg-green-700 text-white"
-                            >
-                              <Check className="mr-2 h-4 w-4" />
-                              Approve
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => handleRejectRating(approval.id, "Rejected from dropdown")}
-                              className="border-red-200 text-red-600 hover:bg-red-50"
-                            >
-                              <X className="mr-2 h-4 w-4" />
-                              Reject
-                            </Button>
-                          </div>
+                        
+                        {/* Action Buttons */}
+                        <div className="flex gap-2 pt-2">
+                          <Button 
+                            size="sm"
+                            onClick={() => handleApproveRating(approval.id)}
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                          >
+                            <Check className="mr-2 h-4 w-4" />
+                            Approve
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleRejectRating(approval.id, "Rejected from dropdown")}
+                            className="border-red-200 text-red-600 hover:bg-red-50"
+                          >
+                            <X className="mr-2 h-4 w-4" />
+                            Reject
+                          </Button>
                         </div>
-                      </CollapsibleContent>
-                    </div>
-                  </Collapsible>
-                ))
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-sm text-muted-foreground">No pending approvals</p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Recent Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Actions</CardTitle>
-            <CardDescription>
-              Recently processed approval requests
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {recentActions && recentActions.length > 0 ? (
-                recentActions.map((action) => (
-                  <div key={action.id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="space-y-1">
-                      <p className="font-medium text-sm">{action.title}</p>
-                      <p className="text-xs text-muted-foreground">
-                        By: {action.approver} • {action.date}
-                      </p>
-                    </div>
-                    <Badge className={getActionColor(action.action)}>
-                      {action.action}
-                    </Badge>
+                      </div>
+                    </CollapsibleContent>
                   </div>
-                ))
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-sm text-muted-foreground">No recent actions</p>
+                </Collapsible>
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-sm text-muted-foreground">No pending approvals</p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Recent Actions */}
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>Recent Actions</CardTitle>
+          <CardDescription>
+            Recently processed approval requests
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {recentActions && recentActions.length > 0 ? (
+              recentActions.map((action) => (
+                <div key={action.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="space-y-1">
+                    <p className="font-medium text-sm">{action.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      By: {action.approver} • {action.date}
+                    </p>
+                  </div>
+                  <Badge className={getActionColor(action.action)}>
+                    {action.action}
+                  </Badge>
                 </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-sm text-muted-foreground">No recent actions</p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
