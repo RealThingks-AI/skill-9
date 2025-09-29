@@ -161,9 +161,7 @@ const Approvals = () => {
               <Clock className="h-5 w-5 text-orange-500" />
               Pending Approvals
             </CardTitle>
-            <CardDescription>
-              Review skill ratings awaiting approval
-            </CardDescription>
+            
           </CardHeader>
           <CardContent className="flex-1 overflow-hidden">
             {loading ? <div className="flex justify-center py-8">
