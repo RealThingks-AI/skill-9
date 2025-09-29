@@ -153,9 +153,9 @@ const Approvals = () => {
       </div>
 
 
-      <div className="grid gap-6 lg:grid-cols-2 h-[calc(100vh-400px)]">
-        {/* Pending Approvals */}
-        <Card className="flex flex-col h-full">
+      <div className="space-y-6">
+        {/* Pending Approvals - Full Width */}
+        <Card className="w-full">
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center gap-2">
               <Clock className="h-5 w-5 text-orange-500" />
@@ -163,7 +163,7 @@ const Approvals = () => {
             </CardTitle>
             
           </CardHeader>
-          <CardContent className="flex-1 overflow-hidden">
+          <CardContent className="w-full">
             {loading ? <div className="flex justify-center py-8">
                 <LoadingSpinner />
               </div> : filteredGroupedApprovals.length === 0 ? <div className="text-center py-12">
@@ -171,7 +171,7 @@ const Approvals = () => {
                 <p className="text-muted-foreground">
                   {searchTerm ? 'No employees match your search.' : 'All caught up! No pending approvals.'}
                 </p>
-              </div> : <div className="space-y-2 h-full overflow-y-auto">
+              </div> : <div className="space-y-2 w-full overflow-y-auto max-h-[600px]">
                 {filteredGroupedApprovals.map(employee => <Collapsible key={employee.employeeId} open={expandedEmployeeId === employee.employeeId} onOpenChange={open => {
               setExpandedEmployeeId(open ? employee.employeeId : null);
               setShowApproveFor(null);
@@ -179,9 +179,9 @@ const Approvals = () => {
               setApproveComment("");
               setRejectComment("");
             }}>
-                    <div className="border rounded-lg overflow-hidden">
+                    <div className="border rounded-lg overflow-hidden w-full">
                       <CollapsibleTrigger asChild>
-                        <div className="flex items-center justify-between p-3 hover:bg-muted/50 transition-colors cursor-pointer group">
+                        <div className="flex items-center justify-between p-3 hover:bg-muted/50 transition-colors cursor-pointer group w-full">
                           <div className="flex items-center gap-4 flex-1 min-w-0">
                             <div className="font-medium text-sm min-w-[120px]">{employee.employeeName}</div>
                             <Badge variant="secondary" className="bg-orange-100 text-orange-800 text-xs whitespace-nowrap">
@@ -202,11 +202,11 @@ const Approvals = () => {
                         </div>
                       </CollapsibleTrigger>
 
-                      <CollapsibleContent className="border-t bg-muted/20">
-                        <div className="p-4 space-y-4">
+                      <CollapsibleContent className="border-t bg-muted/20 w-full">
+                        <div className="p-4 space-y-4 w-full">
                           {/* Individual Ratings */}
                           <div className="space-y-3">
-                            {employee.ratings.map(rating => <div key={rating.id} className="border rounded-lg p-4">
+                            {employee.ratings.map(rating => <div key={rating.id} className="border rounded-lg p-4 w-full">
                                 <div className="flex items-start justify-between mb-3">
                                   <div className="space-y-1 flex-1">
                                     <h4 className="font-medium">{rating.title}</h4>
