@@ -104,7 +104,7 @@ const Approvals = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-bold tracking-tight">Approvals Dashboard</h1>
-          <p className="text-muted-foreground mt-2">Review and manage pending skill approvals</p>
+          
         </div>
         
         {/* Search - Top Right */}
