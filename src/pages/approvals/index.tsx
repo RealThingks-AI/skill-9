@@ -107,23 +107,12 @@ const Approvals = () => {
           <p className="text-muted-foreground mt-2">Review and manage pending skill approvals</p>
         </div>
         
-        {/* Search and Filter - Top Right */}
+        {/* Search - Top Right */}
         <div className="flex items-center gap-3">
           <div className="relative w-64">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Search employees..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10 h-10" />
           </div>
-          <Select value={roleFilter} onValueChange={setRoleFilter}>
-            <SelectTrigger className="w-40 h-10">
-              <SelectValue placeholder="All Roles" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Roles</SelectItem>
-              <SelectItem value="employee">Employees</SelectItem>
-              <SelectItem value="tech_lead">Tech Leads</SelectItem>
-              <SelectItem value="management">Management</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
       </div>
 
