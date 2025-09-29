@@ -49,8 +49,7 @@ export const useApprovals = () => {
     
     setLoading(true);
     try {
-      // Fetch ALL employee ratings that need approval for ANY tech lead
-      // This allows any tech lead to approve any employee's ratings
+      // Fetch ALL employee ratings that need approval
       const { data: ratings, error } = await supabase
         .from('employee_ratings')
         .select(`
@@ -90,8 +89,29 @@ export const useApprovals = () => {
         throw profilesError;
       }
 
-      // Create approvals for ALL submitted ratings (not filtered by tech lead assignment)
-      const filteredRatings = ratings || [];
+      // Filter ratings based on approval logic:
+      // 1. Employee ratings -> All Tech Leads can approve
+      // 2. Tech Lead self-ratings -> Other Tech Leads can approve (exclude self)
+      const currentUserProfile = profiles?.find(p => p.user_id === user.id);
+      const filteredRatings = (ratings || []).filter(rating => {
+        const submitterProfile = profiles?.find(p => p.user_id === rating.user_id);
+        const submitterRole = submitterProfile?.role || 'employee';
+        
+        // If submitter is an employee, any tech lead can approve
+        if (submitterRole === 'employee') {
+          return true;
+        }
+        
+        // If submitter is a tech lead, exclude self-approvals
+        if (submitterRole === 'tech_lead') {
+          return rating.user_id !== user.id; // Exclude own submissions
+        }
+        
+        return true;
+      });
+
+      console.log('🔍 Current user:', currentUserProfile?.full_name, 'Role:', currentUserProfile?.role);
+      console.log('📋 Filtered ratings:', filteredRatings.length, 'out of', ratings?.length || 0);
 
       const approvals: ApprovalRequest[] = [];
 

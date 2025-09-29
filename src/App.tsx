@@ -9,6 +9,7 @@ import { Layout } from "@/components/Layout";
 import Dashboard from "./pages/dashboard";
 import Skills from "./pages/skills";
 import Approvals from "./pages/approvals";
+import SkillExplorer from "./pages/skill-explorer";
 import Projects from "./pages/projects";
 import Reports from "./pages/reports";
 import Admin from "./pages/admin";
@@ -33,6 +34,7 @@ const App = () => (
                     <Route path="/" element={<Skills />} />
                     <Route path="/skills" element={<Skills />} />
                     <Route path="/approvals" element={<Approvals />} />
+                    <Route path="/skill-explorer" element={<SkillExplorer />} />
                     <Route path="/admin" element={<Admin />} />
                     
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

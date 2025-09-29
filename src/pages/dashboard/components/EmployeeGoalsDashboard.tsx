@@ -204,11 +204,13 @@ export const EmployeeGoalsDashboard = () => {
                         <SelectValue placeholder="Select skill to improve" />
                       </SelectTrigger>
                       <SelectContent>
-                        {availableSkills.map((userSkill) => (
-                          <SelectItem key={userSkill.skill_id} value={userSkill.skill_id}>
-                            {userSkill.skill?.name} (Current: {userSkill.rating})
-                          </SelectItem>
-                        ))}
+                        {availableSkills
+                          .filter(userSkill => userSkill.skill_id && userSkill.skill_id.trim() !== '')
+                          .map((userSkill) => (
+                            <SelectItem key={userSkill.skill_id} value={userSkill.skill_id}>
+                              {userSkill.skill?.name} (Current: {userSkill.rating})
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                   </div>

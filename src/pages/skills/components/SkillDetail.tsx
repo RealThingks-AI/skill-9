@@ -1,16 +1,16 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { SubskillRow } from "./SubskillRow";
-import { RatingSubmissionDialog } from "./RatingSubmissionDialog";
 import type { Skill, Subskill, UserSkill } from "@/types/database";
-import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { motion } from "framer-motion";
+import { ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { RatingPill } from "@/components/common/RatingPill";
 import type { EmployeeRating } from "@/types/database";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
 
 interface SkillDetailProps {
   skill: Skill;
@@ -35,7 +35,6 @@ export const SkillDetail = ({
   onSaveRatings,
   onRefresh
 }: SkillDetailProps) => {
-  const [showSubmissionDialog, setShowSubmissionDialog] = useState(false);
   const [expandedSubskills, setExpandedSubskills] = useState(true);
   const hasSubskills = subskills.length > 0;
   
@@ -58,41 +57,77 @@ export const SkillDetail = ({
   const getStatusColor = (status?: string) => {
     switch (status) {
       case 'draft':
-        return 'bg-amber-100 text-amber-800';
+        return 'bg-warning/20 text-warning-foreground border-warning/30';
       case 'submitted':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-primary/20 text-primary-foreground border-primary/30';
       case 'approved':
-        return 'bg-green-100 text-green-800';
+        return 'bg-success/20 text-success-foreground border-success/30';
       case 'rejected':
-        return 'bg-red-100 text-red-800';
+        return 'bg-destructive/20 text-destructive-foreground border-destructive/30';
       default:
-        return 'bg-gray-100 text-gray-600';
+        return 'bg-muted text-muted-foreground border-muted';
+    }
+  };
+
+  const { toast } = useToast();
+  const [comments, setComments] = useState<Record<string, string>>({});
+  const updateComment = (id: string, value: string) => setComments(prev => ({ ...prev, [id]: value }));
+  
+  const handleSaveRatings = async () => {
+    const items = Array.from(pendingRatings.entries()).map(([id, r]) => ({
+      id,
+      type: r.type,
+      rating: r.rating,
+      comment: (comments[id] || "").trim(),
+    }));
+    const missing = items.filter(i => !i.comment);
+    if (missing.length > 0) {
+      toast({ title: "Comments required", description: "Please add comments for all ratings.", variant: "destructive" });
+      return;
+    }
+    try {
+      const ret = onSaveRatings(items) as unknown as Promise<void> | void;
+      if (ret && typeof (ret as any).then === "function") {
+        await (ret as Promise<void>);
+      }
+      toast({ title: "Ratings submitted", description: "Your ratings were saved successfully." });
+      onRefresh();
+    } catch (e) {
+      toast({ title: "Failed to submit ratings", description: e instanceof Error ? e.message : "Please try again.", variant: "destructive" });
     }
   };
 
   return (
-    <ScrollArea className="h-[600px]">
+    <ScrollArea className="h-[720px]">
       <div className="p-6 space-y-6">
         {/* Skill Header */}
-        
+
         {/* Direct Skill Rating (if no subskills) */}
         {!hasSubskills && (
           <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-medium text-foreground mb-1">Rate this skill</h4>
-                  <p className="text-sm text-muted-foreground">
-                    How would you rate your proficiency in {skill.name}?
-                  </p>
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-medium text-foreground mb-1">Rate this skill</h4>
+                    <p className="text-sm text-muted-foreground">
+                      How would you rate your proficiency in {skill.name}?
+                    </p>
+                  </div>
+                  <RatingPill 
+                    rating={userSkillRating} 
+                    onRatingChange={rating => onSkillRate(skill.id, rating)} 
+                    disabled={userSkillStatus === 'submitted' || userSkillStatus === 'approved'} 
+                  />
                 </div>
-                <RatingPill 
-                  rating={userSkillRating} 
-                  onRatingChange={rating => onSkillRate(skill.id, rating)} 
-                  disabled={userSkillStatus === 'submitted' || userSkillStatus === 'approved'} 
-                />
-              </div>
-            </CardContent>
+                <div>
+                  <Input
+                    placeholder="Add your comment..."
+                    value={comments[skill.id] || ""}
+                    onChange={(e) => updateComment(skill.id, e.target.value)}
+                    disabled={userSkillStatus === 'submitted' || userSkillStatus === 'approved'}
+                  />
+                </div>
+              </CardContent>
           </Card>
         )}
 
@@ -133,32 +168,41 @@ export const SkillDetail = ({
                       transition={{ duration: 0.2, delay: index * 0.05 }}
                     >
                       <Card>
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <h5 className="font-medium text-foreground">
-                                  {subskill.name}
-                                </h5>
-                                {userSubskillStatus && (
-                                  <Badge variant="secondary" className={`text-xs ${getStatusColor(userSubskillStatus)}`}>
-                                    {userSubskillStatus}
-                                  </Badge>
+                          <CardContent className="p-4">
+                            <div className="flex items-center justify-between gap-4">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h5 className="font-medium text-foreground">
+                                    {subskill.name}
+                                  </h5>
+                                  {userSubskillStatus && (
+                                    <Badge variant="secondary" className={`text-xs ${getStatusColor(userSubskillStatus)}`}>
+                                      {userSubskillStatus}
+                                    </Badge>
+                                  )}
+                                </div>
+                                {subskill.description && (
+                                  <p className="text-sm text-muted-foreground">
+                                    {subskill.description}
+                                  </p>
                                 )}
                               </div>
-                              {subskill.description && (
-                                <p className="text-sm text-muted-foreground">
-                                  {subskill.description}
-                                </p>
-                              )}
+                              <div className="flex items-center gap-3">
+                                <RatingPill 
+                                  rating={userSubskillRating} 
+                                  onRatingChange={rating => onSubskillRate(subskill.id, rating)} 
+                                  disabled={userSubskillStatus === 'submitted' || userSubskillStatus === 'approved'} 
+                                />
+                                <Input
+                                  placeholder="Add your comment..."
+                                  value={comments[subskill.id] || ""}
+                                  onChange={(e) => updateComment(subskill.id, e.target.value)}
+                                  disabled={userSubskillStatus === 'submitted' || userSubskillStatus === 'approved'}
+                                  className="w-56"
+                                />
+                              </div>
                             </div>
-                            <RatingPill 
-                              rating={userSubskillRating} 
-                              onRatingChange={rating => onSubskillRate(subskill.id, rating)} 
-                              disabled={userSubskillStatus === 'submitted' || userSubskillStatus === 'approved'} 
-                            />
-                          </div>
-                        </CardContent>
+                          </CardContent>
                       </Card>
                     </motion.div>
                   );
@@ -170,28 +214,12 @@ export const SkillDetail = ({
 
         {/* Save Ratings Button */}
         {!isManagerOrAbove && pendingRatings.size > 0 && (
-          <Button onClick={() => setShowSubmissionDialog(true)} className="bg-primary hover:bg-primary/90">
+          <Button onClick={handleSaveRatings}>
             Save Ratings ({pendingRatings.size})
           </Button>
         )}
       </div>
 
-      {/* Rating Submission Dialog */}
-      <RatingSubmissionDialog
-        open={showSubmissionDialog}
-        onOpenChange={setShowSubmissionDialog}
-        pendingRatings={Array.from(pendingRatings.entries()).map(([id, rating]) => {
-          const subskill = subskills.find(s => s.id === rating.id);
-          
-          return {
-            id,
-            type: rating.type,
-            rating: rating.rating,
-            name: rating.type === 'skill' ? skill.name : (subskill?.name || 'Unknown Subskill')
-          };
-        })}
-        onSubmit={onSaveRatings}
-      />
     </ScrollArea>
   );
 };

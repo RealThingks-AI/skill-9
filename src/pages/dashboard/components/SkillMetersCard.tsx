@@ -1,75 +1,44 @@
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { TrendingUp, TrendingDown, Target, Award, ChevronRight, Star, Clock, Trophy, Code, Database, Settings, Shield, Zap, Brain, Layers, Cpu, Network, Users } from "lucide-react";
+import { ChevronDown, ChevronRight, Target, Clock, TrendingUp, TrendingDown, Minus, Award } from "lucide-react";
 import { useSkillMeters } from "../hooks/useSkillMeters";
 import { ApprovedRatingsModal } from "./ApprovedRatingsModal";
 import { useAuth } from "@/hooks/useAuth";
 export const SkillMetersCard = () => {
-  const {
-    metersData,
-    loading
-  } = useSkillMeters();
-  const {
-    user
-  } = useAuth();
+  const { metersData, loading } = useSkillMeters();
+  const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<{
     id: string;
     name: string;
   } | null>(null);
-  const getLevelColor = (level: 'expert' | 'on-track' | 'developing') => {
-    switch (level) {
-      case 'expert':
-        return 'text-emerald-600 bg-emerald-50 border-emerald-200';
-      case 'on-track':
-        return 'text-amber-600 bg-amber-50 border-amber-200';
-      case 'developing':
-        return 'text-slate-600 bg-slate-50 border-slate-200';
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const calculateCategoryScore = (breakdown: { high: number; medium: number; low: number; unrated: number }) => {
+    const totalItems = breakdown.high + breakdown.medium + breakdown.low + breakdown.unrated;
+    if (totalItems === 0) return 0;
+    
+    // Points-based scoring: High=5, Medium=3, Low=1
+    const userPoints = (breakdown.high * 5) + (breakdown.medium * 3) + (breakdown.low * 1);
+    const maxPossiblePoints = totalItems * 5; // All items could be rated High (5 points each)
+    
+    return Math.round((userPoints / maxPossiblePoints) * 100);
+  };
+
+  const getStatusFromPercentage = (percentage: number) => {
+    if (percentage >= 80) return { status: 'Expert', color: 'bg-green-500 text-white', bgTint: 'bg-green-50 border-green-200' };
+    if (percentage >= 40) return { status: 'Moderate', color: 'bg-yellow-500 text-white', bgTint: 'bg-yellow-50 border-yellow-200' };
+    return { status: 'Beginner', color: 'bg-red-500 text-white', bgTint: 'bg-red-50 border-red-200' };
+  };
+
+  const toggleExpanded = (categoryId: string) => {
+    const newExpanded = new Set(expandedCategories);
+    if (newExpanded.has(categoryId)) {
+      newExpanded.delete(categoryId);
+    } else {
+      newExpanded.add(categoryId);
     }
-  };
-  const getLevelText = (level: 'expert' | 'on-track' | 'developing') => {
-    switch (level) {
-      case 'expert':
-        return 'Expert';
-      case 'on-track':
-        return 'On Track';
-      case 'developing':
-        return 'Developing';
-    }
-  };
-  const getCategoryIcon = (categoryName: string) => {
-    const name = categoryName.toLowerCase();
-    if (name.includes('autosar') || name.includes('automotive')) return Code;
-    if (name.includes('database') || name.includes('sql')) return Database;
-    if (name.includes('system') || name.includes('architecture')) return Settings;
-    if (name.includes('security') || name.includes('crypto')) return Shield;
-    if (name.includes('performance') || name.includes('optimization')) return Zap;
-    if (name.includes('ai') || name.includes('machine') || name.includes('algorithm')) return Brain;
-    if (name.includes('network') || name.includes('protocol')) return Network;
-    if (name.includes('embedded') || name.includes('hardware')) return Cpu;
-    return Layers; // Default icon
-  };
-  const getProgressColor = (percentage: number) => {
-    // Progressive color system: Red (0-40%) -> Orange (40-60%) -> Amber (60-80%) -> Green (80%+)
-    if (percentage >= 80) return 'hsl(var(--skill-high))';
-    if (percentage >= 60) return 'hsl(var(--skill-medium))';
-    if (percentage >= 40) return 'hsl(var(--skill-low))';
-    return 'hsl(0 84% 60%)';
-  };
-  const getProgressGradient = (percentage: number) => {
-    if (percentage >= 80) return 'linear-gradient(90deg, hsl(var(--skill-high)), hsl(155 62% 48%))';
-    if (percentage >= 60) return 'linear-gradient(90deg, hsl(var(--skill-medium)), hsl(54 91% 46%))';
-    if (percentage >= 40) return 'linear-gradient(90deg, hsl(var(--skill-low)), hsl(38 92% 50%))';
-    return 'linear-gradient(90deg, hsl(0 84% 60%), hsl(14 91% 54%))';
-  };
-  const getCardTintColor = (percentage: number) => {
-    // Card background tint based on progress: 0% red → 100% green
-    if (percentage >= 80) return 'bg-green-50/80 border-green-200/60';
-    if (percentage >= 60) return 'bg-amber-50/80 border-amber-200/60';
-    if (percentage >= 40) return 'bg-orange-50/80 border-orange-200/60';
-    if (percentage > 0) return 'bg-red-50/80 border-red-200/60';
-    return 'bg-slate-50/80 border-slate-200/60'; // No progress
+    setExpandedCategories(newExpanded);
   };
   const getRelativeTime = (timestamp?: string) => {
     if (!timestamp) return 'Not updated yet';
@@ -85,7 +54,6 @@ export const SkillMetersCard = () => {
     if (diffDays < 7) return `${diffDays}d ago`;
     return past.toLocaleDateString();
   };
-  const isTeachLead = user?.role === 'tech_lead';
   if (loading) {
     return <Card>
         <CardHeader>
@@ -130,7 +98,8 @@ export const SkillMetersCard = () => {
           </div>}
 
         {/* Category Meters */}
-        {metersData.categoryMeters.length === 0 ? <div className="flex-1 flex items-center justify-center">
+        {metersData.categoryMeters.length === 0 ? (
+          <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
               <Target className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
               <p className="text-sm text-muted-foreground">No skill categories found</p>
@@ -138,102 +107,142 @@ export const SkillMetersCard = () => {
                 Complete skill assessments to see your progress
               </p>
             </div>
-          </div> : <div className="flex-1 min-h-0 overflow-hidden">
-            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 h-full auto-rows-fr">
-              {metersData.categoryMeters.sort((a, b) => b.percentage - a.percentage).map(meter => {
-            const CategoryIcon = getCategoryIcon(meter.categoryName);
-            const ratedCount = meter.breakdown.high + meter.breakdown.medium + meter.breakdown.low;
-            const totalSkills = ratedCount + meter.breakdown.unrated;
-            const teamPending = Math.floor(Math.random() * 5); // Mock data for tech leads
+          </div>
+        ) : (
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+              {metersData.categoryMeters
+                .map(meter => ({
+                  ...meter,
+                  score: calculateCategoryScore(meter.breakdown)
+                }))
+                .sort((a, b) => b.score - a.score)
+                .map(meter => {
+                  const status = getStatusFromPercentage(meter.score);
+                  const isExpanded = expandedCategories.has(meter.categoryId);
+                  const ratedCount = meter.breakdown.high + meter.breakdown.medium + meter.breakdown.low;
+                  const totalSkills = ratedCount + meter.breakdown.unrated;
 
-            return <div key={meter.categoryId} className="group cursor-pointer transition-all duration-300 hover:scale-[1.02]" onClick={() => setSelectedCategory({
-              id: meter.categoryId,
-              name: meter.categoryName
-            })}>
-                      <Card className={`h-full ${getCardTintColor(meter.percentage)} hover:shadow-lg hover:border-primary/30 transition-all duration-300 overflow-hidden`}>
-                        {/* Header */}
-                        <CardHeader className="pb-3">
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-2">
-                              
-                              <div className="min-w-0 flex-1">
-                                <CardTitle className="text-base font-semibold text-foreground group-hover:text-primary transition-colors truncate">
-                                  {meter.categoryName}
-                                </CardTitle>
-                                <div className="text-xs text-muted-foreground">
-                                  {totalSkills} skills
-                                </div>
-                              </div>
+                  return (
+                    <Card key={meter.categoryId} className={`transition-all duration-300 ${status.bgTint}`}>
+                      {/* Collapsed View */}
+                      <CardHeader 
+                        className="cursor-pointer hover:bg-white/50 transition-colors"
+                        onClick={() => toggleExpanded(meter.categoryId)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <CardTitle className="text-lg font-semibold text-foreground">
+                              {meter.categoryName}
+                            </CardTitle>
+                            <div className="text-sm text-muted-foreground mt-1">
+                              {ratedCount}/{totalSkills} skills • {meter.score}% complete
                             </div>
-                            <Badge variant="outline" className={`text-xs ${getLevelColor(meter.level)} font-medium shrink-0 ml-2`}>
-                              {getLevelText(meter.level)}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge className={`${status.color} font-medium`}>
+                              {status.status}
                             </Badge>
+                            {isExpanded ? (
+                              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                            )}
                           </div>
-                        </CardHeader>
-                        
-                        <CardContent className="space-y-3 flex-1 pt-0">
-                          {/* Progress Bar */}
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="text-foreground">Progress</span>
-                              <span className="text-foreground text-xl">{meter.percentage}%</span>
+                        </div>
+                      </CardHeader>
+
+                      {/* Expanded View */}
+                      {isExpanded && (
+                        <CardContent className="pt-0 space-y-4">
+                          {/* Score and Progress */}
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="font-medium">Score</span>
+                              <span className="font-semibold">{meter.score}%</span>
                             </div>
-                            <div className="relative">
-                              <Progress value={meter.percentage} className="h-6 bg-white/70 shadow-inner" style={{
-                        '--progress-foreground': getProgressGradient(meter.percentage)
-                      } as React.CSSProperties} />
-                              <div className="absolute inset-0 flex items-center justify-center">
-                                
+                            <Progress 
+                              value={meter.score} 
+                              className="h-3"
+                            />
+                          </div>
+
+                          {/* Points Breakdown */}
+                          <div className="bg-white/50 rounded-lg p-3">
+                            <div className="text-sm font-medium text-foreground mb-2">Points Breakdown</div>
+                            <div className="space-y-1 text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-green-600">High (5 pts each):</span>
+                                <span>{meter.breakdown.high} × 5 = {meter.breakdown.high * 5} pts</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-yellow-600">Medium (3 pts each):</span>
+                                <span>{meter.breakdown.medium} × 3 = {meter.breakdown.medium * 3} pts</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-red-600">Low (1 pt each):</span>
+                                <span>{meter.breakdown.low} × 1 = {meter.breakdown.low * 1} pts</span>
+                              </div>
+                              <div className="border-t pt-1 flex justify-between font-medium">
+                                <span>Total:</span>
+                                <span>{(meter.breakdown.high * 5) + (meter.breakdown.medium * 3) + (meter.breakdown.low * 1)} / {totalSkills * 5} pts</span>
                               </div>
                             </div>
                           </div>
 
-                          {/* Rated Summary */}
-                          <div className="bg-white/50 rounded-lg p-2">
-                            <div className="text-xs text-foreground mb-1">Rated Summary</div>
-                            <div className="text-xs text-foreground">
-                              {ratedCount}/{totalSkills} | {' '}
-                              {meter.breakdown.high > 0 && <span className="text-green-600">High({meter.breakdown.high})</span>}
-                              {meter.breakdown.high > 0 && (meter.breakdown.medium > 0 || meter.breakdown.low > 0) && ' • '}
-                              {meter.breakdown.medium > 0 && <span className="text-amber-600">Mid({meter.breakdown.medium})</span>}
-                              {meter.breakdown.medium > 0 && meter.breakdown.low > 0 && ' • '}
-                              {meter.breakdown.low > 0 && <span className="text-orange-600">Low({meter.breakdown.low})</span>}
-                              {meter.breakdown.unrated > 0 && <>
-                                  {ratedCount > 0 && ' • '}
-                                  <span className="text-muted-foreground">Unrated({meter.breakdown.unrated})</span>
-                                </>}
-                            </div>
-                          </div>
-
-                          {/* Updated Time & Team Pending */}
-                          <div className="grid grid-cols-1 gap-2">
-                            <div className="bg-white/50 rounded-lg p-2 text-center">
-                              <div className="flex items-center justify-center gap-1 mb-1">
-                                <Clock className="h-3 w-3 text-primary" />
-                                <span className="text-xs text-foreground">Updated</span>
+                          {/* Subskill Summary */}
+                          <div className="bg-white/50 rounded-lg p-3">
+                            <div className="text-sm font-medium text-foreground mb-2">Subskill Summary</div>
+                            <div className="grid grid-cols-3 gap-2 text-xs">
+                              <div className="text-center">
+                                <div className="text-green-600 font-semibold">{meter.breakdown.high}</div>
+                                <div className="text-muted-foreground">High</div>
                               </div>
-                              <p className="text-xs text-foreground">
-                                {getRelativeTime()}
-                              </p>
+                              <div className="text-center">
+                                <div className="text-yellow-600 font-semibold">{meter.breakdown.medium}</div>
+                                <div className="text-muted-foreground">Medium</div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-red-600 font-semibold">{meter.breakdown.low}</div>
+                                <div className="text-muted-foreground">Low</div>
+                              </div>
                             </div>
-
-                            {isTeachLead && teamPending > 0 && <div className="bg-blue-50/80 border border-blue-200/60 rounded-lg p-2 text-center">
-                                <div className="flex items-center justify-center gap-1 mb-1">
-                                  <Users className="h-3 w-3 text-blue-600" />
-                                  <span className="text-xs font-medium text-blue-700">Team Pending</span>
+                            {meter.breakdown.unrated > 0 && (
+                              <div className="mt-2 text-center">
+                                <div className="text-muted-foreground text-xs">
+                                  {meter.breakdown.unrated} unrated skills
                                 </div>
-                                <p className="text-xs font-semibold text-blue-800">{teamPending}</p>
-                              </div>}
+                              </div>
+                            )}
                           </div>
 
-                          {/* Breakdown Link */}
-                          
+                          {/* Last Updated */}
+                          <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
+                            <Clock className="h-3 w-3" />
+                            <span>Last updated {getRelativeTime()}</span>
+                          </div>
+
+                          {/* View Details Button */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedCategory({
+                                id: meter.categoryId,
+                                name: meter.categoryName
+                              });
+                            }}
+                            className="w-full mt-2 px-3 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+                          >
+                            View Update/Approval History
+                          </button>
                         </CardContent>
-                      </Card>
-                    </div>;
-          })}
+                      )}
+                    </Card>
+                  );
+                })}
             </div>
-          </div>}
+          </div>
+        )}
 
         {/* Approved Ratings Modal */}
         <ApprovedRatingsModal isOpen={!!selectedCategory} onClose={() => setSelectedCategory(null)} categoryId={selectedCategory?.id || ''} categoryName={selectedCategory?.name || ''} />

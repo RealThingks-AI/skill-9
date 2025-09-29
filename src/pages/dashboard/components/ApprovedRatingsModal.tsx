@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle, Clock, User, Filter } from "lucide-react";
+import { CheckCircle, Clock, User, Filter, TrendingUp, Minus, TrendingDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -45,9 +45,9 @@ export const ApprovedRatingsModal = ({ isOpen, onClose, categoryId, categoryName
 
   const getRatingIcon = (rating: 'high' | 'medium' | 'low') => {
     switch (rating) {
-      case 'high': return '🟢';
-      case 'medium': return '🟡';
-      case 'low': return '🔴';
+      case 'high': return <TrendingUp className="h-3 w-3 text-emerald-600" />;
+      case 'medium': return <Minus className="h-3 w-3 text-amber-600" />;
+      case 'low': return <TrendingDown className="h-3 w-3 text-slate-600" />;
     }
   };
 
@@ -145,13 +145,13 @@ export const ApprovedRatingsModal = ({ isOpen, onClose, categoryId, categoryName
                 All ({ratingCounts.all})
               </TabsTrigger>
               <TabsTrigger value="high" className="flex items-center gap-2">
-                🟢 High ({ratingCounts.high})
+                <TrendingUp className="h-4 w-4 text-emerald-600" /> High ({ratingCounts.high})
               </TabsTrigger>
               <TabsTrigger value="medium" className="flex items-center gap-2">
-                🟡 Medium ({ratingCounts.medium})
+                <Minus className="h-4 w-4 text-amber-600" /> Medium ({ratingCounts.medium})
               </TabsTrigger>
               <TabsTrigger value="low" className="flex items-center gap-2">
-                🔴 Low ({ratingCounts.low})
+                <TrendingDown className="h-4 w-4 text-slate-600" /> Low ({ratingCounts.low})
               </TabsTrigger>
             </TabsList>
 

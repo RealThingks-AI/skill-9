@@ -147,7 +147,6 @@ export const EmployeeHistoryDetail = ({
   const pendingRatings = ratings.filter(r => r.status === 'submitted');
   const approvedRatings = ratings.filter(r => r.status === 'approved');
   const rejectedRatings = ratings.filter(r => r.status === 'rejected');
-  const draftRatings = ratings.filter(r => r.status === 'draft');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -181,9 +180,6 @@ export const EmployeeHistoryDetail = ({
               <TabsTrigger value="rejected">
                 Rejected ({rejectedRatings.length})
               </TabsTrigger>
-              <TabsTrigger value="draft">
-                Draft ({draftRatings.length})
-              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="all">
@@ -202,9 +198,6 @@ export const EmployeeHistoryDetail = ({
               <RatingsList ratings={rejectedRatings} getStatusColor={getStatusColor} getRatingColor={getRatingColor} getStatusIcon={getStatusIcon} />
             </TabsContent>
 
-            <TabsContent value="draft">
-              <RatingsList ratings={draftRatings} getStatusColor={getStatusColor} getRatingColor={getRatingColor} getStatusIcon={getStatusIcon} />
-            </TabsContent>
           </Tabs>
         )}
       </DialogContent>

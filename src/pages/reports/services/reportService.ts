@@ -374,7 +374,7 @@ export class ReportService {
       
       if (rating.status === 'approved') {
         ratingsMap.get(key).approved.push(rating);
-      } else if (rating.status === 'submitted' || rating.status === 'draft') {
+      } else if (rating.status === 'submitted') {
         ratingsMap.get(key).self.push(rating);
       }
     });

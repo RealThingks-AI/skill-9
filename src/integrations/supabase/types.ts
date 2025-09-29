@@ -153,6 +153,8 @@ export type Database = {
           approver_comment: string | null
           created_at: string
           id: string
+          na_status: boolean | null
+          next_upgrade_date: string | null
           rating: string
           self_comment: string | null
           skill_id: string
@@ -168,6 +170,8 @@ export type Database = {
           approver_comment?: string | null
           created_at?: string
           id?: string
+          na_status?: boolean | null
+          next_upgrade_date?: string | null
           rating: string
           self_comment?: string | null
           skill_id: string
@@ -183,6 +187,8 @@ export type Database = {
           approver_comment?: string | null
           created_at?: string
           id?: string
+          na_status?: boolean | null
+          next_upgrade_date?: string | null
           rating?: string
           self_comment?: string | null
           skill_id?: string
@@ -929,6 +935,19 @@ export type Database = {
       calculate_goal_progress: {
         Args: { current_rating_param: string; target_rating_param: string }
         Returns: number
+      }
+      calculate_next_upgrade_date: {
+        Args: { approved_at_param: string }
+        Returns: string
+      }
+      can_upgrade_rating: {
+        Args: {
+          approved_at_param: string
+          current_rating_param: string
+          current_status_param: string
+          target_rating_param: string
+        }
+        Returns: boolean
       }
       cleanup_old_notifications: {
         Args: Record<PropertyKey, never>

@@ -64,13 +64,17 @@ export const useCategoryPreferences = () => {
   };
 
   const addCategories = async (categoryIds: string[]) => {
-    await updatePreferences(categoryIds);
-    toast({
-      title: "Categories Added",
-      description: `${categoryIds.length - visibleCategoryIds.length} categor${
-        categoryIds.length - visibleCategoryIds.length === 1 ? 'y' : 'ies'
-      } added to your dashboard`,
-    });
+    const newCategoryIds = [...new Set([...visibleCategoryIds, ...categoryIds])];
+    const addedCount = newCategoryIds.length - visibleCategoryIds.length;
+    
+    await updatePreferences(newCategoryIds);
+    
+    if (addedCount > 0) {
+      toast({
+        title: "Categories Added",
+        description: `${addedCount} categor${addedCount === 1 ? 'y' : 'ies'} added to your dashboard`,
+      });
+    }
   };
 
   const hideCategory = async (categoryId: string, categoryName: string) => {

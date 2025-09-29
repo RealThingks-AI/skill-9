@@ -87,8 +87,8 @@ serve(async (req) => {
 
     console.log('User authenticated:', user.id);
 
-    // Check if user has admin or manager role
-    const { data: profile, error: profileError } = await supabase
+    // Check if user has admin or manager role using admin client
+    const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('role')
       .eq('user_id', user.id)
@@ -316,11 +316,11 @@ serve(async (req) => {
         throw new Error(`Unknown action: ${action}`);
     }
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('User management error:', error);
     return new Response(JSON.stringify({ 
-      error: error.message || 'Internal server error',
-      details: error.toString()
+      error: error?.message || 'Internal server error',
+      details: error?.toString() || 'Unknown error'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

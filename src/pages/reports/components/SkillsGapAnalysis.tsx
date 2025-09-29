@@ -217,7 +217,7 @@ export function SkillsGapAnalysis() {
       const entry = skillMap.get(key)!;
       if (rating.status === 'approved') {
         entry.approved = rating;
-      } else if (rating.status === 'submitted' || rating.status === 'draft') {
+      } else if (rating.status === 'submitted') {
         entry.self = rating;
       }
     });
@@ -389,11 +389,13 @@ export function SkillsGapAnalysis() {
                   <SelectValue placeholder="All employees" />
                 </SelectTrigger>
                 <SelectContent>
-                  {filterOptions.employees.map(emp => (
-                    <SelectItem key={emp.id} value={emp.id}>
-                      {emp.name}
-                    </SelectItem>
-                  ))}
+                  {filterOptions.employees
+                    .filter(emp => emp.id && emp.id.trim() !== '')
+                    .map(emp => (
+                      <SelectItem key={emp.id} value={emp.id}>
+                        {emp.name}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
@@ -408,11 +410,13 @@ export function SkillsGapAnalysis() {
                   <SelectValue placeholder="All categories" />
                 </SelectTrigger>
                 <SelectContent>
-                  {filterOptions.categories.map(cat => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </SelectItem>
-                  ))}
+                  {filterOptions.categories
+                    .filter(cat => cat.id && cat.id.trim() !== '')
+                    .map(cat => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
@@ -427,11 +431,13 @@ export function SkillsGapAnalysis() {
                   <SelectValue placeholder="All departments" />
                 </SelectTrigger>
                 <SelectContent>
-                  {Array.from(new Set(filterOptions.employees.map(e => e.department))).map(dept => (
-                    <SelectItem key={dept} value={dept}>
-                      {dept}
-                    </SelectItem>
-                  ))}
+                  {Array.from(new Set(filterOptions.employees.map(e => e.department)))
+                    .filter(dept => dept && dept.trim() !== '')
+                    .map(dept => (
+                      <SelectItem key={dept} value={dept}>
+                        {dept}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>

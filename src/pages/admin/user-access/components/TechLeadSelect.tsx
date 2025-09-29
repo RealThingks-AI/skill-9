@@ -97,14 +97,16 @@ export function TechLeadSelect({ user, onUpdate }: TechLeadSelectProps) {
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="none">No tech lead</SelectItem>
-          {techLeads.map((techLead) => (
-            <SelectItem key={techLead.user_id} value={techLead.user_id}>
-              <div>
-                <div className="font-medium">{techLead.full_name}</div>
-                <div className="text-xs text-muted-foreground">{techLead.role}</div>
-              </div>
-            </SelectItem>
-          ))}
+          {techLeads
+            .filter(techLead => techLead.user_id && techLead.user_id.trim() !== '')
+            .map((techLead) => (
+              <SelectItem key={techLead.user_id} value={techLead.user_id}>
+                <div>
+                  <div className="font-medium">{techLead.full_name}</div>
+                  <div className="text-xs text-muted-foreground">{techLead.role}</div>
+                </div>
+              </SelectItem>
+            ))}
         </SelectContent>
       </Select>
       <Button

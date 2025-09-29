@@ -169,7 +169,8 @@ const Skills = () => {
             user_id: profile.user_id,
             skill_id: skillId,
             rating,
-            status: 'draft'
+            status: 'submitted',
+            submitted_at: new Date().toISOString()
           });
         
         if (error) throw error;
@@ -205,12 +206,67 @@ const Skills = () => {
     return userSkill?.rating;
   };
 
-  const filteredCategories = skillCategories.filter(category =>
-    category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    getSkillsByCategory(category.id).some(skill =>
-      skill.name.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  );
+  // Enhanced search function that searches across categories, skills, and subskills
+  const searchMatches = (searchTerm: string) => {
+    if (!searchTerm.trim()) return { categories: skillCategories, expandAll: false };
+    
+    const term = searchTerm.toLowerCase();
+    const matchingCategories: SkillCategory[] = [];
+    const categoriesToExpand = new Set<string>();
+    
+    skillCategories.forEach(category => {
+      let categoryMatches = false;
+      let hasMatchingContent = false;
+      
+      // Check category name and description
+      const categoryNameMatch = category.name.toLowerCase().includes(term);
+      const categoryDescMatch = category.description?.toLowerCase().includes(term);
+      
+      if (categoryNameMatch || categoryDescMatch) {
+        categoryMatches = true;
+        hasMatchingContent = true;
+        categoriesToExpand.add(category.id);
+      }
+      
+      // Check skills in this category
+      const categorySkills = getSkillsByCategory(category.id);
+      const hasMatchingSkills = categorySkills.some(skill => {
+        const skillNameMatch = skill.name.toLowerCase().includes(term);
+        const skillDescMatch = skill.description?.toLowerCase().includes(term);
+        
+        if (skillNameMatch || skillDescMatch) {
+          hasMatchingContent = true;
+          categoriesToExpand.add(category.id);
+          return true;
+        }
+        return false;
+      });
+      
+      if (categoryMatches || hasMatchingSkills || hasMatchingContent) {
+        matchingCategories.push(category);
+      }
+    });
+    
+    return { 
+      categories: matchingCategories, 
+      expandAll: matchingCategories.length > 0,
+      categoriesToExpand 
+    };
+  };
+
+  const searchResults = searchMatches(searchTerm);
+  const filteredCategories = searchResults.categories;
+  
+  // Auto-expand categories with matching content when searching
+  useEffect(() => {
+    if (searchTerm.trim() && searchResults.categoriesToExpand) {
+      setExpandedCategories(prev => {
+        const newExpanded = new Set(prev);
+        searchResults.categoriesToExpand.forEach(id => newExpanded.add(id));
+        return newExpanded;
+      });
+    }
+  }, [searchTerm]);
 
   if (loading) {
     return (

@@ -1,31 +1,27 @@
-import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash2 } from "lucide-react";
 import { RatingPill } from "@/components/common/RatingPill";
 import { canUpgradeRating, getAvailableRatingOptions } from "@/pages/skills/utils/skillHelpers";
 import type { Subskill, EmployeeRating } from "@/types/database";
 
-interface SubskillRowProps {
+interface InlineSubskillRatingProps {
   subskill: Subskill;
   userSkills: EmployeeRating[];
   pendingRatings: Map<string, { type: 'skill' | 'subskill', id: string, rating: 'high' | 'medium' | 'low' }>;
-  isManagerOrAbove: boolean;
   onSubskillRate: (subskillId: string, rating: 'high' | 'medium' | 'low') => void;
-  onRefresh: () => void;
-  onEditSubskill?: () => void;
-  onDeleteSubskill?: () => void;
+  onCommentChange: (subskillId: string, comment: string) => void;
+  comment: string;
 }
 
-export const SubskillRow = ({
+export const InlineSubskillRating = ({
   subskill,
   userSkills,
   pendingRatings,
-  isManagerOrAbove,
   onSubskillRate,
-  onRefresh,
-  onEditSubskill,
-  onDeleteSubskill
-}: SubskillRowProps) => {
+  onCommentChange,
+  comment
+}: InlineSubskillRatingProps) => {
   // Get current rating from pending ratings or saved ratings
   const getCurrentRating = () => {
     const pending = pendingRatings.get(subskill.id);
@@ -36,6 +32,7 @@ export const SubskillRow = ({
   const userSkillRating = getCurrentRating();
   const userSkillEntry = userSkills.find(us => us.subskill_id === subskill.id);
   const userSkillStatus = userSkillEntry?.status;
+  const approvedComment = userSkillEntry?.approver_comment;
   const nextUpgradeDate = userSkillEntry?.next_upgrade_date;
   
   // Check progression rules
@@ -75,10 +72,13 @@ export const SubskillRow = ({
   };
 
   return (
-    <div className="flex items-center justify-between p-2 border rounded bg-muted/30">
-      <div className="flex-1">
+    <div className="flex items-center gap-4 p-3 border rounded-lg bg-card/50">
+      {/* Subskill Name and Description */}
+      <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
-          <h5 className="text-sm font-medium">{subskill.name}</h5>
+          <h5 className="text-sm font-medium text-slate-900 dark:text-slate-100">
+            {subskill.name}
+          </h5>
           {userSkillStatus && (
             <Badge variant="secondary" className={`text-xs ${getStatusColor(userSkillStatus)}`}>
               {getStatusLabel(userSkillStatus)}
@@ -90,17 +90,20 @@ export const SubskillRow = ({
             </Badge>
           )}
         </div>
+        {subskill.description && (
+          <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2">
+            {subskill.description}
+          </p>
+        )}
         {isInCoolDown && upgradeCheck.reason && (
-          <p className="text-xs text-amber-600 dark:text-amber-400 mb-1">
+          <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
             {upgradeCheck.reason}
           </p>
         )}
-        {subskill.description && (
-          <p className="text-xs text-muted-foreground mt-1">{subskill.description}</p>
-        )}
       </div>
 
-      <div className="flex items-center gap-2">
+      {/* Rating Pills */}
+      <div className="flex items-center justify-center min-w-fit">
         <RatingPill
           rating={userSkillRating}
           onRatingChange={(rating) => {
@@ -111,18 +114,19 @@ export const SubskillRow = ({
           }}
           disabled={isDisabled}
           availableRatings={availableRatings}
+          className="justify-center"
         />
+      </div>
 
-        {isManagerOrAbove && (
-          <div className="flex gap-1">
-            <Button variant="ghost" size="sm" onClick={onEditSubskill} className="p-1 h-auto">
-              <Edit className="h-3 w-3" />
-            </Button>
-            <Button variant="ghost" size="sm" onClick={onDeleteSubskill} className="p-1 h-auto">
-              <Trash2 className="h-3 w-3" />
-            </Button>
-          </div>
-        )}
+      {/* Comment Input */}
+      <div className="flex-1 max-w-sm">
+        <Input
+          placeholder={approvedComment ? approvedComment : "Add your comment..."}
+          value={userSkillStatus === 'rejected' ? comment : (approvedComment || comment)}
+          onChange={(e) => onCommentChange(subskill.id, e.target.value)}
+          disabled={isDisabled || (!!approvedComment && userSkillStatus !== 'rejected')}
+          className="text-sm h-8 text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400"
+        />
       </div>
     </div>
   );

@@ -3,9 +3,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Filter, Users } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Search, Filter, Users, User, Clock, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
 import { useApprovals, type GroupedApproval } from "./hooks/useApprovals";
-import { EmployeeApprovalDetail } from "./components/EmployeeApprovalDetail";
 import { PendingApprovalsStats } from "./components/PendingApprovalsStats";
 import { ApprovedTodayStats } from "./components/ApprovedTodayStats";
 import { RejectedTodayStats } from "./components/RejectedTodayStats";
@@ -14,6 +18,7 @@ import { ApprovedActionsList } from "./components/ApprovedActionsList";
 import { RejectedActionsList } from "./components/RejectedActionsList";
 import { EmployeesList } from "./components/EmployeesList";
 import { EmployeeHistoryDetail } from "./components/EmployeeHistoryDetail";
+import { useAuth } from "@/hooks/useAuth";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
 const Approvals = () => {
   const {
@@ -31,65 +36,46 @@ const Approvals = () => {
     getRejectedTodayActions,
     refetch
   } = useApprovals();
-  const [selectedEmployee, setSelectedEmployee] = useState<GroupedApproval | null>(null);
-  const [detailOpen, setDetailOpen] = useState(false);
+  
+  const { profile } = useAuth();
+  const [expandedEmployeeId, setExpandedEmployeeId] = useState<string | null>(null);
   const [pendingListOpen, setPendingListOpen] = useState(false);
   const [approvedListOpen, setApprovedListOpen] = useState(false);
   const [rejectedListOpen, setRejectedListOpen] = useState(false);
   const [selectedEmployeeForHistory, setSelectedEmployeeForHistory] = useState<any>(null);
   const [historyDetailOpen, setHistoryDetailOpen] = useState(false);
+  const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [approveComment, setApproveComment] = useState("");
+  const [rejectComment, setRejectComment] = useState("");
+  const [showApproveFor, setShowApproveFor] = useState<string | null>(null);
+  const [showRejectFor, setShowRejectFor] = useState<string | null>(null);
 
   // Filter grouped approvals based on search term
   const filteredGroupedApprovals = groupedApprovals.filter(group => group.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) || group.email.toLowerCase().includes(searchTerm.toLowerCase()));
   const highPriorityCount = pendingApprovals.filter(a => a.priority === 'High').length;
-  const handleEmployeeClick = (employee: GroupedApproval) => {
-    setSelectedEmployee(employee);
-    setDetailOpen(true);
-  };
+const handleEmployeeToggle = (employee: GroupedApproval) => {
+  setExpandedEmployeeId(prev => (prev === employee.employeeId ? null : employee.employeeId));
+  setShowApproveFor(null);
+  setShowRejectFor(null);
+  setApproveComment("");
+  setRejectComment("");
+};
   const handleEmployeeHistoryClick = (employee: any) => {
     setSelectedEmployeeForHistory(employee);
     setHistoryDetailOpen(true);
   };
-  const handleEmployeeApprove = async (approvalId: string, comment?: string) => {
-    await handleApproveRating(approvalId, comment);
-    // Remove the approved rating from the current employee's list
-    if (selectedEmployee) {
-      const updatedRatings = selectedEmployee.ratings.filter(rating => rating.id !== approvalId);
-      const updatedEmployee = {
-        ...selectedEmployee,
-        ratings: updatedRatings,
-        pendingCount: updatedRatings.length
-      };
-      setSelectedEmployee(updatedEmployee);
-
-      // Close dialog if no more ratings
-      if (updatedRatings.length === 0) {
-        setDetailOpen(false);
-        setSelectedEmployee(null);
-      }
-    }
-    refetch();
-  };
-  const handleEmployeeReject = async (approvalId: string, comment: string) => {
-    await handleRejectRating(approvalId, comment);
-    // Remove the rejected rating from the current employee's list
-    if (selectedEmployee) {
-      const updatedRatings = selectedEmployee.ratings.filter(rating => rating.id !== approvalId);
-      const updatedEmployee = {
-        ...selectedEmployee,
-        ratings: updatedRatings,
-        pendingCount: updatedRatings.length
-      };
-      setSelectedEmployee(updatedEmployee);
-
-      // Close dialog if no more ratings
-      if (updatedRatings.length === 0) {
-        setDetailOpen(false);
-        setSelectedEmployee(null);
-      }
-    }
-    refetch();
-  };
+const getRatingColor = (rating: string) => {
+  switch (rating) {
+    case 'high':
+      return 'bg-green-100 text-green-800';
+    case 'medium':
+      return 'bg-orange-100 text-orange-800';
+    case 'low':
+      return 'bg-red-100 text-red-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+};
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'High':
@@ -112,77 +98,287 @@ const Approvals = () => {
         return 'bg-gray-100 text-gray-800';
     }
   };
-  return <div className="space-y-6">
+  return <div className="min-h-screen w-full p-6 space-y-8">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Approvals</h1>
-          
+          <h1 className="text-4xl font-bold tracking-tight">Approvals Dashboard</h1>
+          <p className="text-muted-foreground mt-2">Review and manage pending skill approvals</p>
+        </div>
+        
+        {/* Search and Filter - Top Right */}
+        <div className="flex items-center gap-3">
+          <div className="relative w-64">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search employees..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 h-10"
+            />
+          </div>
+          <Select value={roleFilter} onValueChange={setRoleFilter}>
+            <SelectTrigger className="w-40 h-10">
+              <SelectValue placeholder="All Roles" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Roles</SelectItem>
+              <SelectItem value="employee">Employees</SelectItem>
+              <SelectItem value="tech_lead">Tech Leads</SelectItem>
+              <SelectItem value="management">Management</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <PendingApprovalsStats count={pendingApprovals.length} highPriorityCount={highPriorityCount} onClick={() => setPendingListOpen(true)} />
-        
-        <ApprovedTodayStats count={getApprovedTodayCount()} onClick={() => setApprovedListOpen(true)} />
-        
-        <RejectedTodayStats count={getRejectedTodayCount()} onClick={() => setRejectedListOpen(true)} />
-      </div>
-
-      {/* Search and Filter */}
-      <div className="flex items-center space-x-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search by employee name or email..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-8" />
-        </div>
-        
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Pending Approvals by Employee */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Pending Approvals by Employee
-            </CardTitle>
-            <CardDescription>
-              Review skill ratings grouped by employee
-            </CardDescription>
+      {/* Dashboard Stats Cards */}
+      <div className="grid gap-6 md:grid-cols-3">
+        <Card className="cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4 border-l-orange-500" onClick={() => setPendingListOpen(true)}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Pending Approvals</CardTitle>
+            <Clock className="h-5 w-5 text-orange-500" />
           </CardHeader>
           <CardContent>
-            {loading ? <div className="flex justify-center py-8">
+            <div className="text-3xl font-bold text-orange-600">{pendingApprovals.length}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {highPriorityCount > 0 ? `${highPriorityCount} high priority` : 'All up to date'}
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card className="cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4 border-l-green-500" onClick={() => setApprovedListOpen(true)}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Approved Today</CardTitle>
+            <CheckCircle className="h-5 w-5 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-green-600">{getApprovedTodayCount()}</div>
+            <p className="text-xs text-muted-foreground mt-1">Successfully reviewed</p>
+          </CardContent>
+        </Card>
+        
+        <Card className="cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4 border-l-red-500" onClick={() => setRejectedListOpen(true)}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Rejected Today</CardTitle>
+            <XCircle className="h-5 w-5 text-red-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-red-600">{getRejectedTodayCount()}</div>
+            <p className="text-xs text-muted-foreground mt-1">Needs revision</p>
+          </CardContent>
+        </Card>
+      </div>
+
+
+      <div className="grid gap-6 lg:grid-cols-2 h-[calc(100vh-400px)]">
+        {/* Pending Approvals */}
+        <Card className="flex flex-col h-full">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-orange-500" />
+              Pending Approvals
+            </CardTitle>
+            <CardDescription>
+              Review skill ratings awaiting approval
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex-1 overflow-hidden">
+            {loading ? (
+              <div className="flex justify-center py-8">
                 <LoadingSpinner />
-              </div> : filteredGroupedApprovals.length === 0 ? <div className="text-center py-8 text-muted-foreground">
-                {searchTerm ? 'No employees match your search.' : 'No pending approvals at this time.'}
-              </div> : <div className="space-y-3">
-                {filteredGroupedApprovals.map(employee => <div key={employee.employeeId} className="border rounded-lg p-4 cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleEmployeeClick(employee)}>
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <p className="font-medium">{employee.employeeName}</p>
-                        <p className="text-sm text-muted-foreground">{employee.email}</p>
-                        <p className="text-xs text-muted-foreground">
-                          Submitted: {employee.submitDate}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <Badge variant="secondary" className="mb-2">
-                          {employee.pendingCount} rating{employee.pendingCount > 1 ? 's' : ''}
-                        </Badge>
-                        <p className="text-xs text-muted-foreground">Click to review</p>
-                      </div>
+              </div>
+            ) : filteredGroupedApprovals.length === 0 ? (
+              <div className="text-center py-12">
+                <CheckCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">
+                  {searchTerm ? 'No employees match your search.' : 'All caught up! No pending approvals.'}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2 h-full overflow-y-auto">
+                {filteredGroupedApprovals.map((employee) => (
+                  <Collapsible
+                    key={employee.employeeId}
+                    open={expandedEmployeeId === employee.employeeId}
+                    onOpenChange={(open) => {
+                      setExpandedEmployeeId(open ? employee.employeeId : null);
+                      setShowApproveFor(null);
+                      setShowRejectFor(null);
+                      setApproveComment("");
+                      setRejectComment("");
+                    }}
+                  >
+                    <div className="border rounded-lg overflow-hidden">
+                      <CollapsibleTrigger asChild>
+                        <div className="flex items-center justify-between p-3 hover:bg-muted/50 transition-colors cursor-pointer group">
+                          <div className="flex items-center gap-4 flex-1 min-w-0">
+                            <div className="font-medium text-sm min-w-[120px]">{employee.employeeName}</div>
+                            <Badge variant="secondary" className="bg-orange-100 text-orange-800 text-xs whitespace-nowrap">
+                              {employee.pendingCount} Rating{employee.pendingCount > 1 ? 's' : ''}
+                            </Badge>
+                            <div className="text-sm text-muted-foreground truncate flex-1">{employee.email}</div>
+                            <div className="text-xs text-muted-foreground whitespace-nowrap hidden sm:block">
+                              Submitted: {employee.submitDate}
+                            </div>
+                          </div>
+                          <Button 
+                            size="sm" 
+                            className="bg-green-600 hover:bg-green-700 ml-4 whitespace-nowrap"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setExpandedEmployeeId(expandedEmployeeId === employee.employeeId ? null : employee.employeeId);
+                            }}
+                          >
+                            Review
+                          </Button>
+                        </div>
+                      </CollapsibleTrigger>
+
+                      <CollapsibleContent className="border-t bg-muted/20">
+                        <div className="p-4 space-y-4">
+                          {/* Individual Ratings */}
+                          <div className="space-y-3">
+                            {employee.ratings.map((rating) => (
+                              <div key={rating.id} className="border rounded-lg p-4">
+                                <div className="flex items-start justify-between mb-3">
+                                  <div className="space-y-1 flex-1">
+                                    <h4 className="font-medium">{rating.title}</h4>
+                                    {rating.self_comment && (
+                                      <div className="mt-2 p-2 bg-muted rounded text-sm">
+                                        <strong>Employee comment:</strong> {rating.self_comment}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <Badge className={getRatingColor(rating.rating)}>
+                                    {rating.rating.toUpperCase()}
+                                  </Badge>
+                                </div>
+
+                                <div className="flex gap-2">
+                                  <Button 
+                                    size="sm" 
+                                    onClick={() => {
+                                      setShowRejectFor(null);
+                                      setShowApproveFor(showApproveFor === rating.id ? null : rating.id);
+                                    }} 
+                                    className="px-4 py-2"
+                                  >
+                                    <CheckCircle className="mr-1 h-3 w-3" />
+                                    Approve
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="destructive" 
+                                    onClick={() => {
+                                      setShowApproveFor(null);
+                                      setShowRejectFor(showRejectFor === rating.id ? null : rating.id);
+                                    }} 
+                                    className="px-4 py-2"
+                                  >
+                                    <XCircle className="mr-1 h-3 w-3" />
+                                    Reject
+                                  </Button>
+                                </div>
+
+                                {/* Approve Comment Section */}
+                                {showApproveFor === rating.id && (
+                                  <div className="mt-3 space-y-3 p-3 bg-green-50 border border-green-200 rounded">
+                                    <div className="flex items-center gap-2">
+                                      <CheckCircle className="h-4 w-4 text-green-600" />
+                                      <Label className="text-sm font-medium text-green-800">Approve Rating - Optional Comment</Label>
+                                    </div>
+                                    <Textarea
+                                      placeholder="Add an optional comment for this approval..."
+                                      value={approveComment}
+                                      onChange={(e) => setApproveComment(e.target.value)}
+                                      className="min-h-[80px]"
+                                    />
+                                    <div className="flex gap-2">
+                                      <Button
+                                        size="sm"
+                                        onClick={async () => {
+                                          await handleApproveRating(rating.id, approveComment);
+                                          setApproveComment("");
+                                          setShowApproveFor(null);
+                                        }}
+                                        className="bg-green-600 hover:bg-green-700"
+                                      >
+                                        Confirm Approval
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => {
+                                          setShowApproveFor(null);
+                                          setApproveComment("");
+                                        }}
+                                      >
+                                        Cancel
+                                      </Button>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Reject Comment Section */}
+                                {showRejectFor === rating.id && (
+                                  <div className="mt-3 space-y-3 p-3 bg-red-50 border border-red-200 rounded">
+                                    <div className="flex items-center gap-2">
+                                      <AlertTriangle className="h-4 w-4 text-red-600" />
+                                      <Label className="text-sm font-medium text-red-800">Reject Rating - Comment Required</Label>
+                                    </div>
+                                    <Textarea
+                                      placeholder="Please provide a detailed explanation for rejecting this rating..."
+                                      value={rejectComment}
+                                      onChange={(e) => setRejectComment(e.target.value)}
+                                      className="min-h-[80px]"
+                                      required
+                                    />
+                                    <div className="flex gap-2">
+                                      <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        onClick={async () => {
+                                          if (!rejectComment.trim()) return;
+                                          await handleRejectRating(rating.id, rejectComment);
+                                          setRejectComment("");
+                                          setShowRejectFor(null);
+                                        }}
+                                        disabled={!rejectComment.trim()}
+                                      >
+                                        Confirm Rejection
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => {
+                                          setShowRejectFor(null);
+                                          setRejectComment("");
+                                        }}
+                                      >
+                                        Cancel
+                                      </Button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </CollapsibleContent>
                     </div>
-                  </div>)}
-              </div>}
+                  </Collapsible>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Employees & Tech Leads List */}
-        <EmployeesList onEmployeeClick={handleEmployeeHistoryClick} />
+        {/* Team Directory - Only visible to management and admin */}
+        {profile?.role && ['management', 'admin'].includes(profile.role) && (
+          <EmployeesList onEmployeeClick={handleEmployeeHistoryClick} roleFilter={roleFilter} searchTerm={searchTerm} />
+        )}
       </div>
-
-      {/* Employee Detail Modal */}
-      <EmployeeApprovalDetail employee={selectedEmployee} open={detailOpen} onOpenChange={setDetailOpen} onApprove={handleEmployeeApprove} onReject={handleEmployeeReject} />
 
       {/* Pending Approvals List */}
       <PendingApprovalsList open={pendingListOpen} onOpenChange={setPendingListOpen} approvals={pendingApprovals} onApprove={id => handleApproveRating(id)} onReject={id => handleRejectRating(id, 'Rejected from pending list')} />

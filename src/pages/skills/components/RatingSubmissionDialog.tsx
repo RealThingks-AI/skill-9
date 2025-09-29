@@ -60,11 +60,11 @@ export const RatingSubmissionDialog = ({
   const getRatingColor = (rating: string) => {
     switch (rating) {
       case 'high':
-        return 'bg-emerald-500 text-white';
+        return 'bg-success text-success-foreground';
       case 'medium':
-        return 'bg-amber-500 text-white';
+        return 'bg-warning text-warning-foreground';
       case 'low':
-        return 'bg-slate-500 text-white';
+        return 'bg-secondary text-secondary-foreground';
       default:
         return 'bg-muted text-muted-foreground';
     }
@@ -127,7 +127,6 @@ export const RatingSubmissionDialog = ({
           <Button 
             onClick={handleSubmit} 
             disabled={!allCommentsProvided}
-            className="bg-primary hover:bg-primary/90"
           >
             Submit {pendingRatings.length} Rating{pendingRatings.length > 1 ? 's' : ''}
           </Button>

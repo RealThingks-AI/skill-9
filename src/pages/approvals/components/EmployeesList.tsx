@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, User } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Users, User, Eye, History } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
-
 interface Employee {
   user_id: string;
   full_name: string;
@@ -12,27 +13,26 @@ interface Employee {
   role: string;
   department?: string;
 }
-
 interface EmployeesListProps {
   onEmployeeClick: (employee: Employee) => void;
+  roleFilter: string;
+  searchTerm: string;
 }
-
-export const EmployeesList = ({ onEmployeeClick }: EmployeesListProps) => {
+export const EmployeesList = ({
+  onEmployeeClick,
+  roleFilter,
+  searchTerm
+}: EmployeesListProps) => {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('user_id, full_name, email, role, department')
-          .in('role', ['employee', 'tech_lead', 'management'])
-          .eq('status', 'active')
-          .order('full_name');
-
+        const {
+          data,
+          error
+        } = await supabase.from('profiles').select('user_id, full_name, email, role, department').in('role', ['employee', 'tech_lead', 'management']).eq('status', 'active').order('full_name');
         if (error) throw error;
-
         setEmployees(data || []);
       } catch (error) {
         console.error('Error fetching employees:', error);
@@ -40,23 +40,27 @@ export const EmployeesList = ({ onEmployeeClick }: EmployeesListProps) => {
         setLoading(false);
       }
     };
-
     fetchEmployees();
   }, []);
 
+  // Filter employees based on role and search term
+  const filteredEmployees = employees.filter(employee => {
+    const matchesRole = roleFilter === "all" || employee.role === roleFilter;
+    const matchesSearch = employee.full_name.toLowerCase().includes(searchTerm.toLowerCase()) || employee.email.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesRole && matchesSearch;
+  });
   const getRoleColor = (role: string) => {
     switch (role) {
       case 'tech_lead':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 text-blue-700 border-blue-200';
       case 'management':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-purple-100 text-purple-700 border-purple-200';
       case 'employee':
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-700 border-gray-200';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-700 border-gray-200';
     }
   };
-
   const formatRole = (role: string) => {
     switch (role) {
       case 'tech_lead':
@@ -69,57 +73,67 @@ export const EmployeesList = ({ onEmployeeClick }: EmployeesListProps) => {
         return role;
     }
   };
-
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Users className="h-5 w-5" />
-          Employees & Tech Leads
-        </CardTitle>
-        <CardDescription>
-          View complete rating history and details for each team member
-        </CardDescription>
+    <Card className="w-full">
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Employees
+          </CardTitle>
+          <CardDescription className="text-sm">
+            {filteredEmployees.length} result{filteredEmployees.length !== 1 ? 's' : ''}
+            {roleFilter !== 'all' ? ` • ${formatRole(roleFilter)}` : ''}
+            {searchTerm ? ` • "${searchTerm}"` : ''}
+          </CardDescription>
+        </div>
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="flex justify-center py-8">
+          <div className="flex items-center justify-center py-10">
             <LoadingSpinner />
           </div>
-        ) : employees.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            No employees found.
-          </div>
         ) : (
-          <div className="space-y-3 max-h-96 overflow-y-auto">
-            {employees.map((employee) => (
-              <div 
-                key={employee.user_id} 
-                className="border rounded-lg p-3 cursor-pointer hover:bg-muted/50 transition-colors"
-                onClick={() => onEmployeeClick(employee)}
-              >
-                <div className="flex items-center justify-between">
+          <div className="divide-y rounded-md border">
+            {filteredEmployees.length === 0 ? (
+              <div className="p-6 text-center text-muted-foreground">No employees found.</div>
+            ) : (
+              filteredEmployees.map((emp) => (
+                <div
+                  key={emp.user_id}
+                  className="flex items-center justify-between p-4 hover:bg-muted/40 transition-colors"
+                >
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-muted">
-                      <User className="h-4 w-4" />
-                    </div>
-                    <div className="space-y-1">
-                      <p className="font-medium text-sm">{employee.full_name}</p>
-                      <p className="text-xs text-muted-foreground">{employee.email}</p>
-                      {employee.department && (
-                        <p className="text-xs text-muted-foreground">{employee.department}</p>
-                      )}
+                    <Avatar>
+                      <AvatarFallback>
+                        {(emp.full_name || emp.email || '?')
+                          .split(' ')
+                          .map((n) => n[0])
+                          .slice(0, 2)
+                          .join('')
+                          .toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <div className="font-medium">{emp.full_name}</div>
+                      <div className="text-sm text-muted-foreground">{emp.email}</div>
                     </div>
                   </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <Badge className={getRoleColor(employee.role)}>
-                      {formatRole(employee.role)}
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className={getRoleColor(emp.role)}>
+                      {formatRole(emp.role)}
                     </Badge>
-                    <p className="text-xs text-muted-foreground">View history</p>
+                    {emp.department && (
+                      <Badge variant="outline">{emp.department}</Badge>
+                    )}
+                    <Button size="sm" variant="outline" onClick={() => onEmployeeClick(emp)}>
+                      <Eye className="mr-2 h-4 w-4" />
+                      View
+                    </Button>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         )}
       </CardContent>

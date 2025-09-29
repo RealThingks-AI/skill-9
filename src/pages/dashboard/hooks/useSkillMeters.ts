@@ -109,9 +109,12 @@ export const useSkillMeters = () => {
           total: ratingUnits.length
         };
 
-        // Calculate percentage using completion-based scoring (as per new rules)
-        const ratedItems = breakdown.high + breakdown.medium + breakdown.low;
-        const percentage = breakdown.total > 0 ? Math.round((ratedItems / breakdown.total) * 100) : 0;
+        // Calculate percentage using points-based scoring (as per new rules)
+        // Points: High=5, Medium=3, Low=1
+        // Percentage = (User points ÷ Max possible points) × 100
+        const userPoints = breakdown.high * 5 + breakdown.medium * 3 + breakdown.low * 1;
+        const maxPossiblePoints = breakdown.total * 5; // All items could be rated High (5 points each)
+        const percentage = breakdown.total > 0 ? Math.round((userPoints / maxPossiblePoints) * 100) : 0;
 
         // Calculate XP based on ratings (High=5, Medium=3, Low=1)
         const categoryXP = breakdown.high * 5 + breakdown.medium * 3 + breakdown.low * 1;

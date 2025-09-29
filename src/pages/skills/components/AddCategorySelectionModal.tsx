@@ -12,7 +12,7 @@ interface AddCategorySelectionModalProps {
   onOpenChange: (open: boolean) => void;
   categories: SkillCategory[];
   visibleCategoryIds: string[];
-  onCategoriesSelected: (categoryIds: string[]) => void;
+  onCategorySelected: (categoryId: string) => void;
 }
 
 export const AddCategorySelectionModal = ({
@@ -20,32 +20,28 @@ export const AddCategorySelectionModal = ({
   onOpenChange,
   categories,
   visibleCategoryIds,
-  onCategoriesSelected
+  onCategorySelected
 }: AddCategorySelectionModalProps) => {
-  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
 
   const availableCategories = categories.filter(
     category => !visibleCategoryIds.includes(category.id)
   );
 
-  const handleCategoryToggle = (categoryId: string) => {
-    setSelectedCategoryIds(prev => 
-      prev.includes(categoryId) 
-        ? prev.filter(id => id !== categoryId)
-        : [...prev, categoryId]
-    );
+  const handleCategorySelect = (categoryId: string) => {
+    setSelectedCategoryId(prev => prev === categoryId ? null : categoryId);
   };
 
   const handleConfirm = () => {
-    if (selectedCategoryIds.length > 0) {
-      onCategoriesSelected([...visibleCategoryIds, ...selectedCategoryIds]);
-      setSelectedCategoryIds([]);
+    if (selectedCategoryId) {
+      onCategorySelected(selectedCategoryId);
+      setSelectedCategoryId(null);
       onOpenChange(false);
     }
   };
 
   const handleCancel = () => {
-    setSelectedCategoryIds([]);
+    setSelectedCategoryId(null);
     onOpenChange(false);
   };
 
@@ -53,13 +49,13 @@ export const AddCategorySelectionModal = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-foreground flex items-center gap-2">
-            <Plus className="h-5 w-5 text-primary" />
-            Add Categories to Dashboard
-          </DialogTitle>
-          <p className="text-sm text-muted-foreground">
-            Select categories to display on your skills dashboard. Choose from {availableCategories.length} available categories.
-          </p>
+            <DialogTitle className="text-xl font-bold text-foreground flex items-center gap-2">
+              <Plus className="h-5 w-5 text-primary" />
+              Add Category to Dashboard
+            </DialogTitle>
+            <p className="text-sm text-muted-foreground">
+              Select a category to add to your skills dashboard. Choose from {availableCategories.length} available categories.
+            </p>
         </DialogHeader>
         
         <div className="flex flex-col gap-4 overflow-hidden">
@@ -72,7 +68,7 @@ export const AddCategorySelectionModal = ({
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {availableCategories.map((category, index) => {
-                  const isSelected = selectedCategoryIds.includes(category.id);
+                  const isSelected = selectedCategoryId === category.id;
                   
                   return (
                     <motion.div
@@ -87,7 +83,7 @@ export const AddCategorySelectionModal = ({
                             ? 'ring-2 ring-primary bg-primary/5' 
                             : 'hover:bg-accent/50'
                         }`}
-                        onClick={() => handleCategoryToggle(category.id)}
+                        onClick={() => handleCategorySelect(category.id)}
                       >
                         <CardContent className="p-4">
                           <div className="flex items-start justify-between gap-2">
@@ -123,7 +119,7 @@ export const AddCategorySelectionModal = ({
           </div>
 
           {/* Selection Summary */}
-          {selectedCategoryIds.length > 0 && (
+          {selectedCategoryId && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -133,7 +129,7 @@ export const AddCategorySelectionModal = ({
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-foreground">Selected:</span>
                   <Badge variant="secondary" className="text-xs">
-                    {selectedCategoryIds.length} categor{selectedCategoryIds.length === 1 ? 'y' : 'ies'}
+                    {categories.find(c => c.id === selectedCategoryId)?.name}
                   </Badge>
                 </div>
               </div>
@@ -150,10 +146,10 @@ export const AddCategorySelectionModal = ({
             </Button>
             <Button
               onClick={handleConfirm}
-              disabled={selectedCategoryIds.length === 0}
+              disabled={!selectedCategoryId}
               className="min-w-[100px]"
             >
-              Add {selectedCategoryIds.length > 0 && `(${selectedCategoryIds.length})`}
+              Add Category
             </Button>
           </div>
         </div>

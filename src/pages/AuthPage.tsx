@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, BarChart3 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 export default function AuthPage() {
   const {
     user,
@@ -50,7 +50,7 @@ export default function AuthPage() {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
             <div className="bg-primary rounded-lg p-3">
-              <BarChart3 className="h-8 w-8 text-primary-foreground" />
+              <img src="/lovable-uploads/54adcce8-be73-4135-bb3c-fb8fd83846cf.png" alt="Logo" className="h-8 w-8" />
             </div>
           </div>
           <h1 className="text-3xl font-bold text-foreground mb-2">Skill Matrix</h1>

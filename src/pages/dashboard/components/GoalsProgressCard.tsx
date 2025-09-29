@@ -97,7 +97,7 @@ export const GoalsProgressCard = () => {
         return {
           ...userSkill,
           rating: userSkill.rating as 'high' | 'medium' | 'low',
-          status: userSkill.status as 'draft' | 'submitted' | 'approved' | 'rejected',
+          status: userSkill.status as 'submitted' | 'approved' | 'rejected',
           skill: skill ? {
             id: skill.id,
             category_id: skill.category_id,
@@ -305,11 +305,13 @@ export const GoalsProgressCard = () => {
                         <SelectValue placeholder="Select skill to improve" />
                       </SelectTrigger>
                       <SelectContent>
-                        {userSkills.map((userSkill) => (
-                          <SelectItem key={userSkill.skill_id} value={userSkill.skill_id}>
-                            {userSkill.skill?.name} (Current: {userSkill.rating})
-                          </SelectItem>
-                        ))}
+                        {userSkills
+                          .filter(userSkill => userSkill.skill_id && userSkill.skill_id.trim() !== '')
+                          .map((userSkill) => (
+                            <SelectItem key={userSkill.skill_id} value={userSkill.skill_id}>
+                              {userSkill.skill?.name} (Current: {userSkill.rating})
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                   </div>

@@ -17,18 +17,59 @@ export const usePendingApprovals = () => {
     try {
       console.log('🔍 Fetching pending approval count...');
       
-      const { data, error } = await supabase
+      // Get current user profile to filter out self-approvals
+      const { data: currentProfile } = await supabase
+        .from('profiles')
+        .select('user_id, role')
+        .eq('user_id', profile.user_id)
+        .single();
+
+      if (!currentProfile) {
+        setPendingCount(0);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch all submitted ratings
+      const { data: allRatings, error } = await supabase
         .from('employee_ratings')
-        .select('id')
+        .select('id, user_id')
         .eq('status', 'submitted');
 
       if (error) {
         console.error('Error fetching pending approvals:', error);
         setPendingCount(0);
-      } else {
-        console.log('📊 Found pending ratings:', data?.length || 0);
-        setPendingCount(data?.length || 0);
+        setLoading(false);
+        return;
       }
+
+      // Get profiles for all rating submitters
+      const userIds = (allRatings || []).map(r => r.user_id);
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, role')
+        .in('user_id', userIds);
+
+      // Filter out self-approvals for tech leads
+      const filteredRatings = (allRatings || []).filter(rating => {
+        const submitterProfile = profiles?.find(p => p.user_id === rating.user_id);
+        const submitterRole = submitterProfile?.role || 'employee';
+        
+        // If submitter is an employee, any tech lead can approve
+        if (submitterRole === 'employee') {
+          return true;
+        }
+        
+        // If submitter is a tech lead, exclude self-approvals
+        if (submitterRole === 'tech_lead') {
+          return rating.user_id !== currentProfile.user_id;
+        }
+        
+        return true;
+      });
+
+      console.log('📊 Found pending ratings:', filteredRatings.length, 'out of', allRatings?.length || 0);
+      setPendingCount(filteredRatings.length);
     } catch (error) {
       console.error('Error in fetchPendingCount:', error);
       setPendingCount(0);
