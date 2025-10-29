@@ -1,177 +1,146 @@
-import { useState } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, CheckCircle, XCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ChevronDown } from "lucide-react";
+import { format } from "date-fns";
 import type { GroupedHistoricalApproval } from "../hooks/useApprovalHistory";
 
 interface EmployeeHistoryDetailProps {
-  employee: GroupedHistoricalApproval | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  employee: GroupedHistoricalApproval;
+  isExpanded: boolean;
+  onToggle: () => void;
 }
 
-export const EmployeeHistoryDetail = ({
-  employee,
-  open,
-  onOpenChange
-}: EmployeeHistoryDetailProps) => {
-  const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({});
-
-  if (!employee) return null;
-
-  // Group ratings by category
-  const ratingsByCategory = employee.ratings.reduce((acc, rating) => {
-    const categoryName = rating.skill?.skill_categories?.name || 'Uncategorized';
-    
-    if (!acc[categoryName]) {
-      acc[categoryName] = {
-        name: categoryName,
-        color: rating.skill?.skill_categories?.color || '#3B82F6',
-        ratings: []
-      };
-    }
-    acc[categoryName].ratings.push(rating);
-    return acc;
-  }, {} as Record<string, { name: string; color: string; ratings: typeof employee.ratings }>);
-
-  const categoryEntries = Object.values(ratingsByCategory).sort((a, b) => 
-    a.name.localeCompare(b.name)
-  );
-
-  const toggleCategory = (categoryName: string) => {
-    setOpenCategories(prev => ({
-      ...prev,
-      [categoryName]: !prev[categoryName]
-    }));
-  };
+export const EmployeeHistoryDetail = ({ employee, isExpanded, onToggle }: EmployeeHistoryDetailProps) => {
 
   const getRatingColor = (rating: string) => {
     switch (rating) {
-      case 'high':
-        return 'bg-emerald-500 text-white';
-      case 'medium':
-        return 'bg-amber-500 text-white';
-      case 'low':
-        return 'bg-orange-500 text-white';
+      case "high":
+        return "bg-emerald-500 text-white";
+      case "medium":
+        return "bg-blue-500 text-white";
+      case "low":
+        return "bg-amber-500 text-white";
       default:
-        return 'bg-muted';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    return status === 'approved' 
-      ? <CheckCircle className="h-4 w-4 text-emerald-500" />
-      : <XCircle className="h-4 w-4 text-red-500" />;
-  };
-
   const getStatusColor = (status: string) => {
-    return status === 'approved'
-      ? 'bg-emerald-500 text-white'
-      : 'bg-red-500 text-white';
+    return status === "approved" 
+      ? "bg-green-100 text-green-800" 
+      : "bg-red-100 text-red-800";
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[80vh]">
-        <DialogHeader>
-          <DialogTitle>Approval History - {employee.employeeName}</DialogTitle>
-          <DialogDescription>
-            View {employee.totalCount} historical skill rating{employee.totalCount > 1 ? 's' : ''}
-          </DialogDescription>
-        </DialogHeader>
-
-        <ScrollArea className="h-[60vh] pr-4">
-          <div className="space-y-2">
-            {categoryEntries.map((category) => (
-              <div key={category.name} className="border rounded-lg">
-                <Collapsible
-                  open={openCategories[category.name] === true}
-                  onOpenChange={() => toggleCategory(category.name)}
+    <Collapsible open={isExpanded} onOpenChange={onToggle}>
+      <div className="border rounded-lg overflow-hidden">
+        <CollapsibleTrigger asChild>
+          <div className="flex items-center justify-between p-3 hover:bg-muted/50 transition-colors cursor-pointer group">
+            <div className="grid grid-cols-5 gap-4 items-center flex-1">
+              <div className="font-medium text-sm">{employee.employeeName}</div>
+              <Badge variant="secondary" className="bg-slate-500 text-white text-xs whitespace-nowrap justify-self-center">
+                {employee.totalCount} Rating{employee.totalCount > 1 ? "s" : ""}
+              </Badge>
+              <div className="text-sm text-muted-foreground">{employee.employeeEmail}</div>
+              <div className="text-xs text-muted-foreground">
+                {employee.ratings[0]?.approved_at 
+                  ? format(new Date(employee.ratings[0].approved_at), "MMM d, yyyy")
+                  : "N/A"}
+              </div>
+              <div className="justify-self-end">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  className="whitespace-nowrap"
                 >
-                  <CollapsibleTrigger asChild>
-                    <button className="w-full p-3 flex items-center justify-between hover:bg-muted/50 transition-colors">
-                      <div className="flex items-center gap-2">
-                        <ChevronDown 
-                          className={`h-4 w-4 transition-transform ${
-                            openCategories[category.name] ? 'rotate-180' : ''
-                          }`}
-                        />
-                        <div 
-                          className="w-2.5 h-2.5 rounded-full"
-                          style={{ backgroundColor: category.color }}
-                        />
-                        <h3 className="font-semibold">{category.name}</h3>
-                        <Badge variant="secondary" className="text-xs">
-                          {category.ratings.length} subskill{category.ratings.length > 1 ? 's' : ''}
-                        </Badge>
-                      </div>
-                    </button>
+                  {isExpanded ? "Hide" : "View"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </CollapsibleTrigger>
+
+        <CollapsibleContent className="border-t bg-muted/20">
+          <div className="p-4 space-y-3">
+            {/* Group ratings by category */}
+            {(() => {
+              const ratingsByCategory = employee.ratings.reduce((acc, rating) => {
+                const categoryName = (rating.skill as any)?.skill_categories?.name || 'Uncategorized';
+                if (!acc[categoryName]) {
+                  acc[categoryName] = [];
+                }
+                acc[categoryName].push(rating);
+                return acc;
+              }, {} as Record<string, typeof employee.ratings>);
+
+              const categoryEntries = Object.entries(ratingsByCategory).sort((a, b) => a[0].localeCompare(b[0]));
+
+              return categoryEntries.map(([categoryName, ratings]) => (
+                <Collapsible key={categoryName} className="border rounded-lg">
+                  <CollapsibleTrigger className="w-full p-3 flex items-center justify-between hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <h3 className="font-semibold text-sm">{categoryName}</h3>
+                      <Badge variant="secondary" className="text-xs">
+                        {ratings.length} subskill{ratings.length > 1 ? 's' : ''}
+                      </Badge>
+                    </div>
+                    <ChevronDown className="h-4 w-4 transition-transform duration-200 data-[state=open]:rotate-180" />
                   </CollapsibleTrigger>
                   
                   <CollapsibleContent>
-                    <div className="space-y-2 p-3 pt-0">
-                      {category.ratings.map((rating) => {
+                    <div className="space-y-3 p-4 pt-0 border-t">
+                      {ratings.map(rating => {
                         const skillName = rating.skill?.name || '';
                         const subskillName = rating.subskill?.name || skillName;
                         const displayName = rating.subskill ? `${skillName} - ${subskillName}` : skillName;
-                        
+
                         return (
-                          <div key={rating.id} className="border rounded-lg p-3 bg-card space-y-2">
-                            {/* Header with subskill name, rating, and status */}
-                            <div className="flex items-center justify-between gap-2 flex-wrap">
-                              <h4 className="font-medium text-sm flex-1">{displayName}</h4>
-                              <div className="flex items-center gap-1.5">
-                                {rating.approved_at && (
-                                  <span className="text-xs text-muted-foreground">
-                                    {new Date(rating.approved_at).toLocaleDateString()} at {new Date(rating.approved_at).toLocaleTimeString()}
-                                  </span>
-                                )}
-                                <Badge className={`${getRatingColor(rating.rating)} text-xs`}>
+                          <div key={rating.id} className="border rounded-lg p-4 bg-background">
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="flex items-center gap-2 flex-1">
+                                <h4 className="font-medium text-sm">{displayName}</h4>
+                                <Badge className={getRatingColor(rating.rating)}>
                                   {rating.rating.toUpperCase()}
                                 </Badge>
-                                <Badge className={`${getStatusColor(rating.status)} text-xs`}>
-                                  <span className="flex items-center gap-1">
-                                    {getStatusIcon(rating.status)}
-                                    {rating.status === 'approved' ? 'Approved' : 'Rejected'}
-                                  </span>
+                                <Badge className={getStatusColor(rating.status)}>
+                                  {rating.status.toUpperCase()}
                                 </Badge>
                               </div>
                             </div>
 
-                            {/* Employee Comment - Inline */}
                             {rating.self_comment && (
-                              <div className="text-sm">
-                                <span className="font-bold text-muted-foreground">Employee Comment ({employee.employeeName}): </span>
-                                <span className="text-foreground">{rating.self_comment}</span>
+                              <div className="mb-2 p-2 bg-muted rounded text-sm">
+                                <strong>Employee comment:</strong> {rating.self_comment}
                               </div>
                             )}
 
-                            {/* Approver Info and Comment - Inline */}
-                            <div className="text-sm">
-                              <span className="font-bold text-muted-foreground">
-                                {rating.status === 'approved' ? 'Approved by' : 'Rejected by'} {rating.approver?.full_name || 'Unknown'}
-                                {rating.approver_comment && ': '}
-                              </span>
-                              {rating.approver_comment && (
-                                <span className={rating.status === 'approved' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}>
-                                  {rating.approver_comment}
-                                </span>
+                            {rating.approver_comment && (
+                              <div className="mb-2 p-2 bg-blue-50 rounded text-sm">
+                                <strong>Approver comment:</strong> {rating.approver_comment}
+                              </div>
+                            )}
+
+                            <div className="text-xs text-muted-foreground mt-2">
+                              {rating.approved_at && (
+                                <>
+                                  {rating.status === "approved" ? "Approved" : "Rejected"} by{" "}
+                                  {rating.approver?.full_name || "Unknown"} on{" "}
+                                  {format(new Date(rating.approved_at), "MMM d, yyyy 'at' h:mm a")}
+                                </>
                               )}
                             </div>
-
                           </div>
                         );
                       })}
                     </div>
                   </CollapsibleContent>
                 </Collapsible>
-              </div>
-            ))}
+              ));
+            })()}
           </div>
-        </ScrollArea>
-      </DialogContent>
-    </Dialog>
+        </CollapsibleContent>
+      </div>
+    </Collapsible>
   );
 };
