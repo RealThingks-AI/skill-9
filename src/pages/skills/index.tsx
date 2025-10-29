@@ -28,7 +28,10 @@ const Skills = () => {
   } | null>(null);
   const [targetSkillId, setTargetSkillId] = useState<string | undefined>();
   const [targetSubskillId, setTargetSubskillId] = useState<string | undefined>();
-  const { isManagerOrAbove, profile } = useAuth();
+  const {
+    isManagerOrAbove,
+    profile
+  } = useAuth();
   const {
     skillCategories,
     skills,
@@ -41,9 +44,14 @@ const Skills = () => {
     handleSubskillRate,
     handleToggleNA,
     handleSaveRatings,
-    setPendingRatings,
+    setPendingRatings
   } = useSkills();
-  const { visibleCategoryIds, loading: preferencesLoading, addCategories, hideCategory } = useCategoryPreferences();
+  const {
+    visibleCategoryIds,
+    loading: preferencesLoading,
+    addCategories,
+    hideCategory
+  } = useCategoryPreferences();
   const handleCategoryClick = (category: SkillCategory) => {
     setSelectedCategory(category);
   };
@@ -56,7 +64,7 @@ const Skills = () => {
   const handleHideCategory = (categoryId: string, categoryName: string) => {
     setCategoryToHide({
       id: categoryId,
-      name: categoryName,
+      name: categoryName
     });
   };
   const confirmHideCategory = () => {
@@ -65,13 +73,12 @@ const Skills = () => {
       setCategoryToHide(null);
     }
   };
-
   const handleCategorySelected = (categoryId: string) => {
     // Add category to dashboard
     addCategories([categoryId]);
 
     // Auto-open the category modal
-    const category = skillCategories.find((c) => c.id === categoryId);
+    const category = skillCategories.find(c => c.id === categoryId);
     if (category) {
       setSelectedCategory(category);
     }
@@ -79,28 +86,21 @@ const Skills = () => {
 
   // Get visible categories based on user preferences and sort by percentage
   // Admins/Management see all categories, employees see only their visible ones
-  const visibleCategories = skillCategories
-    .filter((category) => isManagerOrAbove || visibleCategoryIds.includes(category.id))
-    .sort((a, b) => {
-      // Calculate progress for sorting
-      const progressA = calculateCategoryProgress(a.id, skills, subskills, userSkills);
-      const progressB = calculateCategoryProgress(b.id, skills, subskills, userSkills);
+  const visibleCategories = skillCategories.filter(category => isManagerOrAbove || visibleCategoryIds.includes(category.id)).sort((a, b) => {
+    // Calculate progress for sorting
+    const progressA = calculateCategoryProgress(a.id, skills, subskills, userSkills);
+    const progressB = calculateCategoryProgress(b.id, skills, subskills, userSkills);
 
-      // Sort by percentage descending (highest first)
-      return progressB.progressPercentage - progressA.progressPercentage;
-    });
+    // Sort by percentage descending (highest first)
+    return progressB.progressPercentage - progressA.progressPercentage;
+  });
   // Derive category IDs that already have any ratings
-  const ratedCategoryIds = Array.from(new Set(
-    userSkills
-      .map((r) => skills.find((s) => s.id === r.skill_id)?.category_id)
-      .filter(Boolean) as string[]
-  ));
-  
+  const ratedCategoryIds = Array.from(new Set(userSkills.map(r => skills.find(s => s.id === r.skill_id)?.category_id).filter(Boolean) as string[]));
   console.log('📊 Total categories:', skillCategories.length, 'Visible categories:', visibleCategories.length, 'IsManagerOrAbove:', isManagerOrAbove);
 
   // Update handleSearchResultClick to pass target info
   const handleSearchResultClick = (result: any) => {
-    const category = skillCategories.find((c) => c.id === result.categoryId);
+    const category = skillCategories.find(c => c.id === result.categoryId);
     if (category) {
       // Pass the target skill/subskill info to CategoryModal for auto-expansion
       setSelectedCategory(category);
@@ -119,73 +119,47 @@ const Skills = () => {
     }
   };
   if (loading || preferencesLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
+    return <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-muted-foreground">Loading skills...</p>
         </div>
-      </div>
-    );
+      </div>;
   }
-  return (
-    <>
+  return <>
       <div className="h-screen flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex-shrink-0 flex items-center justify-between h-16 px-6 border-b border-sidebar-border">
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">Skills Management</h1>
-            {isManagerOrAbove && (
-              <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+            <h1 className="text-2xl tracking-tight text-foreground font-medium">Skills Management</h1>
+            {isManagerOrAbove && <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
                 Admin Mode
-              </Badge>
-            )}
+              </Badge>}
           </div>
 
           <div className="flex items-center gap-3">
             {/* Enhanced Search - only show if there are visible categories */}
-            {visibleCategories.length > 0 && (
-              <EnhancedSearch
-                categories={skillCategories}
-                skills={skills}
-                subskills={subskills}
-                onResultClick={handleSearchResultClick}
-                placeholder="Search skills & subskills"
-              />
-            )}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowCriteria(true)}
-              className="flex items-center gap-2"
-            >
+            {visibleCategories.length > 0 && <EnhancedSearch categories={skillCategories} skills={skills} subskills={subskills} onResultClick={handleSearchResultClick} placeholder="Search skills & subskills" />}
+            <Button variant="outline" size="sm" onClick={() => setShowCriteria(true)} className="flex items-center gap-2">
               <Info className="w-4 h-4" />
             </Button>
 
-            {isManagerOrAbove && (
-              <ActionMenu categories={skillCategories} skills={skills} subskills={subskills} onRefresh={fetchData} />
-            )}
+            {isManagerOrAbove && <ActionMenu categories={skillCategories} skills={skills} subskills={subskills} onRefresh={fetchData} />}
           </div>
         </div>
 
         {/* Category Cards Grid - Scrollable */}
         <ScrollArea className="flex-1">
-          {visibleCategories.length === 0 /* Empty State */ ? (
-            <motion.div
-              className="flex flex-col items-center justify-center h-full py-16 text-center"
-              initial={{
-                opacity: 0,
-                y: 20,
-              }}
-              animate={{
-                opacity: 1,
-                y: 0,
-              }}
-              exit={{
-                opacity: 0,
-                y: -20,
-              }}
-            >
+          {visibleCategories.length === 0 /* Empty State */ ? <motion.div className="flex flex-col items-center justify-center h-full py-16 text-center" initial={{
+          opacity: 0,
+          y: 20
+        }} animate={{
+          opacity: 1,
+          y: 0
+        }} exit={{
+          opacity: 0,
+          y: -20
+        }}>
               <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
                 <Plus className="w-8 h-8 text-muted-foreground" />
               </div>
@@ -193,144 +167,68 @@ const Skills = () => {
                 {isManagerOrAbove ? "No Categories Yet" : "No Categories Selected"}
               </h3>
               <p className="text-muted-foreground max-w-md">
-                {isManagerOrAbove
-                  ? "Get started by creating your first skill category."
-                  : "Add categories to your dashboard to start tracking your skills. Click the '+ Add Category' button to get started."}
+                {isManagerOrAbove ? "Get started by creating your first skill category." : "Add categories to your dashboard to start tracking your skills. Click the '+ Add Category' button to get started."}
               </p>
-              {isManagerOrAbove ? (
-                skillCategories.length === 0 && (
-                  <Button onClick={() => setShowAddCategory(true)} className="mt-4">
+              {isManagerOrAbove ? skillCategories.length === 0 && <Button onClick={() => setShowAddCategory(true)} className="mt-4">
                     <Plus className="w-4 h-4 mr-2" />
                     Create First Category
-                  </Button>
-                )
-              ) : (
-                <Button onClick={() => setShowCategorySelection(true)} className="mt-4">
+                  </Button> : <Button onClick={() => setShowCategorySelection(true)} className="mt-4">
                   <Plus className="w-4 h-4 mr-2" />
                   Add Category
-                </Button>
-              )}
-            </motion.div>
-          ) : (
-            <div className="p-6">
-              <motion.div
-                className="grid grid-cols-3 gap-4 auto-rows-fr"
-                layout
-              >
+                </Button>}
+            </motion.div> : <div className="p-6">
+              <motion.div className="grid grid-cols-3 gap-4 auto-rows-fr" layout>
                 <AnimatePresence mode="popLayout">
                   {/* Render all visible categories */}
-                  {visibleCategories.map((category, index) => (
-                    <CategoryCard
-                      key={category.id}
-                      category={category}
-                      skillCount={skills.filter((skill) => skill.category_id === category.id).length}
-                      subskills={subskills}
-                      isManagerOrAbove={isManagerOrAbove}
-                      onClick={() => handleCategoryClick(category)}
-                      onRefresh={fetchData}
-                      index={index}
-                      userSkills={userSkills}
-                      skills={skills}
-                      showHideButton={!isManagerOrAbove}
-                      onHide={!isManagerOrAbove ? handleHideCategory : undefined}
-                    />
-                  ))}
+                  {visibleCategories.map((category, index) => <CategoryCard key={category.id} category={category} skillCount={skills.filter(skill => skill.category_id === category.id).length} subskills={subskills} isManagerOrAbove={isManagerOrAbove} onClick={() => handleCategoryClick(category)} onRefresh={fetchData} index={index} userSkills={userSkills} skills={skills} showHideButton={!isManagerOrAbove} onHide={!isManagerOrAbove ? handleHideCategory : undefined} />)}
 
                   {/* Add Category button for employees */}
-                  {!isManagerOrAbove && (
-                    <motion.div
-                      key="add-category"
-                      className="border-2 border-dashed border-muted-foreground/30 rounded-lg flex flex-col items-center justify-center p-6 hover:border-muted-foreground/50 transition-colors cursor-pointer group min-h-[200px]"
-                      onClick={() => setShowCategorySelection(true)}
-                      initial={{
-                        opacity: 0,
-                        scale: 0.9,
-                      }}
-                      animate={{
-                        opacity: 1,
-                        scale: 1,
-                      }}
-                      exit={{
-                        opacity: 0,
-                        scale: 0.9,
-                      }}
-                      whileHover={{
-                        scale: 1.02,
-                      }}
-                      whileTap={{
-                        scale: 0.98,
-                      }}
-                    >
+                  {!isManagerOrAbove && <motion.div key="add-category" className="border-2 border-dashed border-muted-foreground/30 rounded-lg flex flex-col items-center justify-center p-6 hover:border-muted-foreground/50 transition-colors cursor-pointer group min-h-[200px]" onClick={() => setShowCategorySelection(true)} initial={{
+                opacity: 0,
+                scale: 0.9
+              }} animate={{
+                opacity: 1,
+                scale: 1
+              }} exit={{
+                opacity: 0,
+                scale: 0.9
+              }} whileHover={{
+                scale: 1.02
+              }} whileTap={{
+                scale: 0.98
+              }}>
                       <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-3 group-hover:bg-muted-foreground/10 transition-colors">
                         <Plus className="w-6 h-6 text-muted-foreground" />
                       </div>
                       <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
                         Add Category
                       </span>
-                    </motion.div>
-                  )}
+                    </motion.div>}
                 </AnimatePresence>
               </motion.div>
-            </div>
-          )}
+            </div>}
         </ScrollArea>
       </div>
 
       {/* Category Modal */}
       <AnimatePresence>
-        {selectedCategory && (
-          <CategoryModal
-            category={selectedCategory}
-            skills={skills.filter((skill) => skill.category_id === selectedCategory.id)}
-            subskills={subskills}
-            userSkills={userSkills}
-            pendingRatings={pendingRatings}
-            isManagerOrAbove={isManagerOrAbove}
-            isAdmin={profile?.role === 'admin'}
-            profile={profile as any}
-            onClose={handleCloseModal}
-            onSkillRate={handleSkillRate}
-            onSubskillRate={handleSubskillRate}
-            onToggleNA={handleToggleNA}
-            onSaveRatings={handleSaveRatings}
-            onRefresh={fetchData}
-            targetSkillId={targetSkillId}
-            targetSubskillId={targetSubskillId}
-          />
-        )}
+        {selectedCategory && <CategoryModal category={selectedCategory} skills={skills.filter(skill => skill.category_id === selectedCategory.id)} subskills={subskills} userSkills={userSkills} pendingRatings={pendingRatings} isManagerOrAbove={isManagerOrAbove} isAdmin={profile?.role === 'admin'} profile={profile as any} onClose={handleCloseModal} onSkillRate={handleSkillRate} onSubskillRate={handleSubskillRate} onToggleNA={handleToggleNA} onSaveRatings={handleSaveRatings} onRefresh={fetchData} targetSkillId={targetSkillId} targetSubskillId={targetSubskillId} />}
       </AnimatePresence>
 
       {/* Add Category Modal */}
-      <AddCategoryModal
-        open={showAddCategory}
-        onOpenChange={setShowAddCategory}
-        onSuccess={() => {
-          setShowAddCategory(false);
-          fetchData();
-        }}
-      />
+      <AddCategoryModal open={showAddCategory} onOpenChange={setShowAddCategory} onSuccess={() => {
+      setShowAddCategory(false);
+      fetchData();
+    }} />
 
       {/* Criteria Modal */}
       <CriteriaModal open={showCriteria} onOpenChange={setShowCriteria} />
 
       {/* Category Selection Modal */}
-      <AddCategorySelectionModal
-        open={showCategorySelection}
-        onOpenChange={setShowCategorySelection}
-        categories={skillCategories}
-        visibleCategoryIds={visibleCategoryIds}
-        ratedCategoryIds={ratedCategoryIds}
-        onCategorySelected={handleCategorySelected}
-      />
+      <AddCategorySelectionModal open={showCategorySelection} onOpenChange={setShowCategorySelection} categories={skillCategories} visibleCategoryIds={visibleCategoryIds} ratedCategoryIds={ratedCategoryIds} onCategorySelected={handleCategorySelected} />
 
       {/* Hide Category Confirmation Dialog */}
-      <HideCategoryConfirmDialog
-        open={!!categoryToHide}
-        onOpenChange={(open) => !open && setCategoryToHide(null)}
-        categoryName={categoryToHide?.name || ""}
-        onConfirm={confirmHideCategory}
-      />
-    </>
-  );
+      <HideCategoryConfirmDialog open={!!categoryToHide} onOpenChange={open => !open && setCategoryToHide(null)} categoryName={categoryToHide?.name || ""} onConfirm={confirmHideCategory} />
+    </>;
 };
 export default Skills;
