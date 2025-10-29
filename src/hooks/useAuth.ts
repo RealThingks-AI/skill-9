@@ -14,6 +14,7 @@ interface UserProfile {
   updated_at: string;
   last_login?: string;
   tech_lead_id?: string;
+  department?: string;
 }
 
 export interface UseAuthReturn {
@@ -34,6 +35,36 @@ export function useAuth(): UseAuthReturn {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Check for impersonation
+  const getImpersonatedProfile = async (): Promise<UserProfile | null> => {
+    const stored = sessionStorage.getItem('impersonation');
+    if (!stored) return null;
+
+    try {
+      const { impersonatedUser } = JSON.parse(stored);
+      
+      console.log('Loading impersonated profile for:', impersonatedUser);
+      
+      // Fetch full profile data for the impersonated user
+      const { data: impersonatedProfile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', impersonatedUser.userId)
+        .single();
+
+      if (error || !impersonatedProfile) {
+        console.error('Error loading impersonated profile:', error);
+        return null;
+      }
+
+      console.log('Loaded impersonated profile:', impersonatedProfile);
+      return impersonatedProfile as UserProfile;
+    } catch (error) {
+      console.error('Error parsing impersonation data:', error);
+      return null;
+    }
+  };
+
   const refreshProfile = async () => {
     if (!user) {
       setProfile(null);
@@ -41,28 +72,49 @@ export function useAuth(): UseAuthReturn {
     }
 
     try {
+      // First check if we're in impersonation mode
+      const impersonatedProfile = await getImpersonatedProfile();
+      if (impersonatedProfile) {
+        console.log('Setting impersonated profile:', impersonatedProfile.full_name);
+        setProfile(impersonatedProfile);
+        return;
+      }
+
+      // Otherwise, get the current user's profile
       const userProfile = await authHelpers.getCurrentUserProfile();
-      setProfile(userProfile as UserProfile);
+      
+      // Only set profile if we got valid data - don't sign out on errors
+      if (userProfile) {
+        console.log('Setting user profile:', userProfile.full_name);
+        setProfile(userProfile as UserProfile);
+      }
     } catch (error) {
       console.error('Error refreshing profile:', error);
-      setProfile(null);
+      // Don't clear profile or sign out on errors - keep existing session
     }
   };
 
   useEffect(() => {
+    let isInitialLoad = true;
+    
     // Listen for auth changes first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        setUser(session?.user ?? null);
-        setLoading(false);
-        
-        // Clear profile when user signs out
-        if (event === 'SIGNED_OUT' || !session) {
-          setProfile(null);
+        // Update user state on all auth events except TOKEN_REFRESHED
+        if (event !== 'TOKEN_REFRESHED') {
+          setUser(session?.user ?? null);
+          setLoading(false);
         }
         
-        // Update last_login on sign in
-        if (event === 'SIGNED_IN' && session?.user) {
+        // Clear profile only on explicit sign out
+        if (event === 'SIGNED_OUT') {
+          setProfile(null);
+          setUser(null);
+          sessionStorage.removeItem('impersonation'); // Clear impersonation on sign out
+        }
+        
+        // Update last_login only on actual sign in, not on token refresh or initial load
+        if (event === 'SIGNED_IN' && session?.user && !isInitialLoad) {
           setTimeout(async () => {
             try {
               await supabase
@@ -83,23 +135,41 @@ export function useAuth(): UseAuthReturn {
         const { data: { session } } = await supabase.auth.getSession();
         setUser(session?.user ?? null);
         setLoading(false);
+        isInitialLoad = false;
       } catch (error) {
         console.error('Error getting session:', error);
         setUser(null);
         setProfile(null);
         setLoading(false);
+        isInitialLoad = false;
       }
     };
 
     getInitialSession();
 
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []); // Remove user dependency to prevent infinite loop
 
-  // Refresh profile when user changes
+  // Refresh profile when user changes or when impersonation state changes
   useEffect(() => {
-    refreshProfile();
-  }, [user]);
+    if (user && !profile) {
+      refreshProfile();
+    }
+    
+    // Listen for custom impersonation events
+    const handleImpersonationChange = () => {
+      console.log('Impersonation changed, refreshing profile');
+      refreshProfile();
+    };
+    
+    window.addEventListener('impersonation-change', handleImpersonationChange);
+    
+    return () => {
+      window.removeEventListener('impersonation-change', handleImpersonationChange);
+    };
+  }, [user?.id]);
 
   const signOut = async () => {
     try {
@@ -143,8 +213,8 @@ export function useAuth(): UseAuthReturn {
     loading,
     isAuthenticated: !!user,
     isAdmin: profile?.role === 'admin',
-    isManagerOrAbove: ['admin', 'manager'].includes(profile?.role || ''),
-    isTechLeadOrAbove: ['admin', 'manager', 'tech_lead'].includes(profile?.role || ''),
+    isManagerOrAbove: ['admin', 'management'].includes(profile?.role || ''),
+    isTechLeadOrAbove: ['admin', 'management', 'tech_lead'].includes(profile?.role || ''),
     signOut,
     signIn,
     refreshProfile

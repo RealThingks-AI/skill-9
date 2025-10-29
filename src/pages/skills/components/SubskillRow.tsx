@@ -10,7 +10,7 @@ interface SubskillRowProps {
   userSkills: EmployeeRating[];
   pendingRatings: Map<string, { type: 'skill' | 'subskill', id: string, rating: 'high' | 'medium' | 'low' }>;
   isManagerOrAbove: boolean;
-  onSubskillRate: (subskillId: string, rating: 'high' | 'medium' | 'low') => void;
+  onSubskillRate: (subskillId: string, rating: 'high' | 'medium' | 'low' | null) => void;
   onRefresh: () => void;
   onEditSubskill?: () => void;
   onDeleteSubskill?: () => void;
@@ -42,20 +42,18 @@ export const SubskillRow = ({
   const upgradeCheck = canUpgradeRating(userSkillRating, 'high', userSkillStatus || 'draft', nextUpgradeDate);
   const availableRatings = getAvailableRatingOptions(userSkillRating, userSkillStatus || 'draft', nextUpgradeDate);
   
-  // Determine if rating is disabled - rejected ratings should be editable for resubmission
-  const isSubmittedOrPending = userSkillStatus === 'submitted';
-  const isHighAndApproved = userSkillRating === 'high' && userSkillStatus === 'approved';
-  const isInCoolDown = userSkillStatus === 'approved' && !upgradeCheck.canUpgrade && !!upgradeCheck.daysLeft;
-  const isDisabled = isSubmittedOrPending || isHighAndApproved || isInCoolDown;
+  // Allow editing for all statuses including pending (users can update their submissions)
+  // Only approved ratings are locked (handled by progression rules)
+  const isDisabled = false;
 
   const getStatusColor = (status?: string) => {
     switch (status) {
       case 'approved':
-        return 'bg-success text-success-foreground border-success';
+        return 'bg-emerald-500 text-white border-emerald-500';
       case 'submitted':
-        return 'bg-warning text-warning-foreground border-warning';
+        return 'bg-slate-500 text-white border-slate-500';
       case 'rejected':
-        return 'bg-destructive text-destructive-foreground border-destructive';
+        return 'bg-red-500 text-white border-red-500';
       default:
         return 'bg-muted text-muted-foreground border-muted';
     }
@@ -84,17 +82,7 @@ export const SubskillRow = ({
               {getStatusLabel(userSkillStatus)}
             </Badge>
           )}
-          {isHighAndApproved && (
-            <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 border-amber-200">
-              🔒 Locked
-            </Badge>
-          )}
         </div>
-        {isInCoolDown && upgradeCheck.reason && (
-          <p className="text-xs text-amber-600 dark:text-amber-400 mb-1">
-            {upgradeCheck.reason}
-          </p>
-        )}
         {subskill.description && (
           <p className="text-xs text-muted-foreground mt-1">{subskill.description}</p>
         )}
@@ -104,6 +92,12 @@ export const SubskillRow = ({
         <RatingPill
           rating={userSkillRating}
           onRatingChange={(rating) => {
+            // Allow deselecting (rating = null)
+            if (rating === null) {
+              onSubskillRate(subskill.id, null);
+              return;
+            }
+            
             const upgradeCheck = canUpgradeRating(userSkillRating, rating, userSkillStatus || 'draft', nextUpgradeDate);
             if (upgradeCheck.canUpgrade) {
               onSubskillRate(subskill.id, rating);

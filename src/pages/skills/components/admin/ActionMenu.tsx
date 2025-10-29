@@ -14,6 +14,7 @@ import { Upload, Download, Plus, AlertCircle, CheckCircle, MoreVertical } from "
 import { useToast } from "@/hooks/use-toast";
 import { AddCategoryModal } from "./AddCategoryModal";
 import { ImportExportService } from "../../services/importExport.service";
+import { supabase } from "@/integrations/supabase/client";
 import type { SkillCategory, Skill, Subskill } from "@/types/database";
 
 interface ActionMenuProps {
@@ -44,7 +45,36 @@ export const ActionMenu = ({
 
   const exportToCSV = async () => {
     try {
-      const csvString = await ImportExportService.exportToCSV(categories, skills, subskills);
+      // Fetch fresh data from database before exporting
+      const { data: freshCategories } = await supabase
+        .from('skill_categories')
+        .select('*')
+        .order('name');
+      
+      const { data: freshSkills } = await supabase
+        .from('skills')
+        .select('*')
+        .order('name');
+      
+      const { data: freshSubskills } = await supabase
+        .from('subskills')
+        .select('*')
+        .order('name');
+
+      if (!freshCategories?.length && !freshSkills?.length && !freshSubskills?.length) {
+        toast({
+          title: "Nothing to Export",
+          description: "No categories, skills, or subskills found in the database.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const csvString = await ImportExportService.exportToCSV(
+        freshCategories || [], 
+        freshSkills || [], 
+        freshSubskills || []
+      );
       
       const blob = new Blob([csvString], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
@@ -149,28 +179,33 @@ export const ActionMenu = ({
 
   return (
     <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline">
-            Actions
-            <MoreVertical className="ml-2 h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48">
-          <DropdownMenuItem onClick={() => setShowAddCategory(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Category
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={exportToCSV}>
-            <Download className="mr-2 h-4 w-4" />
-            Export CSV
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setShowImportDialog(true)}>
-            <Upload className="mr-2 h-4 w-4" />
-            Import CSV
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      {/* Primary Actions - Visible Buttons */}
+      <div className="flex items-center gap-2">
+        <Button onClick={() => setShowAddCategory(true)} size="sm">
+          <Plus className="mr-2 h-4 w-4" />
+          Add Category
+        </Button>
+        
+        {/* Import/Export Dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm">
+              Import/Export
+              <MoreVertical className="ml-2 h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem onClick={exportToCSV}>
+              <Download className="mr-2 h-4 w-4" />
+              Export CSV
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setShowImportDialog(true)}>
+              <Upload className="mr-2 h-4 w-4" />
+              Import CSV
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
       {/* Import Dialog */}
       <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>

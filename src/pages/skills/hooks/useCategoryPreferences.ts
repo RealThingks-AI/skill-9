@@ -10,21 +10,59 @@ export const useCategoryPreferences = () => {
   const { toast } = useToast();
 
   const fetchPreferences = async () => {
-    if (!profile?.user_id) return;
+    if (!profile?.user_id) {
+      console.log('[useCategoryPreferences] No profile user_id');
+      return;
+    }
+
+    console.log('[useCategoryPreferences] Fetching preferences for user:', profile.user_id, profile.full_name);
 
     try {
-      const { data, error } = await supabase
+      // Fetch stored preferences
+      const { data: prefsData, error: prefsError } = await supabase
         .from('user_category_preferences')
         .select('visible_category_ids')
         .eq('user_id', profile.user_id)
         .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned"
-        throw error;
+      if (prefsError && prefsError.code !== 'PGRST116') {
+        throw prefsError;
       }
 
-      // If no preferences exist, start with empty array (show no categories by default)
-      setVisibleCategoryIds(data?.visible_category_ids || []);
+      // Fetch categories where user has rated subskills
+      const { data: ratedCategories, error: ratedError } = await supabase
+        .from('employee_ratings')
+        .select('skill_id, skills!inner(category_id)')
+        .eq('user_id', profile.user_id);
+
+      if (ratedError) throw ratedError;
+
+      // Extract unique category IDs from rated subskills
+      const ratedCategoryIds = [...new Set(
+        ratedCategories?.map(r => (r.skills as any)?.category_id).filter(Boolean) || []
+      )] as string[];
+
+      console.log('[useCategoryPreferences] Rated category IDs:', ratedCategoryIds);
+
+      // Merge stored preferences with categories that have ratings
+      const storedCategoryIds = prefsData?.visible_category_ids || [];
+      const mergedCategoryIds = [...new Set([...storedCategoryIds, ...ratedCategoryIds])];
+
+      console.log('[useCategoryPreferences] Merged category IDs:', mergedCategoryIds);
+
+      // If there are new categories from ratings, update preferences
+      if (mergedCategoryIds.length > storedCategoryIds.length) {
+        await supabase
+          .from('user_category_preferences')
+          .upsert({
+            user_id: profile.user_id,
+            visible_category_ids: mergedCategoryIds
+          }, {
+            onConflict: 'user_id'
+          });
+      }
+
+      setVisibleCategoryIds(mergedCategoryIds);
     } catch (error) {
       console.error('Error fetching category preferences:', error);
       toast({
@@ -87,8 +125,9 @@ export const useCategoryPreferences = () => {
   };
 
   useEffect(() => {
+    console.log('[useCategoryPreferences] Profile changed:', profile?.user_id, profile?.full_name);
     fetchPreferences();
-  }, [profile]);
+  }, [profile?.user_id]); // Only depend on user_id to trigger when impersonation changes
 
   return {
     visibleCategoryIds,

@@ -142,8 +142,8 @@ export function useAuth(): UseAuthReturn {
     loading,
     isAuthenticated: !!user,
     isAdmin: profile?.role === 'admin',
-    isManagerOrAbove: ['admin', 'manager'].includes(profile?.role || ''),
-    isTechLeadOrAbove: ['admin', 'manager', 'tech_lead'].includes(profile?.role || ''),
+    isManagerOrAbove: ['admin', 'management'].includes(profile?.role || ''),
+    isTechLeadOrAbove: ['admin', 'management', 'tech_lead'].includes(profile?.role || ''),
     signOut,
     signIn,
     refreshProfile

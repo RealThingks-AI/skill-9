@@ -45,19 +45,20 @@ const Reports = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Reports & Analytics</h1>
-          <p className="text-muted-foreground">
-            Generate insights and track performance metrics from real employee data
-          </p>
+    <div className="h-full flex flex-col">
+      <div className="flex-shrink-0 flex items-center justify-between h-16 px-6 border-b border-sidebar-border">
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Reports & Analytics</h1>
         </div>
-        <Button>
-          <Download className="mr-2 h-4 w-4" />
-          Export Data
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="sm">
+            <Download className="mr-2 h-4 w-4" />
+            Export Data
+          </Button>
+        </div>
       </div>
+
+      <div className="flex-1 overflow-auto p-6">
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-5">
@@ -219,7 +220,8 @@ const Reports = () => {
             </CardHeader>
           </Card>
         </TabsContent>
-      </Tabs>
+        </Tabs>
+      </div>
     </div>
   );
 };

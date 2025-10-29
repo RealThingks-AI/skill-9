@@ -19,7 +19,6 @@ export interface Project {
 
 export const useProjects = () => {
   const { profile } = useAuth();
-  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [projects, setProjects] = useState<Project[]>([]);
 
@@ -29,63 +28,56 @@ export const useProjects = () => {
     try {
       setLoading(true);
       
-      // Fetch projects with assignments and profiles
       const { data: projectsData, error } = await supabase
         .from('projects')
-        .select(`
-          *,
-          project_assignments (
-            user_id,
-            profiles (
-              full_name
-            )
-          )
-        `);
+        .select('*')
+        .order('created_at', { ascending: false });
       
       if (error) throw error;
       
-      // Transform data to match interface
-      const transformedProjects: Project[] = (projectsData || []).map(project => {
-        const teamMembers = project.project_assignments?.map(
-          (assignment: any) => assignment.profiles?.full_name || 'Unknown'
-        ) || [];
-        
-        // Calculate progress based on project status
-        let progress = 0;
-        switch (project.status) {
-          case 'planning':
-            progress = 10;
-            break;
-          case 'in_progress':
-            progress = 50;
-            break;
-          case 'completed':
-            progress = 100;
-            break;
-          case 'on_hold':
-            progress = 25;
-            break;
-          default:
-            progress = 0;
-        }
-        
-        return {
-          id: project.id,
-          name: project.name,
-          description: project.description || '',
-          status: project.status,
-          priority: 'Medium' as const, // Default priority since not in schema
-          progress,
-          team: teamMembers,
-          skills: [], // Would need separate skills-projects mapping
-          startDate: project.start_date || '',
-          endDate: project.end_date || '',
-          tech_lead_id: project.tech_lead_id,
-          created_by: project.created_by
-        };
-      });
+      // Fetch additional data for each project
+      const projectsWithDetails = await Promise.all(
+        (projectsData || []).map(async (project) => {
+          // Fetch team assignments
+          const { data: assignments } = await supabase
+            .from('project_assignments')
+            .select('user_id')
+            .eq('project_id', project.id);
+
+          const team = assignments?.map(a => a.user_id) || [];
+
+          // Fetch required skills
+          const { data: requiredSkills } = await supabase
+            .from('project_required_skills')
+            .select('skill_id')
+            .eq('project_id', project.id);
+
+          const skills = requiredSkills?.map(s => s.skill_id) || [];
+
+          // Calculate progress based on status
+          const progress = 
+            project.status === 'completed' ? 100 :
+            project.status === 'active' ? 50 :
+            project.status === 'awaiting_approval' ? 10 : 25;
+          
+          return {
+            id: project.id,
+            name: project.name,
+            description: project.description || '',
+            status: project.status,
+            priority: 'Medium' as const,
+            progress,
+            team,
+            skills,
+            startDate: project.start_date || '',
+            endDate: project.end_date || '',
+            tech_lead_id: project.tech_lead_id,
+            created_by: project.created_by
+          };
+        })
+      );
       
-      setProjects(transformedProjects);
+      setProjects(projectsWithDetails);
     } catch (error) {
       console.error('Error fetching projects:', error);
       setProjects([]);
@@ -95,18 +87,13 @@ export const useProjects = () => {
   };
 
   useEffect(() => {
-    fetchProjects();
+    if (profile) {
+      fetchProjects();
+    }
   }, [profile]);
 
-  const filteredProjects = projects.filter(project =>
-    project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    project.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   return {
-    searchTerm,
-    setSearchTerm,
-    projects: filteredProjects,
+    projects,
     loading,
     refreshProjects: fetchProjects
   };

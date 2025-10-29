@@ -158,4 +158,14 @@ export class SkillsService {
 
     if (error) throw error;
   }
+
+  static async deleteAllData(): Promise<void> {
+    // Get all categories
+    const categories = await this.getCategories();
+    
+    // Delete each category (cascades to skills and subskills)
+    for (const category of categories) {
+      await this.deleteCategory(category.id);
+    }
+  }
 }

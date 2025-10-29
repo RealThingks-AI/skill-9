@@ -14,6 +14,7 @@ import { Key } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { userService, type UserProfile } from "../services/userService";
 import { VALIDATION_RULES } from "@/utils/constants";
+import { logPasswordChange } from "@/services/activityLogger";
 interface PasswordResetDialogProps {
   user: UserProfile | null;
   open: boolean;
@@ -56,6 +57,9 @@ export function PasswordResetDialog({ user, open, onOpenChange, onSuccess }: Pas
     try {
       setLoading(true);
       await userService.resetPassword(user.user_id, password);
+
+      // Log password change by admin
+      await logPasswordChange(user.user_id, user.full_name, 'Admin');
 
       toast({
         title: "Success",

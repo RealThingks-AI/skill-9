@@ -2,7 +2,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'Employee' | 'Tech Lead' | 'Manager' | 'Admin';
+  role: 'Employee' | 'Tech Lead' | 'Management' | 'Admin';
   status: 'Active' | 'Inactive' | 'Pending';
   lastLogin?: string;
   createdAt: string;
@@ -31,5 +31,5 @@ export interface AdminStats {
   systemHealth: 'Good' | 'Warning' | 'Critical';
 }
 
-export type UserRole = 'Employee' | 'Tech Lead' | 'Manager' | 'Admin';
+export type UserRole = 'Employee' | 'Tech Lead' | 'Management' | 'Admin';
 export type UserStatus = 'Active' | 'Inactive' | 'Pending';

@@ -50,51 +50,7 @@ export const canUpgradeRating = (
   status: string,
   nextUpgradeDate?: string
 ): { canUpgrade: boolean; reason?: string; daysLeft?: number } => {
-  // If no current rating, any rating is allowed
-  if (!currentRating) {
-    return { canUpgrade: true };
-  }
-
-  // If rejected, allow any rating (resubmission)
-  if (status === 'rejected') {
-    return { canUpgrade: true };
-  }
-
-  // If rating is not approved yet (draft/submitted), allow any rating
-  if (status !== 'approved') {
-    return { canUpgrade: true };
-  }
-
-  // Restrictions apply only to approved ratings:
-  
-  // If current rating is high and approved, no updates allowed
-  if (currentRating === 'high' && status === 'approved') {
-    return { canUpgrade: false, reason: 'High rating is permanently locked' };
-  }
-
-  const currentValue = getRatingValue(currentRating);
-  const targetValue = getRatingValue(targetRating);
-
-  // For approved ratings, only allow upward progression (no downgrades)
-  if (targetValue <= currentValue) {
-    return { canUpgrade: false, reason: 'You can only upgrade to higher ratings' };
-  }
-
-  // Check 30-day cool-down period for approved ratings
-  if (status === 'approved' && nextUpgradeDate) {
-    const upgradeDate = new Date(nextUpgradeDate);
-    const today = new Date();
-    
-    if (today < upgradeDate) {
-      const daysLeft = Math.ceil((upgradeDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-      return { 
-        canUpgrade: false, 
-        reason: `You can upgrade this subskill after ${daysLeft} days`,
-        daysLeft 
-      };
-    }
-  }
-
+  // Users can always change their ratings at any point
   return { canUpgrade: true };
 };
 
@@ -103,38 +59,8 @@ export const getAvailableRatingOptions = (
   status: string,
   nextUpgradeDate?: string
 ): ('high' | 'medium' | 'low')[] => {
-  const allRatings: ('high' | 'medium' | 'low')[] = ['low', 'medium', 'high'];
-  
-  // If no current rating or rejected status, all options available
-  if (!currentRating || status === 'rejected') {
-    return allRatings;
-  }
-
-  // If rating is not approved yet (draft/submitted), all options available
-  if (status !== 'approved') {
-    return allRatings;
-  }
-
-  // Restrictions apply only to approved ratings:
-
-  // If high and approved, no options available (locked)
-  if (currentRating === 'high' && status === 'approved') {
-    return [];
-  }
-
-  // Check cool-down period for approved ratings
-  if (status === 'approved' && nextUpgradeDate) {
-    const upgradeDate = new Date(nextUpgradeDate);
-    const today = new Date();
-    
-    if (today < upgradeDate) {
-      return []; // No upgrades during cool-down
-    }
-  }
-
-  // For approved ratings, return only higher ratings (no downgrades)
-  const currentValue = getRatingValue(currentRating);
-  return allRatings.filter(rating => getRatingValue(rating) > currentValue);
+  // All rating options are always available
+  return ['low', 'medium', 'high'];
 };
 
 export const calculateCategoryProgress = (

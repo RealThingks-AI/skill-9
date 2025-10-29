@@ -87,7 +87,7 @@ serve(async (req) => {
 
     console.log('User authenticated:', user.id);
 
-    // Check if user has admin or manager role using admin client
+    // Check if user has admin or management role using admin client
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('role')
@@ -104,12 +104,12 @@ serve(async (req) => {
       });
     }
 
-    // Allow admin and manager roles to manage users
-    const allowedRoles = ['admin', 'manager'];
+    // Allow admin and management roles to manage users
+    const allowedRoles = ['admin', 'management'];
     if (!profile || !allowedRoles.includes(profile.role)) {
       console.error('Insufficient permissions. User role:', profile?.role);
       return new Response(JSON.stringify({ 
-        error: 'Insufficient permissions. Admin or Manager access required',
+        error: 'Insufficient permissions. Admin or Management access required',
         userRole: profile?.role 
       }), {
         status: 403,

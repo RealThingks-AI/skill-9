@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 
 interface RatingPillProps {
   rating: 'high' | 'medium' | 'low' | null;
-  onRatingChange: (rating: 'high' | 'medium' | 'low') => void;
+  onRatingChange: (rating: 'high' | 'medium' | 'low' | null) => void;
   disabled?: boolean;
   availableRatings?: ('high' | 'medium' | 'low')[];
   className?: string;
@@ -10,9 +10,9 @@ interface RatingPillProps {
 
 export const RatingPill = ({ rating, onRatingChange, disabled = false, availableRatings, className }: RatingPillProps) => {
   const ratingOptions = [
-    { value: 'high' as const, label: 'High', color: 'bg-success text-success-foreground border-success' },
-    { value: 'medium' as const, label: 'Medium', color: 'bg-warning text-warning-foreground border-warning' },
-    { value: 'low' as const, label: 'Low', color: 'bg-destructive text-destructive-foreground border-destructive' }
+    { value: 'high' as const, label: 'High', color: 'bg-emerald-500 text-white border-emerald-500' },
+    { value: 'medium' as const, label: 'Medium', color: 'bg-blue-500 text-white border-blue-500' },
+    { value: 'low' as const, label: 'Low', color: 'bg-amber-500 text-white border-amber-500' }
   ];
 
   return (
@@ -25,7 +25,12 @@ export const RatingPill = ({ rating, onRatingChange, disabled = false, available
         return (
           <button
             key={option.value}
-            onClick={() => isClickable ? onRatingChange(option.value) : undefined}
+            onClick={() => {
+              if (isClickable) {
+                // If clicking the same rating, deselect it (set to null)
+                onRatingChange(isCurrentRating ? null : option.value);
+              }
+            }}
             disabled={disabled || !isAvailable}
             className={cn(
               "px-3 py-1 rounded-full text-xs font-medium transition-all duration-200",

@@ -30,28 +30,18 @@ export const authHelpers = {
       return null;
     }
 
-    // If no profile exists, create one
+    // If no profile exists, sign out the user
     if (!profile) {
-      console.log('No profile found for user, creating one...');
-      const newProfile = {
-        user_id: user.id,
-        email: user.email || '',
-        full_name: user.user_metadata?.full_name || user.email || 'User',
-        role: 'employee' as const
-      };
+      console.error('No profile found for user - unauthorized access');
+      await this.signOut();
+      return null;
+    }
 
-      const { data: createdProfile, error: createError } = await supabase
-        .from('profiles')
-        .insert(newProfile)
-        .select()
-        .single();
-
-      if (createError) {
-        console.error('Error creating user profile:', createError);
-        return null;
-      }
-
-      return createdProfile;
+    // If profile exists but status is not active, sign out the user
+    if (profile.status !== 'active') {
+      console.error('User account is inactive');
+      await this.signOut();
+      return null;
     }
 
     return profile;
@@ -81,17 +71,17 @@ export const authHelpers = {
   },
 
   /**
-   * Check if user is manager or above
+   * Check if user is management or above
    */
   async isManagerOrAbove(): Promise<boolean> {
-    return this.hasAnyRole([USER_ROLES.ADMIN, USER_ROLES.MANAGER]);
+    return this.hasAnyRole([USER_ROLES.ADMIN, USER_ROLES.MANAGEMENT]);
   },
 
   /**
    * Check if user is tech lead or above
    */
   async isTechLeadOrAbove(): Promise<boolean> {
-    return this.hasAnyRole([USER_ROLES.ADMIN, USER_ROLES.MANAGER, USER_ROLES.TECH_LEAD]);
+    return this.hasAnyRole([USER_ROLES.ADMIN, USER_ROLES.MANAGEMENT, USER_ROLES.TECH_LEAD]);
   },
 
   /**
@@ -123,7 +113,7 @@ export const roleHierarchy = {
     const levels = {
       [USER_ROLES.EMPLOYEE]: 1,
       [USER_ROLES.TECH_LEAD]: 2,
-      [USER_ROLES.MANAGER]: 3,
+      [USER_ROLES.MANAGEMENT]: 3,
       [USER_ROLES.ADMIN]: 4
     };
     return levels[role] || 0;

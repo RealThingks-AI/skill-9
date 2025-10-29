@@ -17,8 +17,8 @@ interface SkillCategoryCardProps {
   isManagerOrAbove: boolean;
   isExpanded: boolean;
   onToggle: () => void;
-  onSkillRate: (skillId: string, rating: 'high' | 'medium' | 'low') => void;
-  onSubskillRate: (subskillId: string, rating: 'high' | 'medium' | 'low') => void;
+  onSkillRate: (skillId: string, rating: 'high' | 'medium' | 'low' | null) => void;
+  onSubskillRate: (subskillId: string, rating: 'high' | 'medium' | 'low' | null) => void;
   onRefresh: () => void;
   onEditCategory?: () => void;
   onDeleteCategory?: () => void;

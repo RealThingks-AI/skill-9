@@ -3,7 +3,7 @@
 // User Roles
 export const USER_ROLES = {
   ADMIN: 'admin',
-  MANAGER: 'manager', 
+  MANAGEMENT: 'management', 
   TECH_LEAD: 'tech_lead',
   EMPLOYEE: 'employee'
 } as const;
@@ -59,7 +59,7 @@ export type NotificationType = typeof NOTIFICATION_TYPES[keyof typeof NOTIFICATI
 // Role Display Names
 export const ROLE_LABELS: Record<UserRole, string> = {
   [USER_ROLES.ADMIN]: 'Administrator',
-  [USER_ROLES.MANAGER]: 'Manager',
+  [USER_ROLES.MANAGEMENT]: 'Management',
   [USER_ROLES.TECH_LEAD]: 'Tech Lead',
   [USER_ROLES.EMPLOYEE]: 'Employee'
 };

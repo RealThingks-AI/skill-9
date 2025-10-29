@@ -49,34 +49,52 @@ export const useApprovals = () => {
     
     setLoading(true);
     try {
-      // Fetch ALL employee ratings that need approval
-      const { data: ratings, error } = await supabase
-        .from('employee_ratings')
-        .select(`
-          *,
-          skills (
-            id,
-            name,
-            category_id,
-            created_at,
-            skill_categories (name)
-          ),
-          subskills (
-            id,
-            name,
-            skill_id,
-            created_at,
-            updated_at
-          )
-        `)
-        .eq('status', 'submitted');
+      // Fetch ALL employee ratings in batches (Supabase default max is 1000)
+      let allRatings: any[] = [];
+      let hasMore = true;
+      let offset = 0;
+      const batchSize = 1000;
 
-      if (error) {
-        console.error('Error fetching ratings:', error);
-        throw error;
+      while (hasMore) {
+        const { data: ratings, error, count } = await supabase
+          .from('employee_ratings')
+          .select(`
+            *,
+            skills (
+              id,
+              name,
+              category_id,
+              created_at,
+              skill_categories (name)
+            ),
+            subskills (
+              id,
+              name,
+              skill_id,
+              created_at,
+              updated_at
+            )
+          `, { count: 'exact' })
+          .eq('status', 'submitted')
+          .order('created_at', { ascending: false })
+          .range(offset, offset + batchSize - 1);
+
+        if (error) {
+          console.error('Error fetching ratings:', error);
+          throw error;
+        }
+
+        if (ratings && ratings.length > 0) {
+          allRatings = [...allRatings, ...ratings];
+          offset += batchSize;
+          hasMore = ratings.length === batchSize;
+          console.log(`📊 Fetched ${ratings.length} ratings (total so far: ${allRatings.length} of ${count})`);
+        } else {
+          hasMore = false;
+        }
       }
 
-      console.log('📊 Fetched ratings:', ratings?.length || 0, 'ratings');
+      console.log('✅ Total ratings fetched:', allRatings.length);
 
       // Get ALL profiles to map user info (including tech leads for self-ratings)
       const { data: profiles, error: profilesError } = await supabase
@@ -93,7 +111,7 @@ export const useApprovals = () => {
       // 1. Employee ratings -> All Tech Leads can approve
       // 2. Tech Lead self-ratings -> Other Tech Leads can approve (exclude self)
       const currentUserProfile = profiles?.find(p => p.user_id === user.id);
-      const filteredRatings = (ratings || []).filter(rating => {
+      const filteredRatings = (allRatings || []).filter(rating => {
         const submitterProfile = profiles?.find(p => p.user_id === rating.user_id);
         const submitterRole = submitterProfile?.role || 'employee';
         
@@ -111,7 +129,7 @@ export const useApprovals = () => {
       });
 
       console.log('🔍 Current user:', currentUserProfile?.full_name, 'Role:', currentUserProfile?.role);
-      console.log('📋 Filtered ratings:', filteredRatings.length, 'out of', ratings?.length || 0);
+      console.log('📋 Filtered ratings:', filteredRatings.length, 'out of', allRatings?.length || 0);
 
       const approvals: ApprovalRequest[] = [];
 
@@ -142,21 +160,40 @@ export const useApprovals = () => {
 
       setPendingApprovals(approvals);
 
-      // Group approvals by user (including tech leads)
-      const grouped = profiles?.map(profile => {
-        const userRatings = approvals.filter(approval => 
-          approval.requester === profile.full_name
-        );
+      // Group approvals by user_id directly from ratings
+      const groupMap = new Map<string, GroupedApproval>();
+      
+      for (const rating of filteredRatings) {
+        const employeeProfile = profiles?.find(p => p.user_id === rating.user_id);
         
-        return {
-          employeeId: profile.user_id,
-          employeeName: profile.full_name,
-          email: profile.email,
-          pendingCount: userRatings.length,
-          submitDate: userRatings.length > 0 ? userRatings[0].submitDate : '',
-          ratings: userRatings
-        };
-      }).filter(group => group.pendingCount > 0) || [];
+        if (!employeeProfile) {
+          console.warn('⚠️ No profile found for user_id:', rating.user_id);
+          continue;
+        }
+        
+        // Find the corresponding approval request
+        const approval = approvals.find(a => a.id === rating.id);
+        if (!approval) continue;
+        
+        if (!groupMap.has(employeeProfile.user_id)) {
+          groupMap.set(employeeProfile.user_id, {
+            employeeId: employeeProfile.user_id,
+            employeeName: employeeProfile.full_name,
+            email: employeeProfile.email,
+            pendingCount: 0,
+            submitDate: approval.submitDate,
+            ratings: []
+          });
+        }
+        
+        const group = groupMap.get(employeeProfile.user_id)!;
+        group.ratings.push(approval);
+        group.pendingCount = group.ratings.length;
+      }
+      
+      const grouped = Array.from(groupMap.values()).sort((a, b) => 
+        a.employeeName.localeCompare(b.employeeName)
+      );
 
       console.log('📊 Grouped approvals:', grouped.length, 'groups with pending ratings');
 
@@ -249,7 +286,7 @@ export const useApprovals = () => {
         return;
       }
 
-      const { error } = await supabase
+      const { data: updatedRows, error } = await supabase
         .from('employee_ratings')
         .update({
           status: 'approved',
@@ -257,11 +294,67 @@ export const useApprovals = () => {
           approved_at: new Date().toISOString(),
           approver_comment: comment || null
         })
-        .eq('id', approvalId);
+        .eq('id', approvalId)
+        .select('*');
 
       if (error) {
         console.error('Supabase error:', error);
-        throw error;
+        toast.error('Failed to approve rating');
+        return;
+      }
+
+      const updated = (updatedRows && updatedRows[0]) as any;
+      
+      // Optimistically update local state after successful DB update
+      setPendingApprovals(prev => prev.filter(a => a.id !== approvalId));
+      
+      // Update grouped approvals
+      setGroupedApprovals(prev => {
+        return prev.map(group => {
+          const updatedRatings = group.ratings.filter(r => r.id !== approvalId);
+          return {
+            ...group,
+            ratings: updatedRatings,
+            pendingCount: updatedRatings.length
+          };
+        }).filter(group => group.pendingCount > 0);
+      });
+
+      // Add to recent actions
+      const approvedRating = pendingApprovals.find(a => a.id === approvalId);
+      if (approvedRating) {
+        const newAction: RecentAction = {
+          id: approvalId,
+          action: 'Approved',
+          title: approvedRating.title,
+          approver: approvedRating.requester,
+          date: new Date().toLocaleDateString()
+        };
+        setRecentActions(prev => [newAction, ...prev]);
+      }
+
+      // Ensure at least one history record exists for approved subskill ratings
+      if (updated?.subskill_id) {
+        const { count } = await supabase
+          .from('subskill_rating_history')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', updated.user_id)
+          .eq('subskill_id', updated.subskill_id);
+
+        if (!count || count === 0) {
+          await supabase.from('subskill_rating_history').insert({
+            user_id: updated.user_id,
+            skill_id: updated.skill_id,
+            subskill_id: updated.subskill_id,
+            rating: updated.rating,
+            self_comment: updated.self_comment,
+            approver_comment: updated.approver_comment,
+            approved_by: updated.approved_by,
+            approved_at: updated.approved_at,
+            status: updated.status,
+            archived_at: new Date().toISOString(),
+          });
+        }
       }
 
       // Log the approval action
@@ -276,8 +369,6 @@ export const useApprovals = () => {
         });
 
       toast.success('Rating approved successfully');
-      fetchPendingApprovals();
-      fetchRecentActions();
     } catch (error) {
       console.error('Error approving rating:', error);
       toast.error('Failed to approve rating');
@@ -296,7 +387,7 @@ export const useApprovals = () => {
         return;
       }
 
-      const { error } = await supabase
+      const { data: updatedRows, error } = await supabase
         .from('employee_ratings')
         .update({
           status: 'rejected',
@@ -304,11 +395,67 @@ export const useApprovals = () => {
           approved_at: new Date().toISOString(),
           approver_comment: comment
         })
-        .eq('id', approvalId);
+        .eq('id', approvalId)
+        .select('*');
 
       if (error) {
         console.error('Supabase error:', error);
-        throw error;
+        toast.error('Failed to reject rating');
+        return;
+      }
+
+      const updated = (updatedRows && updatedRows[0]) as any;
+      
+      // Update local state after successful DB update
+      setPendingApprovals(prev => prev.filter(a => a.id !== approvalId));
+      
+      // Update grouped approvals
+      setGroupedApprovals(prev => {
+        return prev.map(group => {
+          const updatedRatings = group.ratings.filter(r => r.id !== approvalId);
+          return {
+            ...group,
+            ratings: updatedRatings,
+            pendingCount: updatedRatings.length
+          };
+        }).filter(group => group.pendingCount > 0);
+      });
+
+      // Add to recent actions
+      const rejectedRating = pendingApprovals.find(a => a.id === approvalId);
+      if (rejectedRating) {
+        const newAction: RecentAction = {
+          id: approvalId,
+          action: 'Rejected',
+          title: rejectedRating.title,
+          approver: rejectedRating.requester,
+          date: new Date().toLocaleDateString()
+        };
+        setRecentActions(prev => [newAction, ...prev]);
+      }
+
+      // Ensure at least one history record exists for rejected subskill ratings
+      if (updated?.subskill_id) {
+        const { count } = await supabase
+          .from('subskill_rating_history')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', updated.user_id)
+          .eq('subskill_id', updated.subskill_id);
+
+        if (!count || count === 0) {
+          await supabase.from('subskill_rating_history').insert({
+            user_id: updated.user_id,
+            skill_id: updated.skill_id,
+            subskill_id: updated.subskill_id,
+            rating: updated.rating,
+            self_comment: updated.self_comment,
+            approver_comment: updated.approver_comment,
+            approved_by: updated.approved_by,
+            approved_at: updated.approved_at,
+            status: updated.status,
+            archived_at: new Date().toISOString(),
+          });
+        }
       }
 
       // Log the rejection action
@@ -323,8 +470,6 @@ export const useApprovals = () => {
         });
 
       toast.success('Rating rejected');
-      fetchPendingApprovals();
-      fetchRecentActions();
     } catch (error) {
       console.error('Error rejecting rating:', error);
       toast.error('Failed to reject rating');

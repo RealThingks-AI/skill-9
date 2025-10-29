@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 export default function AuthPage() {
   const {
     user,
@@ -26,7 +27,37 @@ export default function AuthPage() {
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
     try {
-      await signIn(email, password);
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      if (signInError) {
+        throw signInError;
+      }
+
+      // Check if user has a profile
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('status')
+        .eq('email', email)
+        .maybeSingle();
+
+      if (profileError) {
+        await supabase.auth.signOut();
+        throw new Error("Invalid credentials");
+      }
+
+      if (!profile) {
+        await supabase.auth.signOut();
+        throw new Error("Invalid credentials");
+      }
+
+      if (profile.status !== 'active') {
+        await supabase.auth.signOut();
+        throw new Error("Your account has been disabled. Please contact your administrator for more details.");
+      }
+
       toast({
         title: "Welcome back!",
         description: "You have been signed in successfully."
@@ -34,7 +65,7 @@ export default function AuthPage() {
     } catch (error: any) {
       toast({
         title: "Sign In Failed",
-        description: error.message || "Failed to sign in",
+        description: error.message || "Invalid credentials",
         variant: "destructive"
       });
     }

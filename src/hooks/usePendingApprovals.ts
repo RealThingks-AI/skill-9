@@ -8,7 +8,7 @@ export const usePendingApprovals = () => {
   const { profile } = useAuth();
 
   const fetchPendingCount = async () => {
-    if (!profile || !['tech_lead', 'manager', 'admin'].includes(profile.role)) {
+    if (!profile || !['tech_lead', 'management', 'admin'].includes(profile.role)) {
       setPendingCount(0);
       setLoading(false);
       return;
@@ -84,7 +84,7 @@ export const usePendingApprovals = () => {
 
   // Set up real-time subscription for employee_ratings changes
   useEffect(() => {
-    if (!profile || !['tech_lead', 'manager', 'admin'].includes(profile.role)) {
+    if (!profile || !['tech_lead', 'management', 'admin'].includes(profile.role)) {
       return;
     }
 

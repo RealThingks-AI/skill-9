@@ -467,4 +467,82 @@ export class ImportExportService {
 
     return { success, errors };
   }
+
+  static async replaceAllFromCSV(
+    csvData: ImportRow[],
+    currentCategories: SkillCategory[],
+    currentSkills: Skill[],
+    currentSubskills: Subskill[]
+  ): Promise<{ success: number; errors: number; backupFile: string }> {
+    console.log('🔄 Starting REPLACE ALL process');
+    
+    // Step 1: Create backup with timestamp
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    const backupFilename = `skills_backup_${timestamp}.csv`;
+    
+    await this.logOperation({
+      operation_type: 'export',
+      log_level: 'info',
+      entity_type: 'category',
+      entity_name: 'backup_before_replace',
+      action: 'linked',
+      details: { filename: backupFilename }
+    });
+
+    const csvString = await this.exportToCSV(currentCategories, currentSkills, currentSubskills);
+    const blob = new Blob([csvString], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = backupFilename;
+    a.click();
+    window.URL.revokeObjectURL(url);
+
+    console.log('✅ Backup created:', backupFilename);
+
+    // Step 2: Delete all existing data
+    await this.logOperation({
+      operation_type: 'import',
+      log_level: 'info',
+      entity_type: 'category',
+      entity_name: 'delete_all_started',
+      action: 'linked',
+      details: { 
+        categories: currentCategories.length,
+        skills: currentSkills.length,
+        subskills: currentSubskills.length
+      }
+    });
+
+    // Import SkillsService dynamically to avoid circular dependency
+    const { SkillsService } = await import('./skills.service');
+    await SkillsService.deleteAllData();
+    
+    console.log('✅ All existing data deleted');
+
+    // Step 3: Import new data (with empty arrays since everything is deleted)
+    await this.logOperation({
+      operation_type: 'import',
+      log_level: 'info',
+      entity_type: 'category',
+      entity_name: 'import_new_data_started',
+      action: 'linked',
+      details: { rows_to_import: csvData.length }
+    });
+
+    const result = await this.importFromCSV(csvData, [], [], []);
+    
+    console.log('✅ Replace all completed:', result);
+
+    await this.logOperation({
+      operation_type: 'import',
+      log_level: 'success',
+      entity_type: 'category',
+      entity_name: 'replace_all_completed',
+      action: 'linked',
+      details: { ...result, backup_file: backupFilename }
+    });
+
+    return { ...result, backupFile: backupFilename };
+  }
 }

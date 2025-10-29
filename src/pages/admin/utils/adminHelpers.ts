@@ -2,7 +2,7 @@ export const getRoleColor = (role: string): string => {
   switch (role) {
     case 'Admin':
       return 'bg-red-100 text-red-800';
-    case 'Manager':
+    case 'Management':
       return 'bg-purple-100 text-purple-800';
     case 'Tech Lead':
       return 'bg-blue-100 text-blue-800';

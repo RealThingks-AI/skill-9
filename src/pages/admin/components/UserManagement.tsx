@@ -52,7 +52,7 @@ export function UserManagement({ onBack }: UserManagementProps) {
       id: '2', 
       name: 'Jane Smith',
       email: 'jane.smith@company.com',
-      role: 'Manager',
+      role: 'Management',
       status: 'Active',
       lastLogin: '1 day ago',
       created: 'Jan 12, 2024'
@@ -72,7 +72,7 @@ export function UserManagement({ onBack }: UserManagementProps) {
     switch (role) {
       case 'Admin':
         return 'bg-red-100 text-red-800';
-      case 'Manager':
+      case 'Management':
         return 'bg-purple-100 text-purple-800';
       default:
         return 'bg-green-100 text-green-800';

@@ -1,38 +1,74 @@
 import { format, formatDistanceToNow, parseISO, isValid } from 'date-fns';
+import { toZonedTime } from 'date-fns-tz';
+
+// IST timezone constant
+const IST_TIMEZONE = 'Asia/Kolkata';
+
+/**
+ * Convert any date to IST timezone
+ */
+const toIST = (date: string | Date): Date => {
+  const dateObj = typeof date === 'string' ? parseISO(date) : date;
+  return toZonedTime(dateObj, IST_TIMEZONE);
+};
 
 // Date formatting utilities
 export const dateFormatters = {
   /**
-   * Format date to readable string (e.g., "Jan 15, 2024")
+   * Format date to readable string in IST (e.g., "Jan 15, 2024")
    */
   formatDate(date: string | Date): string {
     try {
-      const dateObj = typeof date === 'string' ? parseISO(date) : date;
-      return isValid(dateObj) ? format(dateObj, 'MMM dd, yyyy') : 'Invalid date';
+      const istDate = toIST(date);
+      return isValid(istDate) ? format(istDate, 'MMM dd, yyyy') : 'Invalid date';
     } catch {
       return 'Invalid date';
     }
   },
 
   /**
-   * Format date with time (e.g., "Jan 15, 2024 at 2:30 PM")
+   * Format date with time in IST (e.g., "Jan 15, 2024 at 2:30 PM IST")
    */
   formatDateTime(date: string | Date): string {
     try {
-      const dateObj = typeof date === 'string' ? parseISO(date) : date;
-      return isValid(dateObj) ? format(dateObj, 'MMM dd, yyyy \'at\' h:mm a') : 'Invalid date';
+      const istDate = toIST(date);
+      return isValid(istDate) ? format(istDate, 'MMM dd, yyyy \'at\' h:mm a') + ' IST' : 'Invalid date';
     } catch {
       return 'Invalid date';
     }
   },
 
   /**
-   * Format relative time (e.g., "2 hours ago")
+   * Format date with time in compact format for tables (e.g., "28/10/2025 16:25")
+   */
+  formatDateTimeCompact(date: string | Date): string {
+    try {
+      const istDate = toIST(date);
+      return isValid(istDate) ? format(istDate, 'dd/MM/yyyy HH:mm') : 'Invalid date';
+    } catch {
+      return 'Invalid date';
+    }
+  },
+
+  /**
+   * Format date with time with seconds (e.g., "28/10/2025 16:25:34")
+   */
+  formatDateTimeWithSeconds(date: string | Date): string {
+    try {
+      const istDate = toIST(date);
+      return isValid(istDate) ? format(istDate, 'dd/MM/yyyy HH:mm:ss') : 'Invalid date';
+    } catch {
+      return 'Invalid date';
+    }
+  },
+
+  /**
+   * Format relative time in IST (e.g., "2 hours ago")
    */
   formatRelativeTime(date: string | Date): string {
     try {
-      const dateObj = typeof date === 'string' ? parseISO(date) : date;
-      return isValid(dateObj) ? formatDistanceToNow(dateObj, { addSuffix: true }) : 'Invalid date';
+      const istDate = toIST(date);
+      return isValid(istDate) ? formatDistanceToNow(istDate, { addSuffix: true }) : 'Invalid date';
     } catch {
       return 'Invalid date';
     }

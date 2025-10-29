@@ -10,10 +10,82 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.4"
+    PostgrestVersion: "13.0.5"
   }
   public: {
     Tables: {
+      activity_log: {
+        Row: {
+          action: string
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          id: string
+          metadata: Json | null
+          new_value: Json | null
+          old_value: Json | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          metadata?: Json | null
+          new_value?: Json | null
+          old_value?: Json | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          metadata?: Json | null
+          new_value?: Json | null
+          old_value?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      activity_logs: {
+        Row: {
+          action_type: string
+          created_at: string
+          description: string
+          id: string
+          metadata: Json | null
+          module: string
+          record_reference: string | null
+          user_id: string
+          username: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          description: string
+          id?: string
+          metadata?: Json | null
+          module: string
+          record_reference?: string | null
+          user_id: string
+          username: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          description?: string
+          id?: string
+          metadata?: Json | null
+          module?: string
+          record_reference?: string | null
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
+      }
       approval_audit_logs: {
         Row: {
           action: string
@@ -145,6 +217,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      backup_history: {
+        Row: {
+          backup_name: string
+          backup_type: string
+          created_at: string
+          created_by: string
+          file_size: number
+          id: string
+          metadata: Json | null
+          record_count: number
+          storage_path: string | null
+          table_count: number
+        }
+        Insert: {
+          backup_name: string
+          backup_type: string
+          created_at?: string
+          created_by: string
+          file_size: number
+          id?: string
+          metadata?: Json | null
+          record_count: number
+          storage_path?: string | null
+          table_count: number
+        }
+        Update: {
+          backup_name?: string
+          backup_type?: string
+          created_at?: string
+          created_by?: string
+          file_size?: number
+          id?: string
+          metadata?: Json | null
+          record_count?: number
+          storage_path?: string | null
+          table_count?: number
+        }
+        Relationships: []
       }
       employee_ratings: {
         Row: {
@@ -341,6 +452,95 @@ export type Database = {
         }
         Relationships: []
       }
+      page_access: {
+        Row: {
+          has_access: boolean
+          id: string
+          page_id: string
+          role_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          has_access?: boolean
+          id?: string
+          page_id: string
+          role_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          has_access?: boolean
+          id?: string
+          page_id?: string
+          role_name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_access_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pages: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          route: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          route: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          route?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      password_change_logs: {
+        Row: {
+          changed_by_id: string
+          changed_by_username: string
+          created_at: string
+          id: string
+          trigger_type: string
+          user_id: string
+          username: string
+        }
+        Insert: {
+          changed_by_id: string
+          changed_by_username: string
+          created_at?: string
+          id?: string
+          trigger_type: string
+          user_id: string
+          username: string
+        }
+        Update: {
+          changed_by_id?: string
+          changed_by_username?: string
+          created_at?: string
+          id?: string
+          trigger_type?: string
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
+      }
       personal_goals: {
         Row: {
           completed_at: string | null
@@ -468,8 +668,114 @@ export type Database = {
           },
         ]
       }
+      project_required_skills: {
+        Row: {
+          created_at: string
+          id: string
+          project_id: string
+          skill_id: string
+          subskill_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          project_id: string
+          skill_id: string
+          subskill_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          project_id?: string
+          skill_id?: string
+          subskill_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_required_skills_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_required_skills_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skills"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_required_skills_subskill_id_fkey"
+            columns: ["subskill_id"]
+            isOneToOne: false
+            referencedRelation: "subskills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_skill_validations: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          project_id: string
+          skill_id: string
+          subskill_id: string | null
+          user_id: string
+          validated_at: string
+          validated_by: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          project_id: string
+          skill_id: string
+          subskill_id?: string | null
+          user_id: string
+          validated_at?: string
+          validated_by: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          project_id?: string
+          skill_id?: string
+          subskill_id?: string | null
+          user_id?: string
+          validated_at?: string
+          validated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_skill_validations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_skill_validations_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skills"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_skill_validations_subskill_id_fkey"
+            columns: ["subskill_id"]
+            isOneToOne: false
+            referencedRelation: "subskills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
           created_at: string
           created_by: string
           description: string | null
@@ -482,6 +788,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
           created_at?: string
           created_by: string
           description?: string | null
@@ -494,6 +802,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
           created_at?: string
           created_by?: string
           description?: string | null
@@ -576,6 +886,33 @@ export type Database = {
         }
         Relationships: []
       }
+      skill_explorer_presets: {
+        Row: {
+          created_at: string
+          id: string
+          preset_name: string
+          selections: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          preset_name: string
+          selections: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          preset_name?: string
+          selections?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       skill_rating_history: {
         Row: {
           created_at: string
@@ -649,6 +986,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      subskill_rating_history: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          approver_comment: string | null
+          archived_at: string
+          created_at: string
+          id: string
+          rating: string
+          self_comment: string | null
+          skill_id: string
+          status: string
+          subskill_id: string
+          user_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          approver_comment?: string | null
+          archived_at?: string
+          created_at?: string
+          id?: string
+          rating: string
+          self_comment?: string | null
+          skill_id: string
+          status: string
+          subskill_id: string
+          user_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          approver_comment?: string | null
+          archived_at?: string
+          created_at?: string
+          id?: string
+          rating?: string
+          self_comment?: string | null
+          skill_id?: string
+          status?: string
+          subskill_id?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       subskills: {
         Row: {
@@ -864,6 +1246,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_skills: {
         Row: {
           approved_at: string | null
@@ -949,18 +1352,17 @@ export type Database = {
         }
         Returns: boolean
       }
-      cleanup_old_notifications: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
+      cleanup_old_notifications: { Args: never; Returns: undefined }
+      get_current_user_role: { Args: never; Returns: string }
+      get_my_tech_lead_id: { Args: never; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
       }
-      get_current_user_role: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      send_goal_reminders: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      send_goal_reminders: { Args: never; Returns: undefined }
       test_employee_rating_insert: {
         Args: {
           p_rating: string
@@ -970,13 +1372,10 @@ export type Database = {
         }
         Returns: undefined
       }
-      update_leaderboard_history: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      update_leaderboard_history: { Args: never; Returns: undefined }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "employee" | "tech_lead" | "management" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1103,6 +1502,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["employee", "tech_lead", "management", "admin"],
+    },
   },
 } as const

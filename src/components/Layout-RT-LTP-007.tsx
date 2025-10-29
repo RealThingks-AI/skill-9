@@ -49,7 +49,7 @@ export function Layout({ children }: LayoutProps) {
     switch (role) {
       case 'admin':
         return 'bg-gradient-to-r from-red-500 to-orange-500 text-white';
-      case 'manager':
+      case 'management':
         return 'bg-gradient-to-r from-purple-500 to-pink-500 text-white';
       case 'tech_lead':
         return 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white';
@@ -77,7 +77,7 @@ export function Layout({ children }: LayoutProps) {
               <div className="hidden md:block min-w-0">
                 <h1 className="text-xl font-semibold text-foreground truncate">
                   {profile?.role === 'admin' && 'Admin Dashboard'}
-                  {profile?.role === 'manager' && 'Management Dashboard'}
+                  {profile?.role === 'management' && 'Management Dashboard'}
                   {profile?.role === 'tech_lead' && 'Tech Lead Portal'}
                   {profile?.role === 'employee' && 'My Skills Dashboard'}
                 </h1>

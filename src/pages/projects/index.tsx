@@ -1,15 +1,25 @@
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Plus, Search, Filter, Calendar, Users, Target } from "lucide-react";
-import { useProjects } from "./hooks/useProjects";
-import LoadingSpinner from "@/components/common/LoadingSpinner";
+import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Plus, Search, Target, Users, CheckCircle, Clock } from 'lucide-react';
+import { useProjects } from './hooks/useProjects';
+import { useAuth } from '@/hooks/useAuth';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
+import ProjectFormDialog from './components/ProjectFormDialog';
+import ProjectDetailDialog from './components/ProjectDetailDialog';
+import { Badge } from '@/components/ui/badge';
 
 const Projects = () => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const { projects, loading } = useProjects();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState<'awaiting' | 'active' | 'completed'>('active');
+  const [formDialogOpen, setFormDialogOpen] = useState(false);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  
+  const { projects, loading, refreshProjects } = useProjects();
+  const { profile } = useAuth();
 
   if (loading) {
     return (
@@ -19,200 +29,161 @@ const Projects = () => {
     );
   }
 
-  // Default stats for when no data is available
-  const defaultStats = {
-    activeProjects: projects?.filter(p => p.status === 'Active')?.length || 0,
-    teamMembers: projects?.reduce((acc, p) => acc + (p.team?.length || 0), 0) || 0,
-    completionRate: projects?.length ? Math.round(projects.reduce((acc, p) => acc + (p.progress || 0), 0) / projects.length) : 0,
-    skillsUtilized: [...new Set(projects?.flatMap(p => p.skills || []))].length || 0
+  const filteredProjects = projects.filter((project) =>
+    project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    project.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const awaitingProjects = filteredProjects.filter(p => p.status === 'awaiting_approval');
+  const activeProjects = filteredProjects.filter(p => p.status === 'active');
+  const completedProjects = filteredProjects.filter(p => p.status === 'completed');
+
+  const stats = {
+    awaiting: awaitingProjects.length,
+    active: activeProjects.length,
+    completed: completedProjects.length,
+    total: projects.length,
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Active':
-        return 'bg-green-100 text-green-800';
-      case 'Planning':
-        return 'bg-blue-100 text-blue-800';
-      case 'Completed':
-        return 'bg-gray-100 text-gray-800';
-      case 'On Hold':
-        return 'bg-orange-100 text-orange-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
+  const handleProjectClick = (projectId: string) => {
+    setSelectedProjectId(projectId);
+    setDetailDialogOpen(true);
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'High':
-        return 'bg-red-100 text-red-800';
-      case 'Medium':
-        return 'bg-orange-100 text-orange-800';
-      case 'Low':
-        return 'bg-green-100 text-green-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
+  const getStatusBadge = (status: string) => {
+    const colors = {
+      awaiting_approval: 'bg-[hsl(var(--warning))] text-[hsl(var(--warning-foreground))]',
+      active: 'bg-[hsl(var(--success))] text-[hsl(var(--success-foreground))]',
+      completed: 'bg-muted text-muted-foreground',
+      on_hold: 'bg-destructive/10 text-destructive',
+    };
+    return colors[status as keyof typeof colors] || 'bg-muted text-muted-foreground';
   };
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Projects</h1>
-          <p className="text-muted-foreground">
-            Manage projects and track skill requirements
-          </p>
+  const renderProjectCard = (project: any) => (
+    <Card
+      key={project.id}
+      className="hover:shadow-md transition-shadow cursor-pointer"
+      onClick={() => handleProjectClick(project.id)}
+    >
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between gap-2">
+          <CardTitle className="text-base">{project.name}</CardTitle>
+          <Badge className={`${getStatusBadge(project.status)} shrink-0 text-xs`}>
+            {project.status.replace('_', ' ')}
+          </Badge>
         </div>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          New Project
-        </Button>
-      </div>
-
-      {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
-            <Target className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{defaultStats.activeProjects}</div>
-            <p className="text-xs text-muted-foreground">+{Math.floor(defaultStats.activeProjects * 0.2)} this month</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Team Members</CardTitle>
-            <Users className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{defaultStats.teamMembers}</div>
-            <p className="text-xs text-muted-foreground">Across all projects</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Completion Rate</CardTitle>
-            <Calendar className="h-4 w-4 text-purple-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{defaultStats.completionRate}%</div>
-            <p className="text-xs text-muted-foreground">On-time delivery</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Skills Utilized</CardTitle>
-            <Target className="h-4 w-4 text-orange-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{defaultStats.skillsUtilized}</div>
-            <p className="text-xs text-muted-foreground">Unique skills used</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Search and Filter */}
-      <div className="flex items-center space-x-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search projects..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-8"
-          />
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {project.description && (
+          <p className="text-sm text-muted-foreground line-clamp-2">{project.description}</p>
+        )}
+        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1">
+            <Users className="h-3 w-3" />
+            <span>{project.team?.length || 0} members</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Target className="h-3 w-3" />
+            <span>{project.skills?.length || 0} skills</span>
+          </div>
         </div>
-        <Button variant="outline">
-          <Filter className="mr-2 h-4 w-4" />
-          Filter
-        </Button>
-      </div>
-
-      {/* Projects Grid */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {projects && projects.length > 0 ? (
-          projects.map((project) => (
-          <Card key={project.id} className="hover:shadow-md transition-shadow">
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="space-y-1">
-                  <CardTitle className="text-lg">{project.name}</CardTitle>
-                  <CardDescription className="text-sm">
-                    {project.description}
-                  </CardDescription>
-                </div>
-                <div className="flex gap-1">
-                  <Badge className={getStatusColor(project.status)}>
-                    {project.status}
-                  </Badge>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Badge className={getPriorityColor(project.priority)}>
-                  {project.priority} Priority
-                </Badge>
-                <span className="text-sm text-muted-foreground">
-                  {project.progress}% Complete
-                </span>
-              </div>
-              
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-primary h-2 rounded-full transition-all" 
-                  style={{ width: `${project.progress}%` }}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Users className="h-3 w-3" />
-                  <span>Team: {project.team.length} members</span>
-                </div>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Calendar className="h-3 w-3" />
-                  <span>{project.startDate} - {project.endDate}</span>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <p className="text-xs font-medium">Required Skills:</p>
-                <div className="flex flex-wrap gap-1">
-                  {project.skills.slice(0, 3).map((skill, index) => (
-                    <Badge key={index} variant="outline" className="text-xs">
-                      {skill}
-                    </Badge>
-                  ))}
-                  {project.skills.length > 3 && (
-                    <Badge variant="outline" className="text-xs">
-                      +{project.skills.length - 3} more
-                    </Badge>
-                  )}
-                </div>
-              </div>
-
-              <Button className="w-full" variant="outline">
-                View Details
-              </Button>
-            </CardContent>
-          </Card>
-          ))
-        ) : (
-          <div className="col-span-full text-center py-12">
-            <p className="text-lg text-muted-foreground mb-4">No projects found</p>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Create First Project
-            </Button>
+        {(project.start_date || project.end_date) && (
+          <div className="text-xs text-muted-foreground">
+            {project.start_date || 'TBD'} - {project.end_date || 'Ongoing'}
           </div>
         )}
+      </CardContent>
+    </Card>
+  );
+
+  return (
+    <div className="h-full flex flex-col">
+      <div className="flex-shrink-0 flex items-center justify-between h-16 px-6 border-b border-sidebar-border">
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Projects</h1>
+        </div>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="sm" onClick={() => setFormDialogOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            New Project
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-auto p-6">
+
+      {/* Tabs */}
+      <div className="flex-1 overflow-hidden">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="h-full flex flex-col">
+          <TabsList className="flex-shrink-0 justify-start">
+            <TabsTrigger value="awaiting">
+              Awaiting Approval ({stats.awaiting})
+            </TabsTrigger>
+            <TabsTrigger value="active">Active Projects ({stats.active})</TabsTrigger>
+            <TabsTrigger value="completed">Completed ({stats.completed})</TabsTrigger>
+          </TabsList>
+
+          <div className="flex-1 overflow-auto mt-4">
+            <TabsContent value="awaiting" className="mt-0">
+              {awaitingProjects.length > 0 ? (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {awaitingProjects.map(renderProjectCard)}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <Clock className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-lg text-muted-foreground">No projects awaiting approval</p>
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="active" className="mt-0">
+              {activeProjects.length > 0 ? (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {activeProjects.map(renderProjectCard)}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <Target className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-lg text-muted-foreground mb-4">No active projects</p>
+                  <Button onClick={() => setFormDialogOpen(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create First Project
+                  </Button>
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="completed" className="mt-0">
+              {completedProjects.length > 0 ? (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {completedProjects.map(renderProjectCard)}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <CheckCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-lg text-muted-foreground">No completed projects yet</p>
+                </div>
+              )}
+            </TabsContent>
+          </div>
+        </Tabs>
+      </div>
+
+      <ProjectFormDialog
+        open={formDialogOpen}
+        onOpenChange={setFormDialogOpen}
+        onSuccess={refreshProjects}
+      />
+
+        <ProjectDetailDialog
+          projectId={selectedProjectId}
+          open={detailDialogOpen}
+          onOpenChange={setDetailDialogOpen}
+          onSuccess={refreshProjects}
+          userRole={profile?.role || ''}
+        />
       </div>
     </div>
   );

@@ -10,7 +10,9 @@ import { SkillDetail } from "./SkillDetail";
 import { AddSkillModal } from "./admin/AddSkillModal";
 import { AddSubskillModal } from "./admin/AddSubskillModal";
 import { EditSkillModal } from "./admin/EditSkillModal";
+import { EditSubskillModal } from "./admin/EditSubskillModal";
 import { DeleteSkillDialog } from "./admin/DeleteSkillDialog";
+import { DeleteSubskillDialog } from "./admin/DeleteSubskillDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { SkillCategory, Skill, Subskill, UserSkill, Profile } from "@/types/database";
@@ -25,10 +27,11 @@ interface CategoryModalProps {
     rating: 'high' | 'medium' | 'low';
   }>;
   isManagerOrAbove: boolean;
+  isAdmin?: boolean;
   profile: Profile | null;
   onClose: () => void;
-  onSkillRate: (skillId: string, rating: 'high' | 'medium' | 'low') => void;
-  onSubskillRate: (subskillId: string, rating: 'high' | 'medium' | 'low') => void;
+  onSkillRate: (skillId: string, rating: 'high' | 'medium' | 'low' | null) => void;
+  onSubskillRate: (subskillId: string, rating: 'high' | 'medium' | 'low' | null) => void;
   onToggleNA: (skillId: string, isNA: boolean) => void;
   onSaveRatings: (ratingsWithComments: Array<{
     id: string;
@@ -47,6 +50,7 @@ export const CategoryModal = ({
   userSkills,
   pendingRatings,
   isManagerOrAbove,
+  isAdmin = false,
   profile,
   onClose,
   onSkillRate,
@@ -62,8 +66,12 @@ export const CategoryModal = ({
   const [showEditSkill, setShowEditSkill] = useState(false);
   const [showDeleteSkill, setShowDeleteSkill] = useState(false);
   const [showAddSubskill, setShowAddSubskill] = useState(false);
+  const [showEditSubskill, setShowEditSubskill] = useState(false);
+  const [showDeleteSubskill, setShowDeleteSubskill] = useState(false);
   const [skillToEdit, setSkillToEdit] = useState<Skill | null>(null);
   const [skillToDelete, setSkillToDelete] = useState<Skill | null>(null);
+  const [subskillToEdit, setSubskillToEdit] = useState<Subskill | null>(null);
+  const [subskillToDelete, setSubskillToDelete] = useState<Subskill | null>(null);
   const [pendingSubmit, setPendingSubmit] = useState<string[]>([]);
   const {
     toast
@@ -173,9 +181,16 @@ export const CategoryModal = ({
                   <ArrowLeft className="h-4 w-4" />
                 </Button>}
               <div>
-                <h2 className="text-2xl font-bold text-foreground">
-                  {selectedSkill ? selectedSkill.name : category.name}
-                </h2>
+                <div className="flex items-center gap-2 mb-1">
+                  <h2 className="text-2xl font-bold text-foreground">
+                    {selectedSkill ? selectedSkill.name : category.name}
+                  </h2>
+                  {isAdmin && (
+                    <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+                      Admin Mode
+                    </Badge>
+                  )}
+                </div>
                 {selectedSkill ? selectedSkill.description : <>
                     {category.description}
                     <div className="flex items-center gap-3 mt-2">
@@ -194,12 +209,12 @@ export const CategoryModal = ({
             </div>
             
             <div className="flex items-center gap-2">
-              {selectedSkill && isManagerOrAbove && <Button variant="outline" size="sm" onClick={() => setShowAddSubskill(true)}>
+              {selectedSkill && isAdmin && <Button variant="default" size="sm" onClick={() => setShowAddSubskill(true)}>
                   <Plus className="w-4 h-4 mr-2" />
                   Add Subskill
                 </Button>}
               
-              {!selectedSkill && isManagerOrAbove && <Button variant="outline" size="sm" onClick={() => setShowAddSkill(true)}>
+              {!selectedSkill && isAdmin && <Button variant="default" size="sm" onClick={() => setShowAddSkill(true)}>
                   <Plus className="w-4 h-4 mr-2" />
                   Add Skill
                 </Button>}
@@ -247,7 +262,7 @@ export const CategoryModal = ({
                     {isManagerOrAbove}
 
                     {/* Skills List */}
-                    <ScrollArea className="h-[936px]">
+                    <ScrollArea className="h-[calc(95vh-120px)] max-h-[800px]">
                       <div className="p-6 space-y-3">
                         {skills.length === 0 ? <div className="text-center py-12">
                             <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
@@ -259,7 +274,7 @@ export const CategoryModal = ({
                             <p className="text-muted-foreground mb-4">
                               {isManagerOrAbove ? "Start building this category by adding your first skill." : "This category doesn't have any skills yet."}
                             </p>
-                            {isManagerOrAbove && <Button onClick={() => setShowAddSkill(true)}>
+                            {isAdmin && <Button onClick={() => setShowAddSkill(true)}>
                                 <Plus className="w-4 h-4 mr-2" />
                                 Add First Skill
                               </Button>}
@@ -274,7 +289,7 @@ export const CategoryModal = ({
                       delay: index * 0.05,
                       ease: "easeOut"
                     }}>
-                              <SkillRow skill={skill} subskills={subskills.filter(s => s.skill_id === skill.id)} userSkills={userSkills} pendingRatings={pendingRatings} isManagerOrAbove={isManagerOrAbove} onClick={() => handleSkillClick(skill)} onSkillRate={onSkillRate} onSubskillRate={onSubskillRate} onToggleNA={onToggleNA} onSaveRatings={onSaveRatings} onRefresh={onRefresh} onEditSkill={() => handleEditSkill(skill)} onDeleteSkill={() => handleDeleteSkill(skill)} targetSubskillId={targetSubskillId} expanded={expandedSkills.has(skill.id)} onToggleExpanded={() => {
+                              <SkillRow skill={skill} subskills={subskills.filter(s => s.skill_id === skill.id)} userSkills={userSkills} pendingRatings={pendingRatings} isManagerOrAbove={isAdmin} onClick={() => handleSkillClick(skill)} onSkillRate={onSkillRate} onSubskillRate={onSubskillRate} onToggleNA={onToggleNA} onSaveRatings={onSaveRatings} onRefresh={onRefresh} onEditSkill={isAdmin ? () => handleEditSkill(skill) : undefined} onDeleteSkill={isAdmin ? () => handleDeleteSkill(skill) : undefined} targetSubskillId={targetSubskillId} expanded={expandedSkills.has(skill.id)} onToggleExpanded={() => {
                         const newExpanded = new Set(expandedSkills);
                         if (newExpanded.has(skill.id)) {
                           newExpanded.delete(skill.id);
@@ -311,6 +326,18 @@ export const CategoryModal = ({
     }} />
       <AddSubskillModal open={showAddSubskill} onOpenChange={setShowAddSubskill} skillId={selectedSkill?.id || ''} onSuccess={() => {
       setShowAddSubskill(false);
+      onRefresh();
+    }} />
+
+      <EditSubskillModal open={showEditSubskill} onOpenChange={setShowEditSubskill} subskill={subskillToEdit} onSuccess={() => {
+      setShowEditSubskill(false);
+      setSubskillToEdit(null);
+      onRefresh();
+    }} />
+
+      <DeleteSubskillDialog open={showDeleteSubskill} onOpenChange={setShowDeleteSubskill} subskill={subskillToDelete} onSuccess={() => {
+      setShowDeleteSubskill(false);
+      setSubskillToDelete(null);
       onRefresh();
     }} />
 

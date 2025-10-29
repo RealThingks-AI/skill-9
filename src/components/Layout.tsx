@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Bell, LogOut, User, Settings } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
+import { ImpersonationBanner } from '@/components/ImpersonationBanner';
 interface LayoutProps {
   children: React.ReactNode;
 }
@@ -43,7 +44,7 @@ export function Layout({
     switch (role) {
       case 'admin':
         return 'bg-gradient-to-r from-red-500 to-orange-500 text-white';
-      case 'manager':
+      case 'management':
         return 'bg-gradient-to-r from-purple-500 to-pink-500 text-white';
       case 'tech_lead':
         return 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white';
@@ -55,19 +56,22 @@ export function Layout({
     return role.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   };
   return <SidebarProvider>
-      <div className="h-screen max-h-screen flex w-full max-w-full bg-background overflow-hidden">
-        <AppSidebar />
-        
-        <div className="flex-1 flex flex-col min-w-0 max-w-full">
-          {/* Top Navigation */}
+      <div className="h-screen max-h-screen flex flex-col w-full max-w-full bg-background overflow-hidden">
+        <ImpersonationBanner />
+        <div className="flex-1 flex w-full max-w-full overflow-hidden">
+          <AppSidebar />
           
+          <div className="flex-1 flex flex-col min-w-0 max-w-full">
+            {/* Top Navigation */}
+            
 
-          {/* Main Content */}
-          <main className="flex-1 min-h-0 max-h-full overflow-auto">
-            <div className="h-full">
-              {children}
-            </div>
-          </main>
+            {/* Main Content */}
+            <main className="flex-1 min-h-0 max-h-full overflow-auto">
+              <div className="h-full">
+                {children}
+              </div>
+            </main>
+          </div>
         </div>
       </div>
     </SidebarProvider>;

@@ -104,7 +104,7 @@ export default function UserAccess({
     switch (role) {
       case USER_ROLES.ADMIN:
         return 'bg-destructive text-destructive-foreground';
-      case USER_ROLES.MANAGER:
+      case USER_ROLES.MANAGEMENT:
         return 'bg-primary text-primary-foreground';
       case USER_ROLES.TECH_LEAD:
         return 'bg-success text-success-foreground';

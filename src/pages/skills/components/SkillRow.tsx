@@ -16,8 +16,8 @@ interface SkillRowProps {
   pendingRatings: Map<string, { type: 'skill' | 'subskill', id: string, rating: 'high' | 'medium' | 'low' }>;
   isManagerOrAbove: boolean;
   onClick?: () => void;
-  onSkillRate: (skillId: string, rating: 'high' | 'medium' | 'low') => void;
-  onSubskillRate: (subskillId: string, rating: 'high' | 'medium' | 'low') => void;
+  onSkillRate: (skillId: string, rating: 'high' | 'medium' | 'low' | null) => void;
+  onSubskillRate: (subskillId: string, rating: 'high' | 'medium' | 'low' | null) => void;
   onSaveRatings?: (ratingsWithComments: Array<{id: string, type: 'skill' | 'subskill', rating: 'high' | 'medium' | 'low', comment: string}>) => void;
   onRefresh: () => void;
   onEditSkill?: () => void;
@@ -58,6 +58,23 @@ export const SkillRow = ({
     }
   }, [expanded]);
 
+  // Prefill comments with existing self_comment for subskills (without overriding user edits)
+  useEffect(() => {
+    const updates: Record<string, string> = {};
+    subskills.forEach((ss) => {
+      const entry = (userSkills as EmployeeRating[]).find((us) => us.subskill_id === ss.id);
+      const existing = entry?.self_comment ?? '';
+      // Only seed if we don't already have a local value for this subskill
+      if (existing && comments[ss.id] === undefined) {
+        updates[ss.id] = existing;
+      }
+    });
+    if (Object.keys(updates).length) {
+      setComments((prev) => ({ ...updates, ...prev }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subskills, userSkills]);
+
   // Get current rating from pending ratings or saved ratings
   const getCurrentSkillRating = () => {
     const pending = pendingRatings.get(skill.id);
@@ -78,21 +95,74 @@ export const SkillRow = ({
   const pendingItemsForSkill = Array.from(pendingRatings.entries())
     .filter(([id, r]) => (r.type === 'skill' && id === skill.id) || (r.type === 'subskill' && subskillIds.includes(id)))
     .map(([id, r]) => ({ id, ...r }));
-  const pendingCountForSkill = pendingItemsForSkill.length;
+  
+  // Calculate accurate count: only items with both rating and comment
+  const pendingCountForSkill = (() => {
+    const itemsMap = new Map<string, boolean>();
+    
+    // Count ratings that have comments
+    pendingItemsForSkill.forEach(({ id }) => {
+      if ((comments[id] || '').trim()) {
+        itemsMap.set(id, true);
+      }
+    });
+    
+    // Also count comment-only changes for existing ratings
+    subskills.forEach((sub) => {
+      const newComment = (comments[sub.id] || '').trim();
+      const entry = (userSkills as EmployeeRating[]).find((us) => us.subskill_id === sub.id);
+      const previousComment = (entry?.self_comment || '').trim();
+      if (entry && newComment && newComment !== previousComment) {
+        itemsMap.set(sub.id, true);
+      }
+    });
+    
+    return itemsMap.size;
+  })();
 
   const handleSave = () => {
     if (!onSaveRatings) return;
-    const items = pendingItemsForSkill.map(({ id, type, rating }) => ({
-      id,
-      type,
-      rating,
-      comment: (comments[id] || '').trim(),
-    }));
-    const missing = items.filter(i => !i.comment);
+
+    // Start with items where rating changed in this session
+    const itemsMap = new Map<string, {id: string, type: 'skill' | 'subskill', rating: 'high' | 'medium' | 'low', comment: string}>();
+    pendingItemsForSkill.forEach(({ id, type, rating }) => {
+      itemsMap.set(`${type}-${id}`, {
+        id,
+        type,
+        rating,
+        comment: (comments[id] || '').trim(),
+      });
+    });
+
+    // Add comment-only edits for subskills (no rating change)
+    subskills.forEach((sub) => {
+      const newComment = (comments[sub.id] || '').trim();
+      const entry = (userSkills as EmployeeRating[]).find((us) => us.subskill_id === sub.id);
+      const previousComment = (entry?.self_comment || '').trim();
+      if (entry && newComment && newComment !== previousComment) {
+        const rating = (pendingRatings.get(sub.id)?.rating || entry.rating) as 'high' | 'medium' | 'low';
+        itemsMap.set(`subskill-${sub.id}`, {
+          id: sub.id,
+          type: 'subskill',
+          rating,
+          comment: newComment,
+        });
+      }
+    });
+
+    const items = Array.from(itemsMap.values());
+
+    if (items.length === 0) {
+      toast({ title: 'Nothing to save', description: 'No changes detected for this skill group.' });
+      return;
+    }
+
+    const missing = items.filter((i) => !i.comment);
     if (missing.length > 0) {
       toast({ title: 'Comments required', description: 'Please add comments for all ratings in this skill.', variant: 'destructive' });
       return;
     }
+
     onSaveRatings(items);
   };
 
@@ -108,9 +178,9 @@ export const SkillRow = ({
     }
   };
 
-  return <div className="border rounded-lg p-3 bg-card hover:shadow-md transition-all" onClick={!hasSubskills ? onClick : undefined}>
+  return <div className="border rounded-lg p-3 bg-card hover:shadow-md transition-all">
       <div className="grid grid-cols-4 items-center gap-4">
-        {/* Left: Skill name and chevron */}
+        {/* Column 1: Skill name with chevron */}
         <div className="flex items-center gap-3">
           <div className="w-6 flex justify-center">
             {hasSubskills && (
@@ -125,7 +195,7 @@ export const SkillRow = ({
             )}
           </div>
           
-          <div className="cursor-pointer" onClick={handleSkillClick}>
+          <div className={cn("cursor-pointer", hasSubskills && "flex-1")} onClick={handleSkillClick}>
             <h4 className="font-medium text-sm text-slate-900 dark:text-slate-100">{skill.name}</h4>
             {skill.description && (
               <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">{skill.description}</p>
@@ -133,9 +203,9 @@ export const SkillRow = ({
           </div>
         </div>
         
-        {/* Center: Subskills count */}
+        {/* Column 2: Subskills count or Rating Pills */}
         <div className="flex justify-center">
-          {hasSubskills && (() => {
+          {hasSubskills ? (() => {
             if (isSkillNA) {
               return (
                 <span className="text-sm font-medium text-muted-foreground">
@@ -153,10 +223,7 @@ export const SkillRow = ({
                 ({approvedCount} of {totalCount} subskills)
               </span>
             );
-          })()}
-          
-          {/* For skills without subskills, show rating here */}
-          {!hasSubskills && (
+          })() : (
             <div onClick={e => e.stopPropagation()}>
               <RatingPill 
                 rating={userSkillRating} 
@@ -167,9 +234,9 @@ export const SkillRow = ({
           )}
         </div>
 
-        {/* NA Toggle Button */}
+        {/* Column 3: NA Button or Comment Field */}
         <div className="flex justify-center">
-          {hasSubskills && (
+          {hasSubskills ? (
             <Button
               variant={isSkillNA ? "secondary" : "outline"}
               size="sm"
@@ -182,11 +249,22 @@ export const SkillRow = ({
             >
               NA
             </Button>
+          ) : (
+            <div className="w-full px-2" onClick={e => e.stopPropagation()}>
+              <input
+                type="text"
+                placeholder="Add your comment..."
+                value={comments[skill.id] || ''}
+                onChange={(e) => handleCommentChange(skill.id, e.target.value)}
+                disabled={userSkillStatus === 'submitted' || userSkillStatus === 'approved'}
+                className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+              />
+            </div>
           )}
         </div>
 
-        {/* Right: Rating summary counts with approval status */}
-        <div className="flex justify-end">
+        {/* Column 4: Rating summary or Admin actions */}
+        <div className="flex justify-end items-center gap-2">
           {(() => {
             let ratingsToCount = [];
             if (hasSubskills) {
@@ -197,7 +275,7 @@ export const SkillRow = ({
             } else {
               // For skills without subskills, count the skill rating
               const skillRating = userSkills.find(us => us.skill_id === skill.id && !us.subskill_id);
-              if (skillRating) {
+              if (skillRating && skillRating.rating) {
                 ratingsToCount = [skillRating];
               }
             }
@@ -247,28 +325,30 @@ export const SkillRow = ({
               </div>
             );
           })()}
+          
+          {isManagerOrAbove && (
+            <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+              <Button variant="ghost" size="sm" onClick={e => {
+                e.stopPropagation();
+                setShowAddSubskill(true);
+              }} className="p-1 h-auto">
+                <Plus className="h-3 w-3" />
+              </Button>
+              <Button variant="ghost" size="sm" onClick={e => {
+                e.stopPropagation();
+                onEditSkill?.();
+              }} className="p-1 h-auto">
+                <Edit className="h-3 w-3" />
+              </Button>
+              <Button variant="ghost" size="sm" onClick={e => {
+                e.stopPropagation();
+                onDeleteSkill?.();
+              }} className="p-1 h-auto">
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </div>
+          )}
         </div>
-
-        {isManagerOrAbove && <div className="flex gap-1 ml-2" onClick={e => e.stopPropagation()}>
-            <Button variant="ghost" size="sm" onClick={e => {
-          e.stopPropagation();
-          setShowAddSubskill(true);
-        }} className="p-1 h-auto">
-              <Plus className="h-3 w-3" />
-            </Button>
-            <Button variant="ghost" size="sm" onClick={e => {
-          e.stopPropagation();
-          onEditSkill?.();
-        }} className="p-1 h-auto">
-              <Edit className="h-3 w-3" />
-            </Button>
-            <Button variant="ghost" size="sm" onClick={e => {
-          e.stopPropagation();
-          onDeleteSkill?.();
-        }} className="p-1 h-auto">
-              <Trash2 className="h-3 w-3" />
-            </Button>
-          </div>}
       </div>
 
       {hasSubskills && (
@@ -294,20 +374,6 @@ export const SkillRow = ({
             </div>
           </CollapsibleContent>
         </Collapsible>
-      )}
-
-      {/* Comment input for skills without subskills */}
-      {!hasSubskills && (
-        <div className="mt-3" onClick={e => e.stopPropagation()}>
-          <input
-            type="text"
-            placeholder="Add your comment..."
-            value={comments[skill.id] || ''}
-            onChange={(e) => handleCommentChange(skill.id, e.target.value)}
-            disabled={userSkillStatus === 'submitted' || userSkillStatus === 'approved'}
-            className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
-          />
-        </div>
       )}
 
       {/* Save Ratings Button for this skill */}

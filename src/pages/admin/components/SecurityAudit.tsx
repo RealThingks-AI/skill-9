@@ -50,7 +50,7 @@ export function SecurityAudit({ onBack }: SecurityAuditProps) {
     },
     {
       type: "permission",
-      message: "User role changed: sarah.johnson@company.com → Manager",
+      message: "User role changed: sarah.johnson@company.com → Management",
       timestamp: "1 hour ago",
       severity: "low"
     },

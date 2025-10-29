@@ -30,10 +30,12 @@ export const ImportExportBar = ({
 }: ImportExportBarProps) => {
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
+  const [showReplaceDialog, setShowReplaceDialog] = useState(false);
   const [importData, setImportData] = useState<any[]>([]);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const [importMode, setImportMode] = useState<'merge' | 'replace'>('merge');
   const { toast } = useToast();
 
   const exportToCSV = async () => {
@@ -126,16 +128,58 @@ export const ImportExportBar = ({
         });
       }
       
-      // Don't close dialog immediately, let user see results
-      // setShowImportDialog(false);
-      // setImportData([]);
-      // setImportFile(null);
       onRefresh();
     } catch (error) {
       console.error('❌ Import error:', error);
       toast({
         title: "Import Failed",
         description: `Failed to import data: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+      });
+      setImportResult({ success: 0, errors: importData.length });
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const handleReplaceAll = async () => {
+    if (!importData.length) return;
+    
+    console.log('🚀 Starting REPLACE ALL process with', importData.length, 'rows');
+    setImporting(true);
+    setImportResult(null);
+    
+    try {
+      const result = await ImportExportService.replaceAllFromCSV(
+        importData,
+        categories,
+        skills,
+        subskills
+      );
+      
+      console.log('✅ Replace all completed:', result);
+      setImportResult(result);
+      
+      if (result.errors === 0) {
+        toast({
+          title: "Replace Successful",
+          description: `Backup saved as ${result.backupFile}. Successfully imported ${result.success} new items.`,
+        });
+      } else {
+        toast({
+          title: "Replace Completed with Issues",
+          description: `Backup saved. ${result.success} items imported, ${result.errors} errors occurred`,
+          variant: "destructive",
+        });
+      }
+      
+      setShowReplaceDialog(false);
+      onRefresh();
+    } catch (error) {
+      console.error('❌ Replace all error:', error);
+      toast({
+        title: "Replace Failed",
+        description: `Failed to replace data: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
       setImportResult({ success: 0, errors: importData.length });
@@ -163,12 +207,12 @@ export const ImportExportBar = ({
         <DialogTrigger asChild>
           <Button variant="outline">
             <Upload className="mr-2 h-4 w-4" />
-            Import CSV
+            Merge Import
           </Button>
         </DialogTrigger>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Import Skills Hierarchy from CSV</DialogTitle>
+            <DialogTitle>Merge Import Skills from CSV</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -180,7 +224,7 @@ export const ImportExportBar = ({
                 onChange={handleFileUpload}
               />
               <p className="text-sm text-muted-foreground mt-1">
-                CSV should have columns: Category, Skill, Subskill, Description
+                CSV should have columns: Category, Skill, Subskill, Description. This will merge with existing data.
               </p>
             </div>
             
@@ -255,8 +299,112 @@ export const ImportExportBar = ({
                   className="w-full mt-4" 
                   disabled={importing}
                 >
-                  {importing ? "Importing..." : `Import ${importData.length} Items`}
+                  {importing ? "Importing..." : `Merge ${importData.length} Items`}
                 </Button>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showReplaceDialog} onOpenChange={setShowReplaceDialog}>
+        <DialogTrigger asChild>
+          <Button variant="destructive">
+            <Upload className="mr-2 h-4 w-4" />
+            Replace All
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Replace All Skills Data</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-md">
+              <p className="text-sm font-medium text-destructive mb-2">⚠️ Warning: This will delete ALL existing data!</p>
+              <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                <li>All categories, skills, and subskills will be permanently deleted</li>
+                <li>A backup CSV will be automatically downloaded before deletion</li>
+                <li>Only the new data from your CSV will remain</li>
+                <li>This action cannot be undone (except by restoring the backup)</li>
+              </ul>
+            </div>
+
+            <div>
+              <Label htmlFor="csvFileReplace">CSV File</Label>
+              <Input
+                id="csvFileReplace"
+                type="file"
+                accept=".csv"
+                onChange={handleFileUpload}
+              />
+              <p className="text-sm text-muted-foreground mt-1">
+                CSV should have columns: Category, Skill, Subskill, Description
+              </p>
+            </div>
+            
+            {importData.length > 0 && (
+              <div>
+                <h4 className="font-medium mb-2">Preview ({importData.length} rows)</h4>
+                <ScrollArea className="h-40 border rounded-md p-2">
+                  <div className="space-y-1">
+                    {importData.slice(0, 10).map((row, index) => (
+                      <div key={index} className="text-sm p-2 bg-muted rounded">
+                        <strong>{row["Category"]}</strong>
+                        {row["Skill"] && <> → {row["Skill"]}</>}
+                        {row["Subskill"] && <> → {row["Subskill"]}</>}
+                      </div>
+                    ))}
+                    {importData.length > 10 && (
+                      <div className="text-sm text-muted-foreground">
+                        ... and {importData.length - 10} more
+                      </div>
+                    )}
+                  </div>
+                </ScrollArea>
+                
+                {importResult && (
+                  <div className="mt-4 p-3 rounded-md border bg-muted/50">
+                    <div className="flex items-center gap-2 mb-2">
+                      {importResult.errors === 0 ? (
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <AlertCircle className="h-4 w-4 text-yellow-600" />
+                      )}
+                      <span className="font-medium">Replace Results</span>
+                    </div>
+                    <div className="text-sm space-y-1">
+                      <div>✅ Successfully processed: {importResult.success} items</div>
+                      {importResult.errors > 0 && (
+                        <div>⚠️ Errors encountered: {importResult.errors} items</div>
+                      )}
+                    </div>
+                    <div className="flex gap-2 mt-3">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          setShowReplaceDialog(false);
+                          setImportData([]);
+                          setImportFile(null);
+                          setImportResult(null);
+                        }}
+                      >
+                        Close
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                
+                {!importResult && (
+                  <Button 
+                    onClick={handleReplaceAll} 
+                    variant="destructive"
+                    className="w-full mt-4" 
+                    disabled={importing}
+                  >
+                    {importing ? "Replacing All Data..." : `⚠️ Replace All with ${importData.length} Items`}
+                  </Button>
+                )}
               </div>
             )}
           </div>
