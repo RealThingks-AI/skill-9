@@ -50,7 +50,9 @@ const Approvals = () => {
   const [showRejectFor, setShowRejectFor] = useState<string | null>(null);
   const [criteriaModalOpen, setCriteriaModalOpen] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
-  const { groupedHistory } = useApprovalHistory();
+  const {
+    groupedHistory
+  } = useApprovalHistory();
 
   // Filter grouped approvals based on search term
   const filteredGroupedApprovals = groupedApprovals.filter(group => group.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) || group.email.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -100,7 +102,7 @@ const Approvals = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-baseline gap-4">
-          <h1 className="tracking-tight text-2xl font-medium">Approvals Dashboard</h1>
+          
           <div className="flex items-center gap-3 text-sm text-muted-foreground">
             <div className="flex items-center gap-1.5">
               <Users className="h-4 w-4" />
@@ -188,22 +190,17 @@ const Approvals = () => {
                         <div className="p-4 space-y-3">
                           {/* Group ratings by category */}
                           {(() => {
-                            // Group ratings by their skill's category
-                            const ratingsByCategory = employee.ratings.reduce((acc, rating) => {
-                              const categoryName = (rating.skill as any)?.skill_categories?.name || 'Uncategorized';
-                              if (!acc[categoryName]) {
-                                acc[categoryName] = [];
-                              }
-                              acc[categoryName].push(rating);
-                              return acc;
-                            }, {} as Record<string, typeof employee.ratings>);
-
-                            const categoryEntries = Object.entries(ratingsByCategory).sort((a, b) => 
-                              a[0].localeCompare(b[0])
-                            );
-
-                            return categoryEntries.map(([categoryName, ratings]) => (
-                              <Collapsible key={categoryName} className="border rounded-lg">
+                      // Group ratings by their skill's category
+                      const ratingsByCategory = employee.ratings.reduce((acc, rating) => {
+                        const categoryName = (rating.skill as any)?.skill_categories?.name || 'Uncategorized';
+                        if (!acc[categoryName]) {
+                          acc[categoryName] = [];
+                        }
+                        acc[categoryName].push(rating);
+                        return acc;
+                      }, {} as Record<string, typeof employee.ratings>);
+                      const categoryEntries = Object.entries(ratingsByCategory).sort((a, b) => a[0].localeCompare(b[0]));
+                      return categoryEntries.map(([categoryName, ratings]) => <Collapsible key={categoryName} className="border rounded-lg">
                                 <CollapsibleTrigger className="w-full p-3 flex items-center justify-between hover:bg-muted/50 transition-colors">
                                   <div className="flex items-center gap-3">
                                     <h3 className="font-semibold text-sm">{categoryName}</h3>
@@ -217,12 +214,10 @@ const Approvals = () => {
                                 <CollapsibleContent>
                                   <div className="space-y-3 p-4 pt-0 border-t">
                                     {ratings.map(rating => {
-                                    const skillName = rating.skill?.name || '';
-                                    const subskillName = rating.subskill?.name || skillName;
-                                    const displayName = rating.subskill ? `${skillName} - ${subskillName}` : skillName;
-                                    
-                                    return (
-                                      <div key={rating.id} className="border rounded-lg p-4 bg-background">
+                              const skillName = rating.skill?.name || '';
+                              const subskillName = rating.subskill?.name || skillName;
+                              const displayName = rating.subskill ? `${skillName} - ${subskillName}` : skillName;
+                              return <div key={rating.id} className="border rounded-lg p-4 bg-background">
                                         <div className="flex items-start justify-between mb-3">
                                           <div className="flex items-center gap-2 flex-1">
                                             <h4 className="font-medium text-sm">{displayName}</h4>
@@ -335,14 +330,12 @@ const Approvals = () => {
                                               </div>
                                             </div>
                                           </div>}
-                                      </div>
-                                    );
-                                  })}
+                                      </div>;
+                            })}
                                   </div>
                                 </CollapsibleContent>
-                              </Collapsible>
-                            ));
-                          })()}
+                              </Collapsible>);
+                    })()}
                         </div>
                       </CollapsibleContent>
                     </div>
@@ -365,11 +358,7 @@ const Approvals = () => {
       <CriteriaModal open={criteriaModalOpen} onOpenChange={setCriteriaModalOpen} />
 
       {/* Approval History Modal */}
-      <ApprovalHistoryModal
-        open={showHistory}
-        onOpenChange={setShowHistory}
-        groupedHistory={groupedHistory}
-      />
+      <ApprovalHistoryModal open={showHistory} onOpenChange={setShowHistory} groupedHistory={groupedHistory} />
     </div>;
 };
 export default Approvals;
