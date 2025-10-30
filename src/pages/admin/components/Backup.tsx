@@ -501,7 +501,7 @@ export default function Backup({
           <CardContent className="space-y-4">
             {isExporting && <div className="p-4 bg-muted rounded-lg space-y-2">
                 <div className="flex items-center gap-2">
-                  <LoadingSpinner size="sm" />
+                  <LoadingSpinner showText={false} />
                   <span className="text-sm font-medium">Exporting data...</span>
                 </div>
                 {exportProgress && <p className="text-sm text-muted-foreground">{exportProgress}</p>}
@@ -530,7 +530,7 @@ export default function Backup({
           <CardContent className="space-y-4">
             {isImporting && <div className="p-4 bg-muted rounded-lg space-y-2">
                 <div className="flex items-center gap-2">
-                  <LoadingSpinner size="sm" />
+                  <LoadingSpinner showText={false} />
                   <span className="text-sm font-medium">Restoring database...</span>
                 </div>
                 {importProgress && <p className="text-sm text-muted-foreground">{importProgress}</p>}

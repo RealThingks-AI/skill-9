@@ -109,7 +109,7 @@ export const EmployeeApprovalDetail = ({
         <div className="space-y-4">
           {/* Bulk Actions */}
           <div className="flex gap-2 p-4 bg-muted rounded-lg">
-            <Button onClick={handleBulkApprove} className="flex-1">
+            <Button onClick={handleBulkApprove} variant="success" className="flex-1">
               <CheckCircle className="mr-2 h-4 w-4" />
               Approve All ({employee.pendingCount})
             </Button>
@@ -162,7 +162,7 @@ export const EmployeeApprovalDetail = ({
                                 <strong>Employee comment:</strong> {rating.self_comment}
                               </div>
                               <div className="flex gap-2 shrink-0">
-                                <Button size="sm" onClick={() => setShowApproveDialog(rating.id)} className="px-4 py-2">
+                                <Button size="sm" variant="success" onClick={() => setShowApproveDialog(rating.id)} className="px-4 py-2">
                                   <CheckCircle className="mr-1 h-3 w-3" />
                                   Approve
                                 </Button>
@@ -176,7 +176,7 @@ export const EmployeeApprovalDetail = ({
 
                           {!rating.self_comment && (
                             <div className="flex gap-2 mb-3">
-                              <Button size="sm" onClick={() => setShowApproveDialog(rating.id)} className="px-4 py-2">
+                              <Button size="sm" variant="success" onClick={() => setShowApproveDialog(rating.id)} className="px-4 py-2">
                                 <CheckCircle className="mr-1 h-3 w-3" />
                                 Approve
                               </Button>
@@ -206,8 +206,8 @@ export const EmployeeApprovalDetail = ({
                                   rows={1}
                                   className="flex-1 text-sm min-h-[40px] resize-none overflow-hidden" 
                                 />
-                                <div className="flex gap-2 shrink-0">
-                                  <Button size="sm" onClick={() => handleApprove(rating.id)} className="bg-green-600 hover:bg-green-700">
+                                 <div className="flex gap-2 shrink-0">
+                                  <Button size="sm" variant="success" onClick={() => handleApprove(rating.id)}>
                                     Confirm Approval
                                   </Button>
                                   <Button size="sm" variant="outline" onClick={() => {

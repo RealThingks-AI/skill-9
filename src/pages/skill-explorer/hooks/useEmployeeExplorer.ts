@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllRows } from "@/utils/supabasePagination";
 import { useToast } from "@/hooks/use-toast";
 
 interface ApprovedRating {
@@ -55,22 +56,38 @@ export const useEmployeeExplorer = (hasAccess: boolean) => {
 
       const userIds = profiles.map((p) => p.user_id);
 
-      // Fetch approved ratings with related data
-      const { data: ratings, error: ratingsError } = await supabase
-        .from("employee_ratings")
-        .select(`
-          user_id,
-          skill_id,
-          subskill_id,
-          rating,
-          approved_at,
-          skills!inner(id, name, category_id, skill_categories!inner(id, name)),
-          subskills(id, name)
-        `)
-        .eq("status", "approved")
-        .in("user_id", userIds);
+      // Fetch approved ratings with related data - fetch ALL in batches
+      let ratings: any[] = [];
+      let hasMore = true;
+      let offset = 0;
+      const batchSize = 1000;
 
-      if (ratingsError) throw ratingsError;
+      while (hasMore) {
+        const { data: batch, error: ratingsError } = await supabase
+          .from("employee_ratings")
+          .select(`
+            user_id,
+            skill_id,
+            subskill_id,
+            rating,
+            approved_at,
+            skills!inner(id, name, category_id, skill_categories!inner(id, name)),
+            subskills(id, name)
+          `)
+          .eq("status", "approved")
+          .in("user_id", userIds)
+          .range(offset, offset + batchSize - 1);
+
+        if (ratingsError) throw ratingsError;
+
+        if (batch && batch.length > 0) {
+          ratings = [...ratings, ...batch];
+          offset += batchSize;
+          hasMore = batch.length === batchSize;
+        } else {
+          hasMore = false;
+        }
+      }
 
       // Group ratings by user and category
       const employeeMap = new Map<string, Employee>();

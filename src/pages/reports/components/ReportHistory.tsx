@@ -102,7 +102,6 @@ export function ReportHistory({ isOpen, onOpenChange }: ReportHistoryProps) {
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <LoadingSpinner />
-              <span className="ml-2">Loading report history...</span>
             </div>
           ) : reportLogs.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
@@ -167,7 +166,7 @@ export function ReportHistory({ isOpen, onOpenChange }: ReportHistoryProps) {
                           className="gap-2"
                         >
                           {regenerating === log.id ? (
-                            <LoadingSpinner />
+                            <LoadingSpinner showText={false} />
                           ) : (
                             <RefreshCw className="h-4 w-4" />
                           )}

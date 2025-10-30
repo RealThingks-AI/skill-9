@@ -74,7 +74,7 @@ export default function ProjectDetailDialog({
       if (projectError) throw projectError;
 
       // Fetch required skills
-      const { data: skillsData } = await supabase
+      const { data: skillsData, error: skillsError } = await supabase
         .from('project_required_skills')
         .select(`
           skill_id,
@@ -83,6 +83,12 @@ export default function ProjectDetailDialog({
           subskills(name)
         `)
         .eq('project_id', projectId);
+
+      if (skillsError) {
+        console.error('Error fetching required skills:', skillsError);
+      }
+
+      console.log('Fetched skills data:', skillsData);
 
       const requiredSkills =
         skillsData?.map((s: any) => ({
@@ -329,14 +335,20 @@ export default function ProjectDetailDialog({
                 <ChevronDown className="h-4 w-4" />
               </CollapsibleTrigger>
               <CollapsibleContent className="p-4 pt-0">
-                <div className="flex flex-wrap gap-2">
-                  {project.required_skills.map((skill, idx) => (
-                    <Badge key={idx} variant="secondary">
-                      {skill.skill_name}
-                      {skill.subskill_name && ` - ${skill.subskill_name}`}
-                    </Badge>
-                  ))}
-                </div>
+                {project.required_skills.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-4">
+                    No required skills have been added to this project yet. Click the edit button above to add skills.
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {project.required_skills.map((skill, idx) => (
+                      <Badge key={idx} variant="secondary">
+                        {skill.skill_name}
+                        {skill.subskill_name && ` - ${skill.subskill_name}`}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
               </CollapsibleContent>
             </Collapsible>
 

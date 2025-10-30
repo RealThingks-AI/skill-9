@@ -86,7 +86,7 @@ export const PendingApprovalsList = ({
                   </div>
 
                   <div className="flex gap-2">
-                    <Button size="sm" onClick={() => onApprove(approval.id)}>
+                    <Button size="sm" variant="success" onClick={() => onApprove(approval.id)}>
                       Approve
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => onReject(approval.id)}>

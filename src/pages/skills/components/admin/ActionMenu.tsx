@@ -10,7 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Upload, Download, Plus, AlertCircle, CheckCircle, MoreVertical } from "lucide-react";
+import { Upload, Download, Plus, AlertCircle, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AddCategoryModal } from "./AddCategoryModal";
 import { ImportExportService } from "../../services/importExport.service";
@@ -179,33 +179,28 @@ export const ActionMenu = ({
 
   return (
     <>
-      {/* Primary Actions - Visible Buttons */}
-      <div className="flex items-center gap-2">
-        <Button onClick={() => setShowAddCategory(true)} size="sm">
-          <Plus className="mr-2 h-4 w-4" />
-          Add Category
-        </Button>
-        
-        {/* Import/Export Dropdown */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">
-              Import/Export
-              <MoreVertical className="ml-2 h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem onClick={exportToCSV}>
-              <Download className="mr-2 h-4 w-4" />
-              Export CSV
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setShowImportDialog(true)}>
-              <Upload className="mr-2 h-4 w-4" />
-              Import CSV
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      {/* Single Actions Menu */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button size="sm">
+            Actions
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuItem onClick={() => setShowAddCategory(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Category
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={exportToCSV}>
+            <Download className="mr-2 h-4 w-4" />
+            Export CSV
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setShowImportDialog(true)}>
+            <Upload className="mr-2 h-4 w-4" />
+            Import CSV
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       {/* Import Dialog */}
       <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>

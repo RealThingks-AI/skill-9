@@ -70,7 +70,7 @@ export default function DataTable<T extends Record<string, any>>({
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
-        <LoadingSpinner size="lg" />
+        <LoadingSpinner />
       </div>
     );
   }

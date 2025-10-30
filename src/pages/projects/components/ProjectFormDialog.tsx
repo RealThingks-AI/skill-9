@@ -299,6 +299,8 @@ export default function ProjectFormDialog({
       return;
     }
 
+    console.log('Selected subskills before validation:', selectedSubskills);
+
     if (selectedSubskills.length === 0) {
       toast.error('Please select at least one required subskill');
       return;
@@ -336,11 +338,19 @@ export default function ProjectFormDialog({
           subskill_id: s.subskill_id,
         }));
 
-        const { error: skillsError } = await supabase
-          .from('project_required_skills')
-          .insert(skillsToInsert);
+        console.log('Updating project skills:', skillsToInsert);
 
-        if (skillsError) throw skillsError;
+        const { data: insertedSkills, error: skillsError } = await supabase
+          .from('project_required_skills')
+          .insert(skillsToInsert)
+          .select();
+
+        if (skillsError) {
+          console.error('Error inserting skills during update:', skillsError);
+          throw skillsError;
+        }
+
+        console.log('Successfully updated skills:', insertedSkills);
 
         // Delete existing assignments and re-insert
         await supabase
@@ -387,11 +397,19 @@ export default function ProjectFormDialog({
           subskill_id: s.subskill_id,
         }));
 
-        const { error: skillsError } = await supabase
-          .from('project_required_skills')
-          .insert(skillsToInsert);
+        console.log('Inserting skills:', skillsToInsert);
 
-        if (skillsError) throw skillsError;
+        const { data: insertedSkills, error: skillsError } = await supabase
+          .from('project_required_skills')
+          .insert(skillsToInsert)
+          .select();
+
+        if (skillsError) {
+          console.error('Error inserting skills:', skillsError);
+          throw skillsError;
+        }
+
+        console.log('Successfully inserted skills:', insertedSkills);
 
         // Assign selected employees
         if (selectedEmployees.length > 0) {

@@ -16,8 +16,12 @@ export default function AuthPage() {
   } = useAuth();
   const [loading, setLoading] = useState(false);
 
+  // Debug logging
+  console.log('AuthPage render:', { user: !!user, authLoading, loading });
+
   // Redirect if already authenticated
   if (user && !authLoading) {
+    console.log('User authenticated, redirecting to /');
     return <Navigate to="/" replace />;
   }
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -72,10 +76,13 @@ export default function AuthPage() {
     setLoading(false);
   };
   if (authLoading) {
+    console.log('Auth still loading, showing spinner');
     return <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>;
   }
+
+  console.log('Rendering auth form');
   return <div className="min-h-screen bg-gradient-to-br from-primary/10 via-secondary/5 to-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">

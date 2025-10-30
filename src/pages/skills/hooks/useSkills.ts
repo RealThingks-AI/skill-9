@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import type { SkillCategory, Skill, Subskill, UserSkill, EmployeeRating } from "@/types/database";
+import { fetchAllRows } from "@/utils/supabasePagination";
 
 export const useSkills = () => {
   const [skillCategories, setSkillCategories] = useState<SkillCategory[]>([]);
@@ -42,38 +43,78 @@ export const useSkills = () => {
         .select('*')
         .order('name');
 
-      // Fetch employee ratings for current user with manual joins
+      // Fetch employee ratings based on role
+      // Admins and Management: See ALL users' data for oversight
+      // Employees and Tech Leads: See only their own data
       let userSkillsData: any[] = [];
       if (profile.user_id) {
-        console.log('📊 Fetching employee ratings...');
+        console.log('📊 Fetching employee ratings for user:', profile.user_id, 'role:', profile.role);
         
-        // First get the ratings
-        const { data: ratingsData, error: ratingsError } = await supabase
-          .from('employee_ratings')
-          .select('*')
-          .eq('user_id', profile.user_id);
+        let allRatingsData: any[] = [];
         
-        console.log('📊 Raw ratings result:', { data: ratingsData, error: ratingsError, count: ratingsData?.length });
+        // Check if user is admin or management - they can see all data
+        const canSeeAllData = ['admin', 'management'].includes(profile.role || '');
+        
+        if (canSeeAllData) {
+          // Fetch ALL ratings for admins and management
+          console.log('🔑 Admin/Management user - fetching all employee ratings');
+          
+          const { data: ratingsData, error: ratingsError } = await fetchAllRows(
+            supabase
+              .from('employee_ratings')
+              .select('*')
+              .order('created_at', { ascending: false })
+          );
+          
+          if (ratingsError) {
+            console.error('❌ Error fetching all ratings:', ratingsError);
+          } else {
+            allRatingsData = ratingsData || [];
+            console.log('✅ Total ratings fetched for admin/management:', allRatingsData.length);
+          }
+        } else {
+          // Fetch only current user's ratings for employees and tech leads
+          console.log('👤 Regular user - fetching own ratings only');
+          const { data: ratingsData, error: ratingsError } = await supabase
+            .from('employee_ratings')
+            .select('*')
+            .eq('user_id', profile.user_id)
+            .order('created_at', { ascending: false });
+          
+          if (ratingsError) {
+            console.error('❌ Error fetching user ratings:', ratingsError);
+          } else {
+            allRatingsData = ratingsData || [];
+            console.log('📊 User ratings fetched:', allRatingsData.length);
+          }
+        }
+        
+        console.log('📊 Raw ratings result:', { count: allRatingsData.length });
 
-        if (ratingsData && ratingsData.length > 0) {
+        if (allRatingsData && allRatingsData.length > 0) {
           // Get related skills and profiles
-          const skillIds = [...new Set(ratingsData.map(r => r.skill_id))];
-          const subskillIds = [...new Set(ratingsData.map(r => r.subskill_id).filter(Boolean))];
-          const approverIds = [...new Set(ratingsData.map(r => r.approved_by).filter(Boolean))];
+          const skillIds = [...new Set(allRatingsData.map(r => r.skill_id))];
+          const subskillIds = [...new Set(allRatingsData.map(r => r.subskill_id).filter(Boolean))];
+          const approverIds = [...new Set(allRatingsData.map(r => r.approved_by).filter(Boolean))];
+          const userIds = [...new Set(allRatingsData.map(r => r.user_id))]; // Add employee IDs
 
           // Fetch related data
-          const [skillsResult, subskillsResult, profilesResult] = await Promise.all([
+          const [skillsResult, subskillsResult, approverProfilesResult, employeeProfilesResult] = await Promise.all([
             supabase.from('skills').select('*').in('id', skillIds),
             subskillIds.length > 0 ? supabase.from('subskills').select('*').in('id', subskillIds) : Promise.resolve({ data: [] }),
-            approverIds.length > 0 ? supabase.from('profiles').select('*').in('user_id', approverIds) : Promise.resolve({ data: [] })
+            approverIds.length > 0 ? supabase.from('profiles').select('*').in('user_id', approverIds) : Promise.resolve({ data: [] }),
+            supabase.from('profiles').select('user_id, full_name, email').in('user_id', userIds) // Fetch employee profiles
           ]);
 
           // Manually join the data
-          userSkillsData = ratingsData.map(rating => ({
+          userSkillsData = allRatingsData.map(rating => ({
             ...rating,
             skill: skillsResult.data?.find(s => s.id === rating.skill_id),
             subskill: rating.subskill_id ? subskillsResult.data?.find(s => s.id === rating.subskill_id) : null,
-            approver: rating.approved_by ? profilesResult.data?.find(p => p.user_id === rating.approved_by) : null
+            approver: rating.approved_by ? approverProfilesResult.data?.find(p => p.user_id === rating.approved_by) : null,
+            profiles: employeeProfilesResult.data?.find(p => p.user_id === rating.user_id), // Add employee profile
+            skills: skillsResult.data?.find(s => s.id === rating.skill_id), // Alias for compatibility
+            subskills: rating.subskill_id ? subskillsResult.data?.find(s => s.id === rating.subskill_id) : null // Alias for compatibility
           }));
         }
       }

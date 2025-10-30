@@ -46,6 +46,18 @@ export function SkillExplorerTable({
   const allSelected = results.length > 0 && selectedEngineers.length === results.length;
   const someSelected = selectedEngineers.length > 0 && selectedEngineers.length < results.length;
 
+  // Show empty state without table structure when no selections
+  if (selections.length === 0) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="flex flex-col items-center justify-center gap-3 text-muted-foreground">
+          <Search className="h-10 w-10 opacity-20" />
+          <p className="text-base font-medium">Select subskills above to see matching engineers</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full overflow-auto">
       <Table>
@@ -106,15 +118,6 @@ export function SkillExplorerTable({
             <TableRow>
               <TableCell colSpan={3 + selections.length} className="text-center py-16">
                 <LoadingSpinner />
-              </TableCell>
-            </TableRow>
-          ) : selections.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={3} className="h-[350px]">
-                <div className="flex flex-col items-center justify-center gap-3 text-muted-foreground h-full">
-                  <Search className="h-10 w-10 opacity-20" />
-                  <p className="text-base font-medium">Select subskills above to see matching engineers</p>
-                </div>
               </TableCell>
             </TableRow>
           ) : results.length === 0 ? (

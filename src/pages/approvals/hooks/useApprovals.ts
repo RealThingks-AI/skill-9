@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/components/common/AuthProvider";
 import type { EmployeeRating, Profile, Skill, Subskill } from "@/types/database";
 import { toast } from "sonner";
+import { fetchAllRows } from "@/utils/supabasePagination";
 
 export interface ApprovalRequest {
   id: string;
@@ -49,14 +50,9 @@ export const useApprovals = () => {
     
     setLoading(true);
     try {
-      // Fetch ALL employee ratings in batches (Supabase default max is 1000)
-      let allRatings: any[] = [];
-      let hasMore = true;
-      let offset = 0;
-      const batchSize = 1000;
-
-      while (hasMore) {
-        const { data: ratings, error, count } = await supabase
+      // Fetch ALL employee ratings using pagination helper
+      const { data: allRatings, error: ratingsError } = await fetchAllRows(
+        supabase
           .from('employee_ratings')
           .select(`
             *,
@@ -74,33 +70,20 @@ export const useApprovals = () => {
               created_at,
               updated_at
             )
-          `, { count: 'exact' })
+          `)
           .eq('status', 'submitted')
           .order('created_at', { ascending: false })
-          .range(offset, offset + batchSize - 1);
+      );
 
-        if (error) {
-          console.error('Error fetching ratings:', error);
-          throw error;
-        }
-
-        if (ratings && ratings.length > 0) {
-          allRatings = [...allRatings, ...ratings];
-          offset += batchSize;
-          hasMore = ratings.length === batchSize;
-          console.log(`📊 Fetched ${ratings.length} ratings (total so far: ${allRatings.length} of ${count})`);
-        } else {
-          hasMore = false;
-        }
+      if (ratingsError) {
+        console.error('Error fetching ratings:', ratingsError);
+        throw ratingsError;
       }
-
-      console.log('✅ Total ratings fetched:', allRatings.length);
 
       // Get ALL profiles to map user info (including tech leads for self-ratings)
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('user_id, full_name, email, tech_lead_id, role')
-        .in('role', ['employee', 'tech_lead', 'management', 'admin']);
+        .select('user_id, full_name, email, tech_lead_id, role');
 
       if (profilesError) {
         console.error('Error fetching profiles:', profilesError);
@@ -227,7 +210,7 @@ export const useApprovals = () => {
       const userIds = ratings?.map(r => r.user_id) || [];
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('user_id, full_name')
+        .select('user_id, full_name, role')
         .in('user_id', userIds);
 
       const actions: RecentAction[] = ratings?.map(rating => {

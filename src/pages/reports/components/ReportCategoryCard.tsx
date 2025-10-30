@@ -77,7 +77,7 @@ export function ReportCategoryCard({ category, onReportGenerated }: ReportCatego
                 >
                   {generatingReport === report.id ? (
                     <>
-                      <LoadingSpinner />
+                      <LoadingSpinner showText={false} />
                       Generating...
                     </>
                   ) : (

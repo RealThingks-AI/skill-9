@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllRows } from "@/utils/supabasePagination";
 import { useToast } from "@/hooks/use-toast";
 import { meetsRatingCriteria } from "../utils/skillExplorerHelpers";
 
@@ -41,25 +42,42 @@ export const useSkillExplorerResults = (
       const selectedSubskillIds = pendingSelections.map((sel) => sel.subskill_id);
       const selectedSkillIds = pendingSelections.map((sel) => sel.skill_id);
 
-      const { data: ratingsData, error: ratingsError } = await supabase
-        .from("employee_ratings")
-        .select(
-          `
-          user_id,
-          rating,
-          approved_at,
-          subskill_id,
-          skill_id,
-          skills!inner(name),
-          subskills(name)
-        `
-        )
-        .eq("status", "approved")
-        .or(
-          `subskill_id.in.(${selectedSubskillIds.join(",")}),and(subskill_id.is.null,skill_id.in.(${selectedSkillIds.join(",")}))`
-        );
+      // Fetch ratings in batches to avoid 1000 row limit
+      let ratingsData: any[] = [];
+      let hasMore = true;
+      let offset = 0;
+      const batchSize = 1000;
 
-      if (ratingsError) throw ratingsError;
+      while (hasMore) {
+        const { data: batch, error: ratingsError } = await supabase
+          .from("employee_ratings")
+          .select(
+            `
+            user_id,
+            rating,
+            approved_at,
+            subskill_id,
+            skill_id,
+            skills!inner(name),
+            subskills(name)
+          `
+          )
+          .eq("status", "approved")
+          .or(
+            `subskill_id.in.(${selectedSubskillIds.join(",")}),and(subskill_id.is.null,skill_id.in.(${selectedSkillIds.join(",")}))`
+          )
+          .range(offset, offset + batchSize - 1);
+
+        if (ratingsError) throw ratingsError;
+
+        if (batch && batch.length > 0) {
+          ratingsData = [...ratingsData, ...batch];
+          offset += batchSize;
+          hasMore = batch.length === batchSize;
+        } else {
+          hasMore = false;
+        }
+      }
       if (!ratingsData || ratingsData.length === 0) {
         setResults([]);
         setLoading(false);

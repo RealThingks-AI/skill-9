@@ -167,6 +167,7 @@ export const calculateCategoryProgress = (
 };
 
 // Admin view: Aggregate stats across all users for a category
+// IMPORTANT: Only count approved ratings for High/Medium/Low, and only submitted (pending) for Pending
 export const calculateAdminCategoryStats = (
   categoryId: string,
   skills: any[],
@@ -182,7 +183,7 @@ export const calculateAdminCategoryStats = (
     const skillSubskills = subskills.filter(subskill => subskill.skill_id === skill.id);
     
     if (skillSubskills.length > 0) {
-      // Skill has subskills - count all subskill ratings across all users
+      // Skill has subskills - count only approved subskill ratings
       skillSubskills.forEach(subskill => {
         const approvedRatings = allEmployeeRatings.filter(
           r => r.subskill_id === subskill.id && r.status === 'approved'
@@ -191,13 +192,14 @@ export const calculateAdminCategoryStats = (
           ratingCounts[rating.rating as 'high' | 'medium' | 'low']++;
         });
         
+        // Count only submitted (pending approval) ratings
         const pendingRatings = allEmployeeRatings.filter(
           r => r.subskill_id === subskill.id && r.status === 'submitted'
         );
         pendingCount += pendingRatings.length;
       });
     } else {
-      // Skill has no subskills - count the skill ratings across all users
+      // Skill has no subskills - count only approved skill ratings
       const approvedRatings = allEmployeeRatings.filter(
         r => r.skill_id === skill.id && !r.subskill_id && r.status === 'approved'
       );
@@ -205,6 +207,7 @@ export const calculateAdminCategoryStats = (
         ratingCounts[rating.rating as 'high' | 'medium' | 'low']++;
       });
       
+      // Count only submitted (pending approval) ratings
       const pendingRatings = allEmployeeRatings.filter(
         r => r.skill_id === skill.id && !r.subskill_id && r.status === 'submitted'
       );

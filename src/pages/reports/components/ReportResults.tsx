@@ -24,19 +24,13 @@ export function ReportResults({ report, onExport, onRegenerateReport, loading }:
     return (
       <Card className="w-full">
         <CardHeader>
-          <div className="flex items-center gap-2">
-            <LoadingSpinner />
+          <div className="flex items-center justify-center gap-2">
             <CardTitle>Generating Report...</CardTitle>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            <div className="h-32 bg-muted animate-pulse rounded" />
-            <div className="space-y-2">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-4 bg-muted animate-pulse rounded" />
-              ))}
-            </div>
+          <div className="flex items-center justify-center py-8">
+            <LoadingSpinner />
           </div>
         </CardContent>
       </Card>
@@ -121,7 +115,7 @@ export function ReportResults({ report, onExport, onRegenerateReport, loading }:
                     className="gap-2"
                   >
                     {exporting === format ? (
-                      <LoadingSpinner />
+                      <LoadingSpinner showText={false} />
                     ) : (
                       <Download className="h-4 w-4" />
                     )}

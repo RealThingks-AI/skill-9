@@ -7,8 +7,8 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Bell, LogOut, User, Settings } from 'lucide-react';
-import { Loader2 } from 'lucide-react';
 import { ImpersonationBanner } from '@/components/ImpersonationBanner';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 interface LayoutProps {
   children: React.ReactNode;
 }
@@ -25,7 +25,7 @@ export function Layout({
   // Show loading spinner while checking auth
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <LoadingSpinner />
       </div>;
   }
 
@@ -37,7 +37,7 @@ export function Layout({
   // If user exists but no profile loaded, show loading
   if (user && profile === null && !loading) {
     return <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <LoadingSpinner />
       </div>;
   }
   const getRoleColor = (role: string) => {

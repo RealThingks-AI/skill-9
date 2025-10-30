@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { reportService } from "../services/reportService";
 import type { ReportFilters, GeneratedReport, ExportFormat } from "../types/reportTypes";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
+import { fetchAllRows } from "@/utils/supabasePagination";
 
 interface SkillsGapData {
   employee: string;
@@ -62,11 +63,21 @@ export function SkillsGapAnalysis() {
   useEffect(() => {
     const fetchFilterOptions = async () => {
       try {
-        const [employeesRes, skillsRes, categoriesRes] = await Promise.all([
-          supabase.from('profiles').select('user_id, full_name, department'),
+        // Fetch all profiles using pagination helper
+        const { data: allProfiles, error: profilesError } = await fetchAllRows(
+          supabase
+            .from('profiles')
+            .select('user_id, full_name, department')
+        );
+
+        if (profilesError) throw profilesError;
+
+        const [skillsRes, categoriesRes] = await Promise.all([
           supabase.from('skills').select('id, name, skill_categories(id, name)'),
           supabase.from('skill_categories').select('id, name')
         ]);
+
+        const employeesRes = { data: allProfiles };
 
         setFilterOptions({
           employees: employeesRes.data?.map(e => ({

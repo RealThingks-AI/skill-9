@@ -29,9 +29,9 @@
     --popover-foreground: 230 50% 25%;
 
     /* Primary Professional Blue */
-    --primary: 216 34% 17%; /* Deep navy blue */
-    --primary-light: 216 34% 27%; /* Lighter navy */
-    --primary-dark: 216 34% 12%; /* Darker navy */
+    --primary: 216 50% 40%; /* Modern blue - lighter */
+    --primary-light: 216 50% 50%; /* Lighter navy */
+    --primary-dark: 216 50% 30%; /* Darker navy */
     --primary-foreground: 0 0% 100%;
 
     /* Secondary Neutral */
@@ -46,17 +46,17 @@
     --accent: 220 13% 95%;
     --accent-foreground: 230 50% 25%;
 
-    /* Status Colors */
-    --success: 142 71% 45%; /* green-600 */
+    /* Status Colors - Softer, professional tones */
+    --success: 142 55% 42%; /* Muted green - less saturated */
     --success-foreground: 0 0% 100%;
     
-    --info: 217 91% 60%; /* blue-500 */
+    --info: 217 75% 55%; /* Softer blue */
     --info-foreground: 0 0% 100%;
     
-    --warning: 38 92% 50%; /* amber-500 */
+    --warning: 38 80% 48%; /* Softer amber */
     --warning-foreground: 0 0% 100%;
     
-    --destructive: 0 84% 60%; /* red-500 */
+    --destructive: 0 65% 52%; /* Softer red - less bright */
     --destructive-foreground: 0 0% 100%;
 
     /* Borders and Inputs */
@@ -64,10 +64,10 @@
     --input: 220 13% 91%;
     --ring: 224 76% 48%;
 
-    /* Skill Rating Colors */
-    --skill-high: 142 71% 45%; /* green-600 */
-    --skill-medium: 38 92% 50%; /* amber-500 */
-    --skill-low: 20 91% 48%; /* orange-600 */
+    /* Skill Rating Colors - Softer tones to match */
+    --skill-high: 142 55% 42%; /* Softer green */
+    --skill-medium: 38 80% 48%; /* Softer amber */
+    --skill-low: 20 75% 46%; /* Softer orange */
 
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(224 76% 48%), hsl(263 70% 50%));
@@ -103,12 +103,12 @@
     /* Sidebar Colors */
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 230 50% 25%;
-    --sidebar-primary: 216 34% 17%;
+    --sidebar-primary: 216 50% 40%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 13% 95%;
     --sidebar-accent-foreground: 230 50% 25%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 216 34% 17%;
+    --sidebar-ring: 216 50% 40%;
   }
 
   .dark {
@@ -133,10 +133,10 @@
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
 
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 55% 48%; /* Softer dark mode red */
     --destructive-foreground: 210 40% 98%;
 
-    --success: 142 71% 45%;
+    --success: 142 55% 42%; /* Consistent softer green for dark mode */
     --success-foreground: 210 40% 98%;
     
     --info: 217 91% 60%;

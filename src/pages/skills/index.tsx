@@ -84,15 +84,11 @@ const Skills = () => {
     }
   };
 
-  // Get visible categories based on user preferences and sort by percentage
+  // Get visible categories based on user preferences and sort alphabetically
   // Admins/Management see all categories, employees see only their visible ones
   const visibleCategories = skillCategories.filter(category => isManagerOrAbove || visibleCategoryIds.includes(category.id)).sort((a, b) => {
-    // Calculate progress for sorting
-    const progressA = calculateCategoryProgress(a.id, skills, subskills, userSkills);
-    const progressB = calculateCategoryProgress(b.id, skills, subskills, userSkills);
-
-    // Sort by percentage descending (highest first)
-    return progressB.progressPercentage - progressA.progressPercentage;
+    // Sort alphabetically by name (A-Z)
+    return a.name.localeCompare(b.name);
   });
   // Derive category IDs that already have any ratings
   const ratedCategoryIds = Array.from(new Set(userSkills.map(r => skills.find(s => s.id === r.skill_id)?.category_id).filter(Boolean) as string[]));
@@ -180,7 +176,7 @@ const Skills = () => {
               <motion.div className="grid grid-cols-3 gap-4 auto-rows-fr" layout>
                 <AnimatePresence mode="popLayout">
                   {/* Render all visible categories */}
-                  {visibleCategories.map((category, index) => <CategoryCard key={category.id} category={category} skillCount={skills.filter(skill => skill.category_id === category.id).length} subskills={subskills} isManagerOrAbove={isManagerOrAbove} onClick={() => handleCategoryClick(category)} onRefresh={fetchData} index={index} userSkills={userSkills} skills={skills} showHideButton={!isManagerOrAbove} onHide={!isManagerOrAbove ? handleHideCategory : undefined} />)}
+                  {visibleCategories.map((category, index) => <CategoryCard key={category.id} category={category} skillCount={skills.filter(skill => skill.category_id === category.id).length} subskills={subskills} isManagerOrAbove={isManagerOrAbove} onClick={() => handleCategoryClick(category)} onRefresh={fetchData} index={index} userSkills={userSkills} skills={skills} showHideButton={!isManagerOrAbove} onHide={!isManagerOrAbove ? handleHideCategory : undefined} allEmployeeRatings={userSkills} />)}
 
                   {/* Add Category button for employees */}
                   {!isManagerOrAbove && <motion.div key="add-category" className="border-2 border-dashed border-muted-foreground/30 rounded-lg flex flex-col items-center justify-center p-6 hover:border-muted-foreground/50 transition-colors cursor-pointer group min-h-[200px]" onClick={() => setShowCategorySelection(true)} initial={{

@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllRows } from "@/utils/supabasePagination";
 import type { 
   ReportFilters, 
   ReportData, 
@@ -75,34 +76,38 @@ export class ReportService {
 
       if (projectError) throw projectError;
 
-      // Get approved skill ratings from employee_ratings table
-      const { data: approvedRatings, error: ratingsError } = await supabase
-        .from('employee_ratings')
-        .select(`
-          user_id,
-          skill_id,
-          subskill_id,
-          rating,
-          created_at,
-          approved_at,
-          skills (
-            name,
-            skill_categories (
+      // Get approved skill ratings using pagination helper
+      const { data: approvedRatings, error: ratingsError } = await fetchAllRows(
+        supabase
+          .from('employee_ratings')
+          .select(`
+            user_id,
+            skill_id,
+            subskill_id,
+            rating,
+            created_at,
+            approved_at,
+            skills (
+              name,
+              skill_categories (
+                name
+              )
+            ),
+            subskills (
               name
             )
-          ),
-          subskills (
-            name
-          )
-        `)
-        .eq('status', 'approved');
+          `)
+          .eq('status', 'approved')
+      );
 
       if (ratingsError) throw ratingsError;
 
-      // Get user profiles
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, user_id, full_name, department');
+      // Get user profiles using pagination helper
+      const { data: profiles, error: profilesError } = await fetchAllRows(
+        supabase
+          .from('profiles')
+          .select('id, user_id, full_name, department')
+      );
 
       if (profilesError) throw profilesError;
 
@@ -139,32 +144,36 @@ export class ReportService {
     const logId = await this.logReportGeneration('Skills Analytics', 'Proficiency Trends', filters);
 
     try {
-      // Get historical skill ratings from employee_ratings table
-      const { data: ratingHistory, error } = await supabase
-        .from('employee_ratings')
-        .select(`
-          user_id,
-          skill_id,
-          rating,
-          status,
-          created_at,
-          submitted_at,
-          approved_at,
-          skills (
-            name,
-            skill_categories (
-              name
+      // Get historical ratings using pagination helper
+      const { data: ratingHistory, error: historyError } = await fetchAllRows(
+        supabase
+          .from('employee_ratings')
+          .select(`
+            user_id,
+            skill_id,
+            rating,
+            status,
+            created_at,
+            submitted_at,
+            approved_at,
+            skills (
+              name,
+              skill_categories (
+                name
+              )
             )
-          )
-        `)
-        .order('created_at', { ascending: true });
+          `)
+          .order('created_at', { ascending: true })
+      );
 
-      if (error) throw error;
+      if (historyError) throw historyError;
 
-      // Get user profiles
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, user_id, full_name, department');
+      // Get user profiles using pagination helper
+      const { data: profiles, error: profilesError } = await fetchAllRows(
+        supabase
+          .from('profiles')
+          .select('id, user_id, full_name, department')
+      );
 
       if (profilesError) throw profilesError;
 
@@ -217,30 +226,34 @@ export class ReportService {
 
       if (error) throw error;
 
-      // Get approved skill ratings for team members
-      const { data: skills, error: skillsError } = await supabase
-        .from('employee_ratings')
-        .select(`
-          user_id,
-          skill_id,
-          rating,
-          created_at,
-          approved_at,
-          skills (
-            name,
-            skill_categories (
-              name
+      // Get approved skill ratings using pagination helper
+      const { data: skills, error: skillsError } = await fetchAllRows(
+        supabase
+          .from('employee_ratings')
+          .select(`
+            user_id,
+            skill_id,
+            rating,
+            created_at,
+            approved_at,
+            skills (
+              name,
+              skill_categories (
+                name
+              )
             )
-          )
-        `)
-        .eq('status', 'approved');
+          `)
+          .eq('status', 'approved')
+      );
 
       if (skillsError) throw skillsError;
 
-      // Get user profiles
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, user_id, full_name, department, tech_lead_id');
+      // Get user profiles using pagination helper
+      const { data: profiles, error: profilesError } = await fetchAllRows(
+        supabase
+          .from('profiles')
+          .select('id, user_id, full_name, department, tech_lead_id')
+      );
 
       if (profilesError) throw profilesError;
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import type { Profile } from "@/types/database";
+import { fetchAllRows } from "@/utils/supabasePagination";
 
 export interface HistoricalRating {
   id: string;
@@ -50,33 +51,35 @@ export const useApprovalHistory = () => {
     try {
       setLoading(true);
 
-      // Fetch all approved or rejected ratings
-      const { data: ratings, error } = await supabase
-        .from('employee_ratings')
-        .select(`
-          *,
-          skill:skills (
-            id,
-            name,
-            skill_categories (
+      // Fetch ALL approved or rejected ratings using pagination helper
+      const { data: allRatings, error: ratingsError } = await fetchAllRows(
+        supabase
+          .from('employee_ratings')
+          .select(`
+            *,
+            skill:skills (
               id,
               name,
-              color
+              skill_categories (
+                id,
+                name,
+                color
+              )
+            ),
+            subskill:subskills (
+              id,
+              name
             )
-          ),
-          subskill:subskills (
-            id,
-            name
-          )
-        `)
-        .in('status', ['approved', 'rejected'])
-        .order('approved_at', { ascending: false });
+          `)
+          .in('status', ['approved', 'rejected'])
+          .order('approved_at', { ascending: false })
+      );
 
-      if (error) throw error;
+      if (ratingsError) throw ratingsError;
 
       // Fetch user profiles separately
-      const userIds = [...new Set((ratings || []).map(r => r.user_id))];
-      const approverIds = [...new Set((ratings || []).map(r => r.approved_by).filter(Boolean))];
+      const userIds = [...new Set((allRatings || []).map(r => r.user_id))];
+      const approverIds = [...new Set((allRatings || []).map(r => r.approved_by).filter(Boolean))];
       const allUserIds = [...new Set([...userIds, ...approverIds])];
 
       const { data: profiles, error: profileError } = await supabase
@@ -92,7 +95,7 @@ export const useApprovalHistory = () => {
       }, {} as Record<string, Profile>);
 
       // Group by employee
-      const grouped = (ratings || []).reduce((acc, rating) => {
+      const grouped = (allRatings || []).reduce((acc, rating) => {
         const userId = rating.user_id;
         
         if (!acc[userId]) {

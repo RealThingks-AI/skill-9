@@ -7,12 +7,13 @@ import { AddCategoryModal } from "./admin/AddCategoryModal";
 import { ApprovedRatingsModal } from "./ApprovedRatingsModal";
 import { PendingRatingsModal } from "./PendingRatingsModal";
 import { RejectedRatingsModal } from "./RejectedRatingsModal";
-import { RatingsDrilldownModal } from "./RatingsDrilldownModal";
+import { AdminRatingsDrilldownModal } from "./AdminRatingsDrilldownModal";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { SkillsService } from "../services/skills.service";
 import { calculateCategoryProgress, calculateAdminCategoryStats } from "../utils/skillHelpers";
 import type { SkillCategory, EmployeeRating, Skill } from "@/types/database";
+import { fetchAllRows } from "@/utils/supabasePagination";
 interface CategoryCardProps {
   category: SkillCategory;
   skillCount: number;
@@ -25,6 +26,7 @@ interface CategoryCardProps {
   subskills?: any[];
   showHideButton?: boolean;
   onHide?: (categoryId: string, categoryName: string) => void;
+  allEmployeeRatings?: any[]; // Pre-fetched ratings from parent for admins
 }
 export const CategoryCard = ({
   category,
@@ -37,7 +39,8 @@ export const CategoryCard = ({
   skills = [],
   subskills = [],
   showHideButton = false,
-  onHide
+  onHide,
+  allEmployeeRatings = [] // Receive pre-fetched data from parent
 }: CategoryCardProps) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showApprovedModal, setShowApprovedModal] = useState(false);
@@ -47,37 +50,27 @@ export const CategoryCard = ({
   const [showDrilldownModal, setShowDrilldownModal] = useState(false);
   const [drilldownType, setDrilldownType] = useState<'high' | 'medium' | 'low' | 'pending'>('high');
   const [drilldownRecords, setDrilldownRecords] = useState<any[]>([]);
-  const [allEmployeeRatings, setAllEmployeeRatings] = useState<any[]>([]);
   const {
     toast
   } = useToast();
 
-  // Fetch all employee ratings for admin view
-  useEffect(() => {
-    if (isManagerOrAbove) {
-      const fetchAllRatings = async () => {
-        const { data, error } = await supabase
-          .from('employee_ratings')
-          .select(`
-            *,
-            profiles!employee_ratings_user_id_fkey (full_name),
-            skills (name, category_id),
-            subskills (name),
-            approver:profiles!employee_ratings_approved_by_fkey (full_name)
-          `);
-        
-        if (!error && data) {
-          setAllEmployeeRatings(data);
-        }
-      };
-      fetchAllRatings();
-    }
-  }, [isManagerOrAbove, category.id]);
+  // Filter ratings for this category (for admin view)
+  const categoryEmployeeRatings = React.useMemo(() => {
+    if (!isManagerOrAbove || allEmployeeRatings.length === 0) return [];
+    
+    // Get skill IDs for this category
+    const categorySkillIds = skills.filter(s => s.category_id === category.id).map(s => s.id);
+    
+    // Filter ratings for this category's skills
+    return allEmployeeRatings.filter(rating => 
+      categorySkillIds.includes(rating.skill_id)
+    );
+  }, [isManagerOrAbove, category.id, skills, allEmployeeRatings]);
 
   // Calculate statistics based on role
   const statsData = React.useMemo(() => {
-    if (isManagerOrAbove && allEmployeeRatings.length > 0) {
-      return calculateAdminCategoryStats(category.id, skills, subskills, allEmployeeRatings);
+    if (isManagerOrAbove && categoryEmployeeRatings.length > 0) {
+      return calculateAdminCategoryStats(category.id, skills, subskills, categoryEmployeeRatings);
     } else {
       const progress = calculateCategoryProgress(category.id, skills, subskills, userSkills);
       return {
@@ -85,7 +78,7 @@ export const CategoryCard = ({
         pendingCount: progress.pendingCount
       };
     }
-  }, [isManagerOrAbove, category.id, skills, subskills, userSkills, allEmployeeRatings]);
+  }, [isManagerOrAbove, category.id, skills, subskills, userSkills, categoryEmployeeRatings]);
 
   const { ratingCounts, pendingCount } = statsData;
 
@@ -356,8 +349,8 @@ export const CategoryCard = ({
 
               <button onClick={e => {
                 handleUpdateClick(e);
-              }} className="justify-self-end self-end w-[60%] h-[60%] flex items-center justify-center p-2.5 rounded-xl bg-slate-700 dark:bg-slate-800 border-0 hover:bg-slate-600 dark:hover:bg-slate-700 hover:shadow-lg transition-all duration-200 cursor-pointer" type="button">
-                <div className="text-sm font-semibold text-white">Update</div>
+              }} className="justify-self-end self-end w-[60%] h-[60%] flex items-center justify-center p-2.5 rounded-xl bg-primary border-0 hover:bg-primary/90 hover:shadow-lg transition-all duration-200 cursor-pointer" type="button">
+                <div className="text-sm font-semibold text-primary-foreground">Update</div>
               </button>
             </div>
           </CardContent>
@@ -375,7 +368,7 @@ export const CategoryCard = ({
 
       <RejectedRatingsModal open={showRejectedModal} onOpenChange={setShowRejectedModal} categoryName={category.name} ratings={userSkills} skills={skills.filter(skill => skill.category_id === category.id)} subskills={subskills.filter(subskill => skills.some(skill => skill.id === subskill.skill_id && skill.category_id === category.id))} />
 
-      <RatingsDrilldownModal 
+      <AdminRatingsDrilldownModal 
         open={showDrilldownModal} 
         onOpenChange={setShowDrilldownModal}
         categoryName={category.name}
