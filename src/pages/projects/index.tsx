@@ -1,20 +1,19 @@
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Search, Target, Users, CheckCircle, Clock } from 'lucide-react';
+import { Plus, Clock, CheckCircle, Target, XCircle } from 'lucide-react';
 import { useProjects } from './hooks/useProjects';
 import { useAuth } from '@/hooks/useAuth';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
-import ProjectFormDialog from './components/ProjectFormDialog';
+import ProjectCreateDialog from './components/ProjectCreateDialog';
 import ProjectDetailDialog from './components/ProjectDetailDialog';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 
 const Projects = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState<'awaiting' | 'active' | 'completed'>('active');
-  const [formDialogOpen, setFormDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'awaiting' | 'active' | 'completed' | 'rejected'>('active');
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   
@@ -29,19 +28,16 @@ const Projects = () => {
     );
   }
 
-  const filteredProjects = projects.filter((project) =>
-    project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    project.description?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const awaitingProjects = filteredProjects.filter(p => p.status === 'awaiting_approval');
-  const activeProjects = filteredProjects.filter(p => p.status === 'active');
-  const completedProjects = filteredProjects.filter(p => p.status === 'completed');
+  const awaitingProjects = projects.filter(p => p.status === 'awaiting_approval');
+  const activeProjects = projects.filter(p => p.status === 'active');
+  const completedProjects = projects.filter(p => p.status === 'completed');
+  const rejectedProjects = projects.filter(p => p.status === 'rejected');
 
   const stats = {
     awaiting: awaitingProjects.length,
     active: activeProjects.length,
     completed: completedProjects.length,
+    rejected: rejectedProjects.length,
     total: projects.length,
   };
 
@@ -52,50 +48,62 @@ const Projects = () => {
 
   const getStatusBadge = (status: string) => {
     const colors = {
-      awaiting_approval: 'bg-[hsl(var(--warning))] text-[hsl(var(--warning-foreground))]',
-      active: 'bg-[hsl(var(--success))] text-[hsl(var(--success-foreground))]',
-      completed: 'bg-muted text-muted-foreground',
-      on_hold: 'bg-destructive/10 text-destructive',
+      awaiting_approval: 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400',
+      active: 'bg-green-500/10 text-green-700 dark:text-green-400',
+      completed: 'bg-blue-500/10 text-blue-700 dark:text-blue-400',
+      rejected: 'bg-red-500/10 text-red-700 dark:text-red-400',
     };
     return colors[status as keyof typeof colors] || 'bg-muted text-muted-foreground';
   };
 
-  const renderProjectCard = (project: any) => (
-    <Card
-      key={project.id}
-      className="hover:shadow-md transition-shadow cursor-pointer"
-      onClick={() => handleProjectClick(project.id)}
-    >
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-2">
-          <CardTitle className="text-base">{project.name}</CardTitle>
-          <Badge className={`${getStatusBadge(project.status)} shrink-0 text-xs`}>
-            {project.status.replace('_', ' ')}
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-2">
-        {project.description && (
-          <p className="text-sm text-muted-foreground line-clamp-2">{project.description}</p>
-        )}
-        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <Users className="h-3 w-3" />
-            <span>{project.team?.length || 0} members</span>
+  const renderProjectCard = (project: any) => {
+    const totalAllocation = project.members.reduce((sum: number, m: any) => sum + m.allocation_percentage, 0);
+    const avgAllocation = project.members.length > 0 ? Math.round(totalAllocation / project.members.length) : 0;
+
+    return (
+      <Card
+        key={project.id}
+        className="hover:shadow-md transition-shadow cursor-pointer"
+        onClick={() => handleProjectClick(project.id)}
+      >
+        <CardContent className="p-4 space-y-3">
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="font-semibold text-base">{project.name}</h3>
+            <Badge className={`${getStatusBadge(project.status)} shrink-0 text-xs`}>
+              {project.status.replace('_', ' ')}
+            </Badge>
           </div>
-          <div className="flex items-center gap-1">
-            <Target className="h-3 w-3" />
-            <span>{project.skills?.length || 0} skills</span>
+
+          {project.description && (
+            <p className="text-sm text-muted-foreground line-clamp-2">{project.description}</p>
+          )}
+
+          <div className="grid grid-cols-3 gap-2 text-xs">
+            <div className="flex flex-col gap-1">
+              <span className="text-muted-foreground">Members</span>
+              <span className="font-semibold">{project.members.length}</span>
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-muted-foreground">Skills</span>
+              <span className="font-semibold">{project.required_skills.length}</span>
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-muted-foreground">Avg Load</span>
+              <span className="font-semibold">{avgAllocation}%</span>
+            </div>
           </div>
-        </div>
-        {(project.start_date || project.end_date) && (
-          <div className="text-xs text-muted-foreground">
-            {project.start_date || 'TBD'} - {project.end_date || 'Ongoing'}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
+
+          {(project.start_date || project.end_date) && (
+            <div className="text-xs text-muted-foreground pt-2 border-t">
+              {project.start_date || 'TBD'} → {project.end_date || 'Ongoing'}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
+
+  const canCreateProject = ['tech_lead', 'management', 'admin'].includes(profile?.role || '');
 
   return (
     <div className="h-full flex flex-col">
@@ -103,25 +111,33 @@ const Projects = () => {
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Projects</h1>
         </div>
-        <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" onClick={() => setFormDialogOpen(true)}>
+        {canCreateProject && (
+          <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             New Project
           </Button>
-        </div>
+        )}
       </div>
 
       <div className="flex-1 overflow-auto p-6">
-
-      {/* Tabs */}
-      <div className="flex-1 overflow-hidden">
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="h-full flex flex-col">
           <TabsList className="flex-shrink-0 justify-start">
             <TabsTrigger value="awaiting">
-              Awaiting Approval ({stats.awaiting})
+              <Clock className="mr-2 h-4 w-4" />
+              Pending ({stats.awaiting})
             </TabsTrigger>
-            <TabsTrigger value="active">Active Projects ({stats.active})</TabsTrigger>
-            <TabsTrigger value="completed">Completed ({stats.completed})</TabsTrigger>
+            <TabsTrigger value="active">
+              <Target className="mr-2 h-4 w-4" />
+              Active ({stats.active})
+            </TabsTrigger>
+            <TabsTrigger value="completed">
+              <CheckCircle className="mr-2 h-4 w-4" />
+              Completed ({stats.completed})
+            </TabsTrigger>
+            <TabsTrigger value="rejected">
+              <XCircle className="mr-2 h-4 w-4" />
+              Rejected ({stats.rejected})
+            </TabsTrigger>
           </TabsList>
 
           <div className="flex-1 overflow-auto mt-4">
@@ -147,10 +163,12 @@ const Projects = () => {
                 <div className="text-center py-12">
                   <Target className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                   <p className="text-lg text-muted-foreground mb-4">No active projects</p>
-                  <Button onClick={() => setFormDialogOpen(true)}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create First Project
-                  </Button>
+                  {canCreateProject && (
+                    <Button onClick={() => setCreateDialogOpen(true)}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Create First Project
+                    </Button>
+                  )}
                 </div>
               )}
             </TabsContent>
@@ -167,24 +185,36 @@ const Projects = () => {
                 </div>
               )}
             </TabsContent>
+
+            <TabsContent value="rejected" className="mt-0">
+              {rejectedProjects.length > 0 ? (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {rejectedProjects.map(renderProjectCard)}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <XCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-lg text-muted-foreground">No rejected projects</p>
+                </div>
+              )}
+            </TabsContent>
           </div>
         </Tabs>
       </div>
 
-      <ProjectFormDialog
-        open={formDialogOpen}
-        onOpenChange={setFormDialogOpen}
+      <ProjectCreateDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
         onSuccess={refreshProjects}
       />
 
-        <ProjectDetailDialog
-          projectId={selectedProjectId}
-          open={detailDialogOpen}
-          onOpenChange={setDetailDialogOpen}
-          onSuccess={refreshProjects}
-          userRole={profile?.role || ''}
-        />
-      </div>
+      <ProjectDetailDialog
+        projectId={selectedProjectId}
+        open={detailDialogOpen}
+        onOpenChange={setDetailDialogOpen}
+        onSuccess={refreshProjects}
+        userRole={profile?.role || ''}
+      />
     </div>
   );
 };

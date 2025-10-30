@@ -636,8 +636,50 @@ export type Database = {
           },
         ]
       }
+      project_allocation_history: {
+        Row: {
+          change_reason: string | null
+          changed_by: string
+          created_at: string
+          id: string
+          new_allocation: number
+          previous_allocation: number | null
+          project_id: string
+          user_id: string
+        }
+        Insert: {
+          change_reason?: string | null
+          changed_by: string
+          created_at?: string
+          id?: string
+          new_allocation: number
+          previous_allocation?: number | null
+          project_id: string
+          user_id: string
+        }
+        Update: {
+          change_reason?: string | null
+          changed_by?: string
+          created_at?: string
+          id?: string
+          new_allocation?: number
+          previous_allocation?: number | null
+          project_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_allocation_history_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_assignments: {
         Row: {
+          allocation_percentage: number
           assigned_by: string
           created_at: string
           id: string
@@ -645,6 +687,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          allocation_percentage?: number
           assigned_by: string
           created_at?: string
           id?: string
@@ -652,6 +695,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          allocation_percentage?: number
           assigned_by?: string
           created_at?: string
           id?: string
@@ -668,11 +712,50 @@ export type Database = {
           },
         ]
       }
+      project_reminders: {
+        Row: {
+          created_at: string
+          due_date: string
+          id: string
+          project_id: string
+          reminder_type: string
+          sent_at: string
+          sent_to: string
+        }
+        Insert: {
+          created_at?: string
+          due_date: string
+          id?: string
+          project_id: string
+          reminder_type?: string
+          sent_at?: string
+          sent_to: string
+        }
+        Update: {
+          created_at?: string
+          due_date?: string
+          id?: string
+          project_id?: string
+          reminder_type?: string
+          sent_at?: string
+          sent_to?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_reminders_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_required_skills: {
         Row: {
           created_at: string
           id: string
           project_id: string
+          required_rating: string
           skill_id: string
           subskill_id: string | null
         }
@@ -680,6 +763,7 @@ export type Database = {
           created_at?: string
           id?: string
           project_id: string
+          required_rating?: string
           skill_id: string
           subskill_id?: string | null
         }
@@ -687,6 +771,7 @@ export type Database = {
           created_at?: string
           id?: string
           project_id?: string
+          required_rating?: string
           skill_id?: string
           subskill_id?: string | null
         }
@@ -782,6 +867,9 @@ export type Database = {
           end_date: string | null
           id: string
           name: string
+          rejected_at: string | null
+          rejected_by: string | null
+          rejection_reason: string | null
           start_date: string | null
           status: string
           tech_lead_id: string | null
@@ -796,6 +884,9 @@ export type Database = {
           end_date?: string | null
           id?: string
           name: string
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
           start_date?: string | null
           status?: string
           tech_lead_id?: string | null
@@ -810,12 +901,23 @@ export type Database = {
           end_date?: string | null
           id?: string
           name?: string
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
           start_date?: string | null
           status?: string
           tech_lead_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "projects_rejected_by_fkey"
+            columns: ["rejected_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       report_logs: {
         Row: {
@@ -1355,6 +1457,14 @@ export type Database = {
       cleanup_old_notifications: { Args: never; Returns: undefined }
       get_current_user_role: { Args: never; Returns: string }
       get_my_tech_lead_id: { Args: never; Returns: string }
+      get_user_available_capacity: {
+        Args: { user_id_param: string }
+        Returns: number
+      }
+      get_user_total_allocation: {
+        Args: { user_id_param: string }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

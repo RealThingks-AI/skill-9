@@ -22,7 +22,6 @@ import { useEmployeeExplorer } from "./hooks/useEmployeeExplorer";
 import { EmployeeExplorerView } from "./components/EmployeeExplorerView";
 import { getRatingValueForSubskill, getHighestRatingValue } from "./utils/skillExplorerHelpers";
 import { format } from "date-fns";
-import ProjectFormDialog from "../projects/components/ProjectFormDialog";
 
 interface SubskillWithRating {
   subskill: { id: string; name: string; skill_id: string };
