@@ -127,7 +127,7 @@ const Skills = () => {
         {/* Header */}
         <div className="flex-shrink-0 flex items-center justify-between h-16 px-6 border-b border-sidebar-border">
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl tracking-tight text-foreground font-medium">Skills Management</h1>
+            <h1 className="text-2xl tracking-tight text-foreground font-medium">Skills</h1>
             {isManagerOrAbove && <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
                 Admin Mode
               </Badge>}
