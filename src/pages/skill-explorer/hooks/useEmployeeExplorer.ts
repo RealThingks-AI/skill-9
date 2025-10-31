@@ -8,7 +8,7 @@ interface ApprovedRating {
   skill_name: string;
   subskill_id: string | null;
   subskill_name: string | null;
-  rating: string;
+  rating: "high" | "low" | "medium";
   approved_at: string;
   category_id: string;
   category_name: string;

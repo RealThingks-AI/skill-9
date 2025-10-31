@@ -36,7 +36,7 @@ export function EmployeeExplorerView({
   loading
 }: EmployeeExplorerViewProps) {
   if (loading) {
-    return <div className="flex items-center justify-center py-16">
+    return <div className="flex items-center justify-center h-64">
         <LoadingSpinner />
       </div>;
   }

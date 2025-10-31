@@ -16,6 +16,7 @@ import Projects from "./pages/projects";
 import Reports from "./pages/reports";
 import Admin from "./pages/admin";
 import Profile from "./pages/Profile";
+import Notifications from "./pages/Notifications";
 import AuthPage from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
 import NoAccess from "./pages/NoAccess";
@@ -45,6 +46,7 @@ const App = () => (
                     <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
                     <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
                     <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                    <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
                     
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                     <Route path="*" element={<NotFound />} />

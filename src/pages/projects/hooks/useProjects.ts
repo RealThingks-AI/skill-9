@@ -21,6 +21,19 @@ export const useProjects = () => {
     }
   };
 
+  const deleteProject = async (projectId: string) => {
+    try {
+      await projectService.deleteProject(projectId);
+      setProjects(prev => prev.filter(p => p.id !== projectId));
+      toast.success('Project deleted successfully');
+      return true;
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      toast.error('Failed to delete project');
+      return false;
+    }
+  };
+
   useEffect(() => {
     fetchProjects();
   }, []);
@@ -29,5 +42,6 @@ export const useProjects = () => {
     projects,
     loading,
     refreshProjects: fetchProjects,
+    deleteProject,
   };
 };

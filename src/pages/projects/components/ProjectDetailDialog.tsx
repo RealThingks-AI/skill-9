@@ -3,16 +3,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, X, Loader2 } from 'lucide-react';
+import { Check, X, Loader2, Edit } from 'lucide-react';
 import { projectService } from '../services/projectService';
 import { Project } from '../types/projects';
 import { toast } from 'sonner';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { supabase } from '@/integrations/supabase/client';
 import ProjectOverviewTab from './detail-tabs/ProjectOverviewTab';
 import ProjectMembersTab from './detail-tabs/ProjectMembersTab';
 import ProjectSkillsTab from './detail-tabs/ProjectSkillsTab';
 import ProjectHistoryTab from './detail-tabs/ProjectHistoryTab';
+import ProjectCreateDialog from './ProjectCreateDialog';
 
 interface ProjectDetailDialogProps {
   projectId: string | null;
@@ -33,6 +35,7 @@ export default function ProjectDetailDialog({
   const [loading, setLoading] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [showRejectForm, setShowRejectForm] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   useEffect(() => {
     if (projectId && open) {
@@ -60,7 +63,13 @@ export default function ProjectDetailDialog({
 
     try {
       setLoading(true);
-      await projectService.updateProjectStatus(projectId, 'active', project.created_by);
+      // Get current user ID
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('User not authenticated');
+        return;
+      }
+      await projectService.updateProjectStatus(projectId, 'active', user.id);
       toast.success('Project approved');
       onSuccess();
       onOpenChange(false);
@@ -80,7 +89,13 @@ export default function ProjectDetailDialog({
 
     try {
       setLoading(true);
-      await projectService.updateProjectStatus(projectId, 'rejected', project.created_by, rejectionReason);
+      // Get current user ID
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('User not authenticated');
+        return;
+      }
+      await projectService.updateProjectStatus(projectId, 'rejected', user.id, rejectionReason);
       toast.success('Project rejected');
       onSuccess();
       onOpenChange(false);
@@ -107,18 +122,38 @@ export default function ProjectDetailDialog({
   }
 
   const canApprove = ['management', 'admin'].includes(userRole) && project.status === 'awaiting_approval';
+  
+  // Tech leads can edit active projects anytime, management and admin can edit awaiting_approval and active projects
+  const canEdit = 
+    (['tech_lead', 'management', 'admin'].includes(userRole) && project.status === 'awaiting_approval') ||
+    (['tech_lead', 'management', 'admin'].includes(userRole) && project.status === 'active');
+
+  const handleEditSuccess = () => {
+    setEditDialogOpen(false);
+    loadProject();
+    onSuccess();
+  };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle>{project.name}</DialogTitle>
-            <Badge variant={project.status === 'active' ? 'default' : project.status === 'awaiting_approval' ? 'secondary' : project.status === 'rejected' ? 'destructive' : 'outline'}>
-              {project.status.replace('_', ' ').toUpperCase()}
-            </Badge>
-          </div>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-6xl w-[95vw] max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <div className="flex items-center justify-between gap-4">
+              <DialogTitle>{project.name}</DialogTitle>
+              <div className="flex items-center gap-2">
+                {canEdit && (
+                  <Button variant="outline" size="sm" onClick={() => setEditDialogOpen(true)}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit
+                  </Button>
+                )}
+                <Badge variant={project.status === 'active' ? 'default' : project.status === 'awaiting_approval' ? 'secondary' : project.status === 'rejected' ? 'destructive' : 'outline'}>
+                  {project.status.replace('_', ' ').toUpperCase()}
+                </Badge>
+              </div>
+            </div>
+          </DialogHeader>
 
         <Tabs defaultValue="overview" className="flex-1 overflow-hidden flex flex-col">
           <TabsList className="flex-shrink-0">
@@ -165,7 +200,17 @@ export default function ProjectDetailDialog({
             )}
           </div>
         )}
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+
+      {project && (
+        <ProjectCreateDialog
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          onSuccess={handleEditSuccess}
+          editMode={project}
+        />
+      )}
+    </>
   );
 }

@@ -100,7 +100,7 @@ export function ReportHistory({ isOpen, onOpenChange }: ReportHistoryProps) {
 
         <div className="flex-1 overflow-auto space-y-4">
           {loading ? (
-            <div className="flex items-center justify-center py-8">
+            <div className="flex items-center justify-center h-64">
               <LoadingSpinner />
             </div>
           ) : reportLogs.length === 0 ? (

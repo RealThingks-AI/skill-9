@@ -114,7 +114,7 @@ export function SkillExplorerTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {loading ? (
+          {loading && results.length === 0 ? (
             <TableRow>
               <TableCell colSpan={3 + selections.length} className="text-center py-16">
                 <LoadingSpinner />

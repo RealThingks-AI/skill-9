@@ -136,9 +136,41 @@ export const useApprovalHistory = () => {
     }
   }, [user]);
 
+  const handleDeleteHistoricalRating = async (ratingId: string) => {
+    try {
+      const { error } = await supabase
+        .from('employee_ratings')
+        .delete()
+        .eq('id', ratingId);
+
+      if (error) {
+        console.error('Error deleting historical rating:', error);
+        return false;
+      }
+
+      // Update local state after successful deletion
+      setGroupedHistory(prev => {
+        return prev.map(group => {
+          const updatedRatings = group.ratings.filter(r => r.id !== ratingId);
+          return {
+            ...group,
+            ratings: updatedRatings,
+            totalCount: updatedRatings.length
+          };
+        }).filter(group => group.totalCount > 0);
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error deleting historical rating:', error);
+      return false;
+    }
+  };
+
   return {
     groupedHistory,
     loading,
-    refetch: fetchApprovalHistory
+    refetch: fetchApprovalHistory,
+    handleDeleteHistoricalRating
   };
 };

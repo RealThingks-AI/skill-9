@@ -91,6 +91,19 @@ export function useActivityLogs({
           dateFrom = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       }
 
+      // Helper function to normalize module names from activity_logs table
+      const normalizeModule = (module: string): string => {
+        // Map old module names to new UI categories
+        const moduleMap: Record<string, string> = {
+          'Backup': 'Backup & Restore',
+          'Restore': 'Backup & Restore',
+          'Users': 'Settings',
+          'Skills': 'Settings',
+          'Approvals': 'Approvals & Rejections',
+        };
+        return moduleMap[module] || module;
+      };
+
       // Fetch from new activity_logs table
       let newLogsQuery = supabase
         .from("activity_logs")
@@ -174,8 +187,14 @@ export function useActivityLogs({
         created_at: log.created_at,
       }));
 
+      // Normalize module names in new logs
+      const normalizedNewLogs: ActivityLog[] = (newLogsData || []).map((log: any) => ({
+        ...log,
+        module: normalizeModule(log.module),
+      }));
+
       // Combine both sources
-      let combinedLogs = [...(newLogsData || []), ...transformedOldLogs];
+      let combinedLogs = [...normalizedNewLogs, ...transformedOldLogs];
 
       // Apply filters
       if (module) {

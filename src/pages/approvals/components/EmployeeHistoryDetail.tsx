@@ -1,7 +1,7 @@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import type { GroupedHistoricalApproval } from "../hooks/useApprovalHistory";
 
@@ -9,9 +9,11 @@ interface EmployeeHistoryDetailProps {
   employee: GroupedHistoricalApproval;
   isExpanded: boolean;
   onToggle: () => void;
+  onDelete?: (ratingId: string) => void;
+  isAdmin?: boolean;
 }
 
-export const EmployeeHistoryDetail = ({ employee, isExpanded, onToggle }: EmployeeHistoryDetailProps) => {
+export const EmployeeHistoryDetail = ({ employee, isExpanded, onToggle, onDelete, isAdmin }: EmployeeHistoryDetailProps) => {
 
   const getRatingColor = (rating: string) => {
     switch (rating) {
@@ -130,6 +132,20 @@ export const EmployeeHistoryDetail = ({ employee, isExpanded, onToggle }: Employ
                                 </>
                               )}
                             </div>
+
+                            {isAdmin && onDelete && (
+                              <div className="mt-3 pt-3 border-t">
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  onClick={() => onDelete(rating.id)}
+                                  className="text-destructive hover:text-destructive"
+                                >
+                                  <Trash2 className="mr-1 h-3 w-3" />
+                                  Delete Record
+                                </Button>
+                              </div>
+                            )}
                           </div>
                         );
                       })}

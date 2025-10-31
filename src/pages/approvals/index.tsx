@@ -7,7 +7,18 @@ import { Label } from "@/components/ui/label";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, Users, Clock, CheckCircle, XCircle, AlertTriangle, Info, ChevronDown } from "lucide-react";
+import { Search, Users, Clock, CheckCircle, XCircle, AlertTriangle, Info, ChevronDown, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 import { useApprovals, type GroupedApproval } from "./hooks/useApprovals";
 import { useAuth } from "@/hooks/useAuth";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
@@ -24,6 +35,7 @@ const Approvals = () => {
     loading,
     handleApproveRating,
     handleRejectRating,
+    handleDeleteRating,
     refetch
   } = useApprovals();
   const {
@@ -39,9 +51,31 @@ const Approvals = () => {
   const [activeTab, setActiveTab] = useState("pending");
   const {
     groupedHistory,
-    loading: historyLoading
+    loading: historyLoading,
+    handleDeleteHistoricalRating
   } = useApprovalHistory();
   const [techLeadStatsOpen, setTechLeadStatsOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [ratingToDelete, setRatingToDelete] = useState<string | null>(null);
+
+  const isAdmin = profile?.role === 'admin';
+
+  const confirmDelete = async () => {
+    if (ratingToDelete) {
+      if (activeTab === "pending") {
+        await handleDeleteRating(ratingToDelete);
+      } else {
+        const success = await handleDeleteHistoricalRating(ratingToDelete);
+        if (success) {
+          toast.success('Rating deleted successfully');
+        } else {
+          toast.error('Failed to delete rating');
+        }
+      }
+      setRatingToDelete(null);
+      setDeleteDialogOpen(false);
+    }
+  };
 
   // Filter grouped approvals based on search term
   const filteredGroupedApprovals = groupedApprovals.filter(group => group.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) || group.email.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -106,7 +140,7 @@ const Approvals = () => {
         {/* Pending Approvals Tab */}
         <TabsContent value="pending" className="flex-1 overflow-hidden mt-0 p-6">
           <ScrollArea className="h-full">
-            {loading ? <div className="flex justify-center py-8">
+            {loading ? <div className="flex items-center justify-center min-h-[calc(100vh-64px-48px)]">
                 <LoadingSpinner />
               </div> : filteredGroupedApprovals.length === 0 ? <div className="text-center py-12">
                 <CheckCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -206,6 +240,20 @@ const Approvals = () => {
                                                   <XCircle className="mr-1 h-3 w-3" />
                                                   Reject
                                                 </Button>
+                                                {isAdmin && (
+                                                  <Button 
+                                                    size="sm" 
+                                                    variant="outline" 
+                                                    onClick={() => {
+                                                      setRatingToDelete(rating.id);
+                                                      setDeleteDialogOpen(true);
+                                                    }} 
+                                                    className="px-4 py-2"
+                                                  >
+                                                    <Trash2 className="mr-1 h-3 w-3" />
+                                                    Delete
+                                                  </Button>
+                                                )}
                                               </div>
                                             </div>}
 
@@ -224,6 +272,20 @@ const Approvals = () => {
                                                 <XCircle className="mr-1 h-3 w-3" />
                                                 Reject
                                               </Button>
+                                              {isAdmin && (
+                                                <Button 
+                                                  size="sm" 
+                                                  variant="outline" 
+                                                  onClick={() => {
+                                                    setRatingToDelete(rating.id);
+                                                    setDeleteDialogOpen(true);
+                                                  }} 
+                                                  className="px-4 py-2"
+                                                >
+                                                  <Trash2 className="mr-1 h-3 w-3" />
+                                                  Delete
+                                                </Button>
+                                              )}
                                             </div>}
 
                                           {/* Approve Comment Section */}
@@ -307,7 +369,7 @@ const Approvals = () => {
         {/* Approval History Tab */}
         <TabsContent value="history" className="flex-1 overflow-hidden mt-0 p-6">
           <ScrollArea className="h-full">
-            {historyLoading ? <div className="flex justify-center py-8">
+            {historyLoading ? <div className="flex items-center justify-center min-h-[calc(100vh-64px-48px)]">
                 <LoadingSpinner />
               </div> : filteredHistory.length === 0 ? <div className="text-center py-12">
                 <Info className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -315,7 +377,10 @@ const Approvals = () => {
                   {searchTerm ? "No history matches your search." : "No approval history yet."}
                 </p>
               </div> : <div className="space-y-2">
-                {filteredHistory.map(employee => <EmployeeHistoryDetail key={employee.userId} employee={employee} isExpanded={expandedHistoryId === employee.userId} onToggle={() => setExpandedHistoryId(prev => prev === employee.userId ? null : employee.userId)} />)}
+                {filteredHistory.map(employee => <EmployeeHistoryDetail key={employee.userId} employee={employee} isExpanded={expandedHistoryId === employee.userId} onToggle={() => setExpandedHistoryId(prev => prev === employee.userId ? null : employee.userId)} isAdmin={isAdmin} onDelete={(ratingId) => {
+                    setRatingToDelete(ratingId);
+                    setDeleteDialogOpen(true);
+                  }} />)}
               </div>}
           </ScrollArea>
         </TabsContent>
@@ -325,6 +390,24 @@ const Approvals = () => {
       
       {/* Tech Lead Stats Modal */}
       <TechLeadStatsModal open={techLeadStatsOpen} onOpenChange={setTechLeadStatsOpen} />
+      
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Rating</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to permanently delete this record? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setRatingToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Tabs>;
 };
 export default Approvals;

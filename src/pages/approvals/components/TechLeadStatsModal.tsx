@@ -32,7 +32,7 @@ export const TechLeadStatsModal = ({
             <DialogTitle className="text-xl font-semibold">Tech Lead Actions</DialogTitle>
           </DialogHeader>
 
-          {loading ? <div className="flex justify-center py-12">
+          {loading ? <div className="flex items-center justify-center h-64">
               <LoadingSpinner />
             </div> : techLeadStats.length === 0 ? <div className="text-center py-12 text-muted-foreground">
               No tech lead actions found

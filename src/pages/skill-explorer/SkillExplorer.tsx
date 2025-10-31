@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Download } from "lucide-react";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
+import ProjectCreateDialog from "@/pages/projects/components/ProjectCreateDialog";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { CategorySelectionModal } from "./components/CategorySelectionModal";
@@ -281,7 +282,9 @@ export default function SkillExplorer() {
       return sortDirection === "asc" ? aVal - bVal : bVal - aVal;
     });
 
-  if (authLoading || stillResolvingProfile) {
+  // Single global loading state to avoid double spinners on first load
+  const pageLoading = authLoading || stillResolvingProfile || (activeTab === "skills" ? (loading && results.length === 0) : employeesLoading);
+  if (pageLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <LoadingSpinner />
@@ -556,7 +559,7 @@ export default function SkillExplorer() {
         userId={profile?.user_id || ""}
       />
 
-      <ProjectFormDialog
+      <ProjectCreateDialog
         open={showProjectDialog}
         onOpenChange={setShowProjectDialog}
         prefilledSubskills={pendingSelections.map((sel) => ({

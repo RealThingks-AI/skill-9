@@ -29,7 +29,7 @@ export function ReportResults({ report, onExport, onRegenerateReport, loading }:
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center py-8">
+          <div className="flex items-center justify-center h-64">
             <LoadingSpinner />
           </div>
         </CardContent>

@@ -427,6 +427,7 @@ export type Database = {
           created_at: string
           id: string
           message: string
+          performed_by: string | null
           read: boolean
           title: string
           type: string
@@ -436,6 +437,7 @@ export type Database = {
           created_at?: string
           id?: string
           message: string
+          performed_by?: string | null
           read?: boolean
           title: string
           type?: string
@@ -445,6 +447,7 @@ export type Database = {
           created_at?: string
           id?: string
           message?: string
+          performed_by?: string | null
           read?: boolean
           title?: string
           type?: string

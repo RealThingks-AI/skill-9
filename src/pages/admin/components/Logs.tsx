@@ -204,7 +204,7 @@ export default function Logs({ onBack }: LogsProps) {
       <Card className="flex-1 flex flex-col overflow-hidden">
         <CardContent className="p-0 flex-1 overflow-auto">
           {isLoading ? (
-            <div className="flex items-center justify-center h-64">
+            <div className="flex items-center justify-center h-full min-h-64">
               <LoadingSpinner />
             </div>
           ) : error ? (

@@ -3,13 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 export type ActivityModule = 
   | "Skills" 
   | "Users" 
-  | "Approvals" 
-  | "Backup" 
-  | "Restore" 
+  | "Approvals & Rejections"
+  | "Backup & Restore" 
   | "Auth" 
   | "Settings" 
   | "Projects" 
-  | "Reports";
+  | "Reports"
+  | "Profile & Password Updates";
 
 interface LogActivityParams {
   module: ActivityModule;
@@ -93,7 +93,7 @@ export async function logPasswordChange(
 
     // Also log in activity logs
     await logActivity({
-      module: "Auth",
+      module: "Profile & Password Updates",
       actionType: "Password Change",
       description: `Password changed for user ${targetUsername} by ${triggerType === "Self" ? "themselves" : "admin"}`,
       recordReference: targetUserId,

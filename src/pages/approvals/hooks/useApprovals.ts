@@ -466,6 +466,46 @@ export const useApprovals = () => {
     }
   }, [user]);
 
+  const handleDeleteRating = async (approvalId: string) => {
+    try {
+      if (!user?.id) {
+        toast.error('You must be logged in to delete ratings');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('employee_ratings')
+        .delete()
+        .eq('id', approvalId);
+
+      if (error) {
+        console.error('Supabase error:', error);
+        toast.error('Failed to delete rating');
+        return;
+      }
+      
+      // Update local state after successful DB delete
+      setPendingApprovals(prev => prev.filter(a => a.id !== approvalId));
+      
+      // Update grouped approvals
+      setGroupedApprovals(prev => {
+        return prev.map(group => {
+          const updatedRatings = group.ratings.filter(r => r.id !== approvalId);
+          return {
+            ...group,
+            ratings: updatedRatings,
+            pendingCount: updatedRatings.length
+          };
+        }).filter(group => group.pendingCount > 0);
+      });
+
+      toast.success('Rating deleted successfully');
+    } catch (error) {
+      console.error('Error deleting rating:', error);
+      toast.error('Failed to delete rating');
+    }
+  };
+
   return {
     searchTerm,
     setSearchTerm,
@@ -475,6 +515,7 @@ export const useApprovals = () => {
     loading,
     handleApproveRating,
     handleRejectRating,
+    handleDeleteRating,
     getApprovedTodayCount,
     getRejectedTodayCount,
     getApprovedTodayActions,

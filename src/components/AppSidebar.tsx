@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, BookOpen, CheckCircle, Search, Settings, ChevronLeft, User, LogOut, FolderKanban, FileBarChart } from "lucide-react";
+import { LayoutDashboard, BookOpen, CheckCircle, Search, Settings, ChevronLeft, User, LogOut, FolderKanban, FileBarChart, Bell } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePendingApprovals } from "@/hooks/usePendingApprovals";
 import { useToast } from "@/hooks/use-toast";
 import { usePageAccess } from "@/hooks/usePageAccess";
+import { useNotifications } from "@/hooks/useNotifications";
 const items = [{
   title: "Dashboard",
   url: "/dashboard",
@@ -59,7 +60,13 @@ export function AppSidebar() {
   const {
     pendingCount
   } = usePendingApprovals();
-  const { hasAccess, isLoading: accessLoading } = usePageAccess();
+  const {
+    hasAccess,
+    isLoading: accessLoading
+  } = usePageAccess();
+  const {
+    unreadCount
+  } = useNotifications();
   const currentPath = location.pathname;
   const toggleSidebar = () => {
     setCollapsed(!collapsed);
@@ -76,7 +83,7 @@ export function AppSidebar() {
     isActive: boolean;
   }) => isActive ? "bg-sidebar-accent text-sidebar-primary font-semibold border-r-2 border-sidebar-primary" : "hover:bg-sidebar-accent/50 text-sidebar-foreground/70 hover:text-sidebar-foreground";
   const canAccessItem = (itemRoles?: string[], itemUrl?: string) => {
-    const roleOk = !itemRoles || (profile && itemRoles.includes(profile.role));
+    const roleOk = !itemRoles || profile && itemRoles.includes(profile.role);
     const accessOk = itemUrl ? hasAccess(itemUrl) : true;
     return Boolean(roleOk && accessOk);
   };
@@ -155,6 +162,38 @@ export function AppSidebar() {
                 </TooltipProvider>;
           }
           return collapseButton;
+        })()}
+        </div>
+
+        {/* Notifications */}
+        <div>
+          {(() => {
+          const handleNotificationsClick = () => {
+            navigate("/notifications");
+          };
+          const notificationsButton = <button onClick={handleNotificationsClick} className="flex items-center h-10 w-full rounded-lg transition-colors font-medium text-sidebar-foreground/70 hover:text-sidebar-primary hover:bg-sidebar-accent/50">
+                <div className="w-10 h-10 flex items-center justify-center flex-shrink-0 relative">
+                  <Bell className="w-5 h-5" />
+                  {unreadCount > 0 && <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center p-0 text-xs">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </Badge>}
+                </div>
+                <div className={`transition-all duration-300 overflow-hidden whitespace-nowrap flex items-center justify-between flex-1 ${collapsed ? "opacity-0 w-0" : "opacity-100 w-auto ml-0"}`}>
+                  <span className="text-sm font-medium">Notifications</span>
+                  {unreadCount > 0}
+                </div>
+              </button>;
+          if (collapsed) {
+            return <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>{notificationsButton}</TooltipTrigger>
+                    <TooltipContent side="right" className="ml-2">
+                      <p>Notifications {unreadCount > 0 && `(${unreadCount})`}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>;
+          }
+          return notificationsButton;
         })()}
         </div>
 

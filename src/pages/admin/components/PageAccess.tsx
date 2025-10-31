@@ -155,10 +155,17 @@ export function PageAccess() {
     }
   };
 
-  const filteredPages = pages.filter(page =>
-    page.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    page.route.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredPages = pages.filter(page => {
+    // Hide /notifications and /profile pages as they're accessible to all users by default
+    if (page.route === '/notifications' || page.route === '/profile') {
+      return false;
+    }
+    
+    return (
+      page.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      page.route.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  });
 
   if (isLoading) {
     return <div className="flex items-center justify-center p-8">Loading...</div>;

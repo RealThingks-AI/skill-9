@@ -10,7 +10,7 @@ const Dashboard = () => {
   console.log('Profile data:', profile); // Debug log
   const canAccessDashboard = false; // Dashboard removed for all user roles
   if (!profile) {
-    return <div className="flex items-center justify-center h-64">
+    return <div className="flex items-center justify-center h-screen">
         <LoadingSpinner />
       </div>;
   }

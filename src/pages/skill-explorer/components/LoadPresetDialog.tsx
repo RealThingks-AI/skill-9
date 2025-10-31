@@ -134,7 +134,7 @@ export function LoadPresetDialog({
 
           <div className="max-h-[400px] overflow-y-auto">
             {loading ? (
-              <div className="flex items-center justify-center py-12">
+              <div className="flex items-center justify-center h-64">
                 <LoadingSpinner />
               </div>
             ) : presets.length === 0 ? (

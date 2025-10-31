@@ -11,9 +11,10 @@ import FormSelect from '@/components/common/FormSelect';
 interface StepOneProps {
   formData: ProjectFormData;
   setFormData: (data: ProjectFormData) => void;
+  prefilledSubskills?: { skill_id: string; subskill_id: string }[];
 }
 
-export default function StepOne({ formData, setFormData }: StepOneProps) {
+export default function StepOne({ formData, setFormData, prefilledSubskills = [] }: StepOneProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [subskills, setSubskills] = useState<any[]>([]);
   const [filteredSubskills, setFilteredSubskills] = useState<any[]>([]);
@@ -21,6 +22,32 @@ export default function StepOne({ formData, setFormData }: StepOneProps) {
   useEffect(() => {
     fetchSubskills();
   }, []);
+
+  // Load prefilled subskills into formData
+  useEffect(() => {
+    if (prefilledSubskills.length > 0 && subskills.length > 0 && formData.required_skills.length === 0) {
+      const prefilledSkills: RequiredSkill[] = prefilledSubskills
+        .map(ps => {
+          const subskill = subskills.find(s => s.id === ps.subskill_id);
+          if (!subskill) return null;
+          return {
+            skill_id: ps.skill_id,
+            skill_name: subskill.skills.name,
+            subskill_id: ps.subskill_id,
+            subskill_name: subskill.name,
+            required_rating: 'medium' as RatingLevel,
+          };
+        })
+        .filter((s): s is RequiredSkill => s !== null);
+      
+      if (prefilledSkills.length > 0) {
+        setFormData({
+          ...formData,
+          required_skills: prefilledSkills,
+        });
+      }
+    }
+  }, [prefilledSubskills, subskills, formData, setFormData]);
 
   useEffect(() => {
     if (searchTerm) {
