@@ -159,12 +159,12 @@ export default function ProjectCreateDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[160rem] w-[90vw] h-[90vh] flex flex-col">
-        <DialogHeader className="flex-shrink-0">
+      <DialogContent className="max-w-6xl w-[95vw] max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
           <DialogTitle>{editMode ? 'Edit Project' : 'Create New Project'} - Step {step} of 3</DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto space-y-6 py-4">
+        <div className="space-y-6 py-4">
           {step === 1 && (
             <StepOne 
               formData={formData} 
@@ -180,7 +180,7 @@ export default function ProjectCreateDialog({
           )}
         </div>
 
-        <div className="flex-shrink-0 flex items-center justify-between pt-4 border-t">
+        <div className="flex items-center justify-between pt-4 border-t">
           <Button
             variant="outline"
             onClick={handleBack}
