@@ -189,7 +189,7 @@ const Projects = () => {
             </TabsTrigger>
           </TabsList>
 
-          <div className="flex-1 overflow-auto mt-4">
+          <div className="flex-1 overflow-auto">
             <TabsContent value="awaiting" className="mt-0">
               {awaitingProjects.length > 0 ? (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
