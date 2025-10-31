@@ -90,9 +90,9 @@ export function AppSidebar() {
   const filteredItems = items.filter(item => canAccessItem(item.roles, item.url));
   const filteredBottomItems = bottomItems.filter(item => canAccessItem(item.roles));
   return <div className="h-screen flex flex-col border-r border-sidebar-border bg-sidebar-background transition-all duration-300 ease-in-out" style={{
-    width: collapsed ? "64px" : "180px",
-    minWidth: collapsed ? "64px" : "180px",
-    maxWidth: collapsed ? "64px" : "180px"
+    width: collapsed ? "64px" : "160px",
+    minWidth: collapsed ? "64px" : "160px",
+    maxWidth: collapsed ? "64px" : "160px"
   }}>
       {/* Logo */}
       <div className="flex items-center border-b border-sidebar-border h-16">
