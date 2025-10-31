@@ -4,6 +4,7 @@ import { useAuthContext } from "@/components/common/AuthProvider";
 import type { EmployeeRating, Profile, Skill, Subskill } from "@/types/database";
 import { toast } from "sonner";
 import { fetchAllRows } from "@/utils/supabasePagination";
+import { notificationService } from "@/services/notificationService";
 
 export interface ApprovalRequest {
   id: string;
@@ -351,6 +352,23 @@ export const useApprovals = () => {
           created_at: new Date().toISOString()
         });
 
+      // Send notification to the employee
+      if (updated?.user_id) {
+        const { data: approverProfile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('user_id', user.id)
+          .single();
+
+        const skillName = approvedRating?.title || 'skill';
+        await notificationService.notifyRatingApproved(
+          updated.user_id,
+          approverProfile?.full_name || 'A tech lead',
+          skillName,
+          user.id
+        );
+      }
+
       toast.success('Rating approved successfully');
     } catch (error) {
       console.error('Error approving rating:', error);
@@ -451,6 +469,24 @@ export const useApprovals = () => {
           approver_comment: comment,
           created_at: new Date().toISOString()
         });
+
+      // Send notification to the employee
+      if (updated?.user_id) {
+        const { data: approverProfile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('user_id', user.id)
+          .single();
+
+        const skillName = rejectedRating?.title || 'skill';
+        await notificationService.notifyRatingRejected(
+          updated.user_id,
+          approverProfile?.full_name || 'A tech lead',
+          skillName,
+          comment,
+          user.id
+        );
+      }
 
       toast.success('Rating rejected');
     } catch (error) {
