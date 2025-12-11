@@ -82,7 +82,7 @@ export default function AuthPage() {
       </div>;
   }
   console.log('Rendering auth form');
-  return <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+  return <main className="min-h-screen flex items-center justify-center p-4 bg-background">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           
@@ -119,5 +119,5 @@ export default function AuthPage() {
           
         </div>
       </div>
-    </div>;
+    </main>;
 }
