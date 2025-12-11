@@ -98,7 +98,7 @@ export function AppSidebar() {
       <div className="flex items-center border-b border-sidebar-border h-16">
         <div className="flex items-center w-full pl-3 pr-3">
           <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
-            <img src="/lovable-uploads/54adcce8-be73-4135-bb3c-fb8fd83846cf.png" alt="Logo" className="h-8 w-8" />
+            <img src="/lovable-uploads/54adcce8-be73-4135-bb3c-fb8fd83846cf.png" alt="Logo" className="h-8 w-8 object-contain" />
           </div>
           <div className={`ml-0 text-sidebar-foreground font-bold text-base whitespace-nowrap transition-all duration-300 overflow-hidden ${collapsed ? "opacity-0 w-0" : "opacity-100 w-auto"}`}>
             RealThingks
