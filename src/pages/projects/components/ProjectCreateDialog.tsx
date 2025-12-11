@@ -394,15 +394,15 @@ export default function ProjectCreateDialog({
     }
     return <>
         <Dialog open={open} onOpenChange={onOpenChange}>
-          <DialogContent className="max-w-[min(1296px,90vw)] w-full h-[85vh] overflow-hidden flex flex-col">
+          <DialogContent className="max-w-[min(1296px,90vw)] w-full max-h-[85vh] overflow-hidden flex flex-col">
             <DialogHeader className="flex-shrink-0">
               <DialogTitle>{project.name}</DialogTitle>
             </DialogHeader>
 
-            <div className="flex-1 min-h-0 py-4 px-1">
-              <div className="grid grid-cols-1 lg:grid-cols-[40%_60%] gap-4 h-full">
+            <div className="flex-1 min-h-0 overflow-y-auto py-4 px-1">
+              <div className="grid grid-cols-1 lg:grid-cols-[40%_60%] gap-4">
                 {/* Left Column: Project Details (same as edit mode but read-only) */}
-                <div className="space-y-4 min-h-0 overflow-y-auto pr-2">
+                <div className="space-y-4">
                   <StepOneWithDates formData={{
                   name: project.name,
                   description: project.description || '',
@@ -417,7 +417,7 @@ export default function ProjectCreateDialog({
                 </div>
 
                 {/* Right Column: Team Members (read-only list) */}
-                <div className="flex flex-col h-full min-h-[500px]">
+                <div className="flex flex-col">
                   <ProjectViewMembersList project={project} onEditMember={canEdit ? userId => {
                   setMemberToExpand(userId);
                   setShowSkillsAndTeam(true);
