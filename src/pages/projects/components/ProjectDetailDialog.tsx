@@ -177,7 +177,7 @@ export default function ProjectDetailDialog({
             </div>
           </DialogHeader>
 
-        <Tabs defaultValue="overview" className="flex-1 overflow-hidden flex flex-col">
+        <Tabs defaultValue="overview" className="flex-1 min-h-0 flex flex-col">
           <TabsList className="flex-shrink-0">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="members">Members</TabsTrigger>
@@ -185,25 +185,25 @@ export default function ProjectDetailDialog({
             <TabsTrigger value="history">History</TabsTrigger>
           </TabsList>
 
-          <div className="flex-1 overflow-y-auto mt-4">
-            <TabsContent value="overview" className="mt-0">
+          <div className="flex-1 min-h-0 overflow-y-auto mt-4">
+            <TabsContent value="overview" className="mt-0 h-full">
               <ProjectOverviewTab project={project} />
             </TabsContent>
-            <TabsContent value="members" className="mt-0 h-full overflow-hidden">
+            <TabsContent value="members" className="mt-0 h-full">
               <ProjectMembersTab project={project} isEmployeeView={userRole === 'employee'} />
             </TabsContent>
-            <TabsContent value="skills" className="mt-0">
+            <TabsContent value="skills" className="mt-0 h-full">
               <ProjectSkillsTab project={project} />
             </TabsContent>
             {userRole === 'employee' ? (
-              <TabsContent value="history" className="mt-0">
+              <TabsContent value="history" className="mt-0 h-full">
                 <ProjectHistoryTab 
                   projectId={project.id} 
                   isEmployeeView={true}
                 />
               </TabsContent>
             ) : (
-              <TabsContent value="history" className="mt-0">
+              <TabsContent value="history" className="mt-0 h-full">
                 <ProjectHistoryTab projectId={project.id} isEmployeeView={false} />
               </TabsContent>
             )}

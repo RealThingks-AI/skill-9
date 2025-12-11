@@ -105,7 +105,7 @@ export default function ProjectViewMembersList({
         </ToggleGroup>
       </div>
       
-      <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5">
+      <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5 max-h-[400px]">
         {viewMode === 'user' ? membersWithMonthCount.length > 0 ? membersWithMonthCount.map(member => {
         const isExpanded = expandedUsers.has(member.user_id);
         return <Collapsible key={member.user_id} open={isExpanded} onOpenChange={() => toggleUserExpanded(member.user_id)}>
