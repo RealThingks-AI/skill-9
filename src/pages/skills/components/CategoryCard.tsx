@@ -14,6 +14,7 @@ import { SkillsService } from "../services/skills.service";
 import { calculateCategoryProgress, calculateAdminCategoryStats } from "../utils/skillHelpers";
 import type { SkillCategory, EmployeeRating, Skill } from "@/types/database";
 import { fetchAllRows } from "@/utils/supabasePagination";
+
 interface CategoryCardProps {
   category: SkillCategory;
   skillCount: number;
@@ -26,9 +27,10 @@ interface CategoryCardProps {
   subskills?: any[];
   showHideButton?: boolean;
   onHide?: (categoryId: string, categoryName: string) => void;
-  allEmployeeRatings?: any[]; // Pre-fetched ratings from parent for admins
+  allEmployeeRatings?: any[];
 }
-export const CategoryCard = ({
+
+export const CategoryCard = React.forwardRef<HTMLDivElement, CategoryCardProps>(({
   category,
   skillCount,
   isManagerOrAbove,
@@ -40,8 +42,8 @@ export const CategoryCard = ({
   subskills = [],
   showHideButton = false,
   onHide,
-  allEmployeeRatings = [] // Receive pre-fetched data from parent
-}: CategoryCardProps) => {
+  allEmployeeRatings = []
+}, ref) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showApprovedModal, setShowApprovedModal] = useState(false);
   const [showPendingModal, setShowPendingModal] = useState(false);
@@ -234,26 +236,34 @@ export const CategoryCard = ({
     onClick();
   };
   return <>
-      <motion.div initial={{
-      opacity: 0,
-      y: 20
-    }} animate={{
-      opacity: 1,
-      y: 0
-    }} exit={{
-      opacity: 0,
-      y: -20,
-      scale: 0.95
-    }} transition={{
-      duration: 0.2,
-      delay: Math.min(index * 0.05, 0.3),
-      ease: "easeOut"
-    }} whileHover={{
-      y: -4,
-      transition: {
-        duration: 0.2
-      }
-    }} className="group">
+      <motion.div 
+        ref={ref}
+        initial={{
+          opacity: 0,
+          y: 20
+        }} 
+        animate={{
+          opacity: 1,
+          y: 0
+        }} 
+        exit={{
+          opacity: 0,
+          y: -20,
+          scale: 0.95
+        }} 
+        transition={{
+          duration: 0.2,
+          delay: Math.min(index * 0.05, 0.3),
+          ease: "easeOut"
+        }} 
+        whileHover={{
+          y: -4,
+          transition: {
+            duration: 0.2
+          }
+        }} 
+        className="group"
+      >
         <Card className="relative h-full w-full border border-border/50 bg-card hover:border-primary/50 hover:shadow-xl transition-all duration-300 overflow-hidden">
           {/* Subtle gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-br from-primary/3 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
@@ -374,6 +384,9 @@ export const CategoryCard = ({
         categoryName={category.name}
         ratingType={drilldownType}
         records={drilldownRecords}
+        onRefresh={onRefresh}
       />
     </>;
-};
+});
+
+CategoryCard.displayName = "CategoryCard";

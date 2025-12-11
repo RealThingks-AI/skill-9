@@ -41,15 +41,16 @@ export async function logActivity({
       .eq("user_id", user.id)
       .single();
 
-    const { error } = await supabase.from("activity_logs").insert({
+    const payload: any = {
       user_id: user.id,
-      username: profile?.full_name || user.email || "Unknown User",
       module,
       action_type: actionType,
       description,
-      record_reference: recordReference,
-      metadata,
-    });
+    };
+    if (recordReference) payload.record_reference = recordReference;
+    if (metadata) payload.metadata = metadata;
+
+    const { error } = await supabase.from("activity_logs").insert([payload]);
 
     if (error) {
       console.error("Error logging activity:", error);

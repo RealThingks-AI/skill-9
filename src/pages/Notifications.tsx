@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Bell, Check, CheckCheck, Trash2, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Bell, Check, CheckCheck, Trash2, X, ExternalLink } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +32,7 @@ export default function Notifications() {
     deleteNotification,
   } = useNotifications();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [filter, setFilter] = useState<"all" | "unread">("all");
 
   const filteredNotifications = filter === "unread" 
@@ -70,6 +72,18 @@ export default function Notifications() {
       toast({ title: "Notification deleted" });
     } catch (error) {
       toast({ title: "Failed to delete notification", variant: "destructive" });
+    }
+  };
+
+  const handleViewRecord = async (notification: any) => {
+    // Mark as read when viewing
+    if (!notification.read) {
+      await markAsRead(notification.id);
+    }
+
+    // Navigate to the related record
+    if (notification.related_record_route) {
+      navigate(notification.related_record_route);
     }
   };
 
@@ -176,6 +190,18 @@ export default function Notifications() {
                               <span>• by {notification.performer.full_name}</span>
                             )}
                           </div>
+
+                          {notification.related_record_route && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleViewRecord(notification)}
+                              className="mt-2 gap-2"
+                            >
+                              <ExternalLink className="w-3 h-3" />
+                              View Related Record
+                            </Button>
+                          )}
                         </div>
 
                         <div className="flex items-center gap-1">

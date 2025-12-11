@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { dateFormatters } from "@/utils/formatters";
 import { Trash2, Calendar, Layers } from "lucide-react";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
 import {
@@ -124,7 +124,7 @@ export function LoadPresetDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="max-w-[min(600px,90vw)] w-full max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>Load Preset</DialogTitle>
             <DialogDescription>
@@ -162,7 +162,7 @@ export function LoadPresetDialog({
                           </span>
                           <span className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
-                            {format(new Date(preset.updated_at), "MMM dd, yyyy")}
+                            {dateFormatters.formatDate(preset.updated_at)}
                           </span>
                         </div>
                       </div>

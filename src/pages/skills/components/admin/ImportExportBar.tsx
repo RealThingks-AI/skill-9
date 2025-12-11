@@ -210,7 +210,7 @@ export const ImportExportBar = ({
             Merge Import
           </Button>
         </DialogTrigger>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-[min(672px,90vw)] w-full max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>Merge Import Skills from CSV</DialogTitle>
           </DialogHeader>
@@ -314,7 +314,7 @@ export const ImportExportBar = ({
             Replace All
           </Button>
         </DialogTrigger>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-[min(672px,90vw)] w-full max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>Replace All Skills Data</DialogTitle>
           </DialogHeader>

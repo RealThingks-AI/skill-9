@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { useState, useMemo } from "react";
-import { format } from "date-fns";
+import { dateFormatters } from "@/utils/formatters";
 import { Search } from "lucide-react";
 
 interface RatingRecord {
@@ -145,12 +145,12 @@ export const RatingsDrilldownModal = ({
                         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                           {record.status === 'approved' && record.approved_at && (
                             <div>
-                              Approved: {format(new Date(record.approved_at), 'MMM d, yyyy')}
+                              Approved: {dateFormatters.formatDate(record.approved_at)}
                             </div>
                           )}
                           {record.status === 'submitted' && record.submitted_at && (
                             <div>
-                              Submitted: {format(new Date(record.submitted_at), 'MMM d, yyyy')}
+                              Submitted: {dateFormatters.formatDate(record.submitted_at)}
                             </div>
                           )}
                           {record.approver_name && (

@@ -21,6 +21,7 @@ import type { UserProfile } from "./services/userService";
 import { TechLeadSelect } from "./components/TechLeadSelect";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { useNavigate } from "react-router-dom";
+import { dateFormatters } from "@/utils/formatters";
 interface UserAccessProps {
   onBack: () => void;
 }
@@ -312,10 +313,10 @@ export default function UserAccess({
                       </Badge>
                     </TableCell>
                     <TableCell className="hidden lg:table-cell">
-                      {user.last_login ? new Date(user.last_login).toLocaleDateString() : 'Never'}
+                      {user.last_login ? dateFormatters.formatDate(user.last_login) : 'Never'}
                     </TableCell>
                     <TableCell className="hidden xl:table-cell">
-                      {new Date(user.created_at).toLocaleDateString()}
+                      {dateFormatters.formatDate(user.created_at)}
                     </TableCell>
                     <TableCell className="text-center">
                       <div className="flex items-center justify-center gap-1">

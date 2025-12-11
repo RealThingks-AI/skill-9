@@ -12,6 +12,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, Plus, Target, Trophy, Clock, Zap } from "lucide-react";
 import { format, parseISO, isBefore, isAfter, differenceInDays } from "date-fns";
+import { dateFormatters } from "@/utils/formatters";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -293,7 +294,7 @@ export const GoalsProgressCard = () => {
                   New Goal
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md">
+              <DialogContent className="max-w-[min(448px,90vw)] w-full max-h-[90vh] overflow-hidden flex flex-col">
                 <DialogHeader>
                   <DialogTitle>Create Personal Goal</DialogTitle>
                 </DialogHeader>
@@ -342,7 +343,7 @@ export const GoalsProgressCard = () => {
                           )}
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
-                          {selectedDate ? format(selectedDate, "PPP") : "Pick target date"}
+                          {selectedDate ? dateFormatters.formatDate(selectedDate) : "Pick target date"}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
@@ -467,7 +468,7 @@ export const GoalsProgressCard = () => {
                       <div>
                         <p className="font-medium text-emerald-900">{goal.skill?.name}</p>
                         <p className="text-xs text-emerald-700">
-                          Completed {format(parseISO(goal.completed_at!), 'MMM d')}
+                          Completed {dateFormatters.formatDate(goal.completed_at!)}
                         </p>
                       </div>
                     </div>

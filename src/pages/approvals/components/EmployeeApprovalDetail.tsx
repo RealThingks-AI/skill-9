@@ -98,7 +98,7 @@ export const EmployeeApprovalDetail = ({
     }
   };
   return <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-[min(896px,90vw)] w-full max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Review Skills - {employee.employeeName}</DialogTitle>
           <DialogDescription>

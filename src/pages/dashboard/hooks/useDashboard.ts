@@ -35,11 +35,11 @@ export const useDashboard = () => {
   
   const [loading, setLoading] = useState(true);
 
-  const fetchDashboardStats = async () => {
+  const fetchDashboardStats = async (showLoading = false) => {
     if (!profile) return;
     
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       
       // Get total team members
       const { data: profiles } = await supabase
@@ -72,12 +72,55 @@ export const useDashboard = () => {
         ? Math.round((approvedRatings?.length || 0) / totalRatings.length * 100)
         : 0;
       
+      // Get recent activity from activity logs
+      const { data: recentActivities } = await supabase
+        .from('activity_logs')
+        .select('description, created_at, metadata')
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      const recentActivity = recentActivities?.map(activity => ({
+        description: activity.description,
+        timestamp: new Date(activity.created_at).toLocaleString()
+      })) || [];
+
+      // Calculate top skills by counting approved ratings per skill
+      const { data: skillRatings } = await supabase
+        .from('employee_ratings')
+        .select('skill_id, skills(name)')
+        .eq('status', 'approved')
+        .not('skill_id', 'is', null);
+
+      // Count ratings per skill
+      const skillCounts = new Map<string, { name: string; count: number }>();
+      skillRatings?.forEach(rating => {
+        const skillName = (rating as any).skills?.name;
+        const skillId = rating.skill_id;
+        if (skillName && skillId) {
+          const existing = skillCounts.get(skillId);
+          if (existing) {
+            existing.count++;
+          } else {
+            skillCounts.set(skillId, { name: skillName, count: 1 });
+          }
+        }
+      });
+
+      // Convert to array and calculate percentages
+      const totalRatingsCount = skillRatings?.length || 1;
+      const topSkills = Array.from(skillCounts.values())
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 8)
+        .map(skill => ({
+          name: skill.name,
+          percentage: Math.round((skill.count / totalRatingsCount) * 100)
+        }));
+
       setStats({
         totalTeamMembers: (profiles?.length || 0).toString(),
         skillsTracked: (skills?.length || 0).toString(),
         completedAssessments: `${completionRate}%`,
         pendingReviews: (pendingRatings?.length || 0).toString(),
-        // Additional properties for compatibility
         totalMembers: (profiles?.length || 0).toString(),
         membersChange: "+2 this month",
         totalSkills: (skills?.length || 0).toString(),
@@ -85,27 +128,8 @@ export const useDashboard = () => {
         completionRate: completionRate,
         completionChange: "+12% this month",
         reviewsChange: "-3 this week",
-        recentActivity: [
-          {
-            description: "John Doe completed React assessment",
-            timestamp: "2 hours ago"
-          },
-          {
-            description: "Sarah Wilson updated TypeScript skills",
-            timestamp: "4 hours ago"
-          },
-          {
-            description: "Mike Chen submitted Node.js evaluation",
-            timestamp: "1 day ago"
-          }
-        ],
-        topSkills: [
-          { name: "React", percentage: 85 },
-          { name: "TypeScript", percentage: 72 },
-          { name: "Node.js", percentage: 68 },
-          { name: "Python", percentage: 55 },
-          { name: "AWS", percentage: 43 }
-        ]
+        recentActivity,
+        topSkills
       });
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
@@ -115,7 +139,32 @@ export const useDashboard = () => {
   };
 
   useEffect(() => {
-    fetchDashboardStats();
+    fetchDashboardStats(true);
+
+    // Set up real-time subscription for live updates
+    const channel = supabase
+      .channel('dashboard-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'employee_ratings' },
+        () => {
+          console.log('Rating changed, refreshing dashboard...');
+          fetchDashboardStats(false);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'profiles' },
+        () => {
+          console.log('Profile changed, refreshing dashboard...');
+          fetchDashboardStats(false);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [profile]);
   
   return {

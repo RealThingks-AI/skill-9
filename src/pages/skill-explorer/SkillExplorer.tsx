@@ -22,7 +22,7 @@ import { useSkillExplorerPresets } from "./hooks/useSkillExplorerPresets";
 import { useEmployeeExplorer } from "./hooks/useEmployeeExplorer";
 import { EmployeeExplorerView } from "./components/EmployeeExplorerView";
 import { getRatingValueForSubskill, getHighestRatingValue } from "./utils/skillExplorerHelpers";
-import { format } from "date-fns";
+import { dateFormatters } from "@/utils/formatters";
 
 interface SubskillWithRating {
   subskill: { id: string; name: string; skill_id: string };
@@ -210,7 +210,7 @@ export default function SkillExplorer() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `skill-explorer-${format(new Date(), "yyyy-MM-dd")}.csv`;
+    a.download = `skill-explorer-${dateFormatters.formatForInput(new Date())}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -386,7 +386,11 @@ export default function SkillExplorer() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => setPendingSelections([])}
+                            onClick={() => {
+                              setPendingSelections([]);
+                              setSortField("matching_count");
+                              setSortDirection("desc");
+                            }}
                             disabled={submitting}
                             className="h-9 px-3 text-sm transition-all hover:scale-105"
                           >

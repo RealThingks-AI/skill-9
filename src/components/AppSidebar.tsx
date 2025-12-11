@@ -90,9 +90,9 @@ export function AppSidebar() {
   const filteredItems = items.filter(item => canAccessItem(item.roles, item.url));
   const filteredBottomItems = bottomItems.filter(item => canAccessItem(item.roles));
   return <div className="h-screen flex flex-col border-r border-sidebar-border bg-sidebar-background transition-all duration-300 ease-in-out" style={{
-    width: collapsed ? "64px" : "160px",
-    minWidth: collapsed ? "64px" : "160px",
-    maxWidth: collapsed ? "64px" : "160px"
+    width: collapsed ? "64px" : "200px",
+    minWidth: collapsed ? "64px" : "200px",
+    maxWidth: collapsed ? "64px" : "20px"
   }}>
       {/* Logo */}
       <div className="flex items-center border-b border-sidebar-border h-16">
@@ -100,7 +100,7 @@ export function AppSidebar() {
           <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
             <img src="/lovable-uploads/54adcce8-be73-4135-bb3c-fb8fd83846cf.png" alt="Logo" className="h-8 w-8" />
           </div>
-          <div className={`ml-0 text-sidebar-foreground font-semibold text-base whitespace-nowrap transition-all duration-300 overflow-hidden ${collapsed ? "opacity-0 w-0" : "opacity-100 w-auto"}`}>
+          <div className={`ml-0 text-sidebar-foreground font-bold text-base whitespace-nowrap transition-all duration-300 overflow-hidden ${collapsed ? "opacity-0 w-0" : "opacity-100 w-auto"}`}>
             RealThingks
           </div>
         </div>
@@ -112,14 +112,14 @@ export function AppSidebar() {
           {filteredItems.map(item => {
           const active = isActive(item.url);
           const menuButton = <NavLink to={item.url} end={item.url === "/"} className={`
-                  flex items-center h-10 rounded-lg relative transition-colors duration-200 font-medium
-                  ${active ? "text-sidebar-primary bg-sidebar-accent" : "text-sidebar-foreground hover:text-sidebar-primary hover:bg-sidebar-accent/50"}
+                  flex items-center h-10 rounded-lg relative transition-colors duration-200 font-semibold
+                  ${active ? "text-sidebar-accent-foreground bg-sidebar-accent" : "text-sidebar-foreground hover:text-sidebar-primary hover:bg-sidebar-accent/50"}
                 `}>
                 <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
                   <item.icon className="w-5 h-5" />
                 </div>
                 <div className={`transition-all duration-300 overflow-hidden whitespace-nowrap flex items-center justify-between flex-1 ${collapsed ? "opacity-0 w-0" : "opacity-100 w-auto ml-0"}`}>
-                  <span className="text-sm font-medium">{item.title}</span>
+                  <span className="text-sm font-semibold">{item.title}</span>
                   {item.title === "Approvals" && pendingCount > 0}
                 </div>
               </NavLink>;
@@ -143,12 +143,12 @@ export function AppSidebar() {
         {/* Collapse Toggle */}
         <div>
           {(() => {
-          const collapseButton = <button onClick={toggleSidebar} className="flex items-center h-10 w-full rounded-lg transition-colors font-medium text-sidebar-foreground/70 hover:text-sidebar-primary hover:bg-sidebar-accent/50">
+          const collapseButton = <button onClick={toggleSidebar} className="flex items-center h-10 w-full rounded-lg transition-colors font-semibold text-sidebar-foreground hover:text-sidebar-primary hover:bg-sidebar-accent/50">
                 <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
                   <ChevronLeft className={`w-5 h-5 transition-transform duration-300 ${collapsed ? "rotate-180" : ""}`} />
                 </div>
                 <div className={`transition-all duration-300 overflow-hidden whitespace-nowrap ${collapsed ? "opacity-0 w-0" : "opacity-100 w-auto ml-0"}`}>
-                  <span className="text-sm font-medium">Collapse</span>
+                  <span className="text-sm font-semibold">Collapse</span>
                 </div>
               </button>;
           if (collapsed) {
@@ -171,7 +171,7 @@ export function AppSidebar() {
           const handleNotificationsClick = () => {
             navigate("/notifications");
           };
-          const notificationsButton = <button onClick={handleNotificationsClick} className="flex items-center h-10 w-full rounded-lg transition-colors font-medium text-sidebar-foreground/70 hover:text-sidebar-primary hover:bg-sidebar-accent/50">
+          const notificationsButton = <button onClick={handleNotificationsClick} className="flex items-center h-10 w-full rounded-lg transition-colors font-semibold text-sidebar-foreground hover:text-sidebar-primary hover:bg-sidebar-accent/50">
                 <div className="w-10 h-10 flex items-center justify-center flex-shrink-0 relative">
                   <Bell className="w-5 h-5" />
                   {unreadCount > 0 && <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center p-0 text-xs">
@@ -179,7 +179,7 @@ export function AppSidebar() {
                     </Badge>}
                 </div>
                 <div className={`transition-all duration-300 overflow-hidden whitespace-nowrap flex items-center justify-between flex-1 ${collapsed ? "opacity-0 w-0" : "opacity-100 w-auto ml-0"}`}>
-                  <span className="text-sm font-medium">Notifications</span>
+                  <span className="text-sm font-semibold">Notifications</span>
                   {unreadCount > 0}
                 </div>
               </button>;
@@ -204,13 +204,13 @@ export function AppSidebar() {
             navigate("/profile");
           };
           const displayName = profile?.full_name || profile?.email || "User";
-          const profileButton = <button onClick={handleProfileClick} className="flex items-center h-10 w-full rounded-lg transition-colors font-medium text-sidebar-foreground/70 hover:text-sidebar-primary hover:bg-sidebar-accent/50">
+          const profileButton = <button onClick={handleProfileClick} className="flex items-center h-10 w-full rounded-lg transition-colors font-semibold text-sidebar-foreground hover:text-sidebar-primary hover:bg-sidebar-accent/50">
                 <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
                   <User className="w-5 h-5" />
                 </div>
                 <div className={`transition-all duration-300 overflow-hidden whitespace-nowrap ${collapsed ? "opacity-0 w-0" : "opacity-100 w-auto ml-0"}`}>
                   <div className="text-left">
-                    <div className="text-sm font-medium truncate max-w-32">{displayName}</div>
+                    <div className="text-sm font-semibold truncate max-w-32">{displayName}</div>
                   </div>
                 </div>
               </button>;
@@ -255,12 +255,12 @@ export function AppSidebar() {
           };
           const logoutButton = <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <button className="flex items-center h-10 w-full rounded-lg transition-colors font-medium text-sidebar-foreground/70 hover:text-sidebar-primary hover:bg-sidebar-accent/50">
+                  <button className="flex items-center h-10 w-full rounded-lg transition-colors font-semibold text-sidebar-foreground hover:text-sidebar-primary hover:bg-sidebar-accent/50">
                     <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
                       <LogOut className="w-5 h-5" />
                     </div>
                     <div className={`transition-all duration-300 overflow-hidden whitespace-nowrap ${collapsed ? "opacity-0 w-0" : "opacity-100 w-auto ml-0"}`}>
-                      <span className="text-sm font-medium">Logout</span>
+                      <span className="text-sm font-semibold">Logout</span>
                     </div>
                   </button>
                 </AlertDialogTrigger>
@@ -283,7 +283,7 @@ export function AppSidebar() {
                     <TooltipTrigger asChild>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <button className="flex items-center h-10 w-full rounded-lg transition-colors font-medium text-sidebar-foreground/70 hover:text-sidebar-primary hover:bg-sidebar-accent/50">
+                          <button className="flex items-center h-10 w-full rounded-lg transition-colors font-semibold text-sidebar-foreground hover:text-sidebar-primary hover:bg-sidebar-accent/50">
                             <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
                               <LogOut className="w-5 h-5" />
                             </div>

@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
+import { dateFormatters } from "@/utils/formatters";
 
 interface RatingHistoryEntry {
   id: string;
@@ -50,7 +50,7 @@ export const RatingHistoryModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh]">
+      <DialogContent className="max-w-[min(672px,90vw)] w-full max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Rating History - {subskillName}</DialogTitle>
         </DialogHeader>
@@ -80,7 +80,7 @@ export const RatingHistoryModal = ({
                       </Badge>
                     </div>
                     <span className="text-xs text-muted-foreground">
-                      {format(new Date(entry.archived_at), 'MMM d, yyyy h:mm a')}
+                      {dateFormatters.formatDateTime(entry.archived_at)}
                     </span>
                   </div>
 
@@ -107,7 +107,7 @@ export const RatingHistoryModal = ({
                       </p>
                       {entry.approved_at && entry.approver?.full_name && (
                         <p className="text-xs text-muted-foreground">
-                          By {entry.approver.full_name} • {format(new Date(entry.approved_at), 'MMM d, yyyy')}
+                          By {entry.approver.full_name} • {dateFormatters.formatDate(entry.approved_at)}
                         </p>
                       )}
                     </div>

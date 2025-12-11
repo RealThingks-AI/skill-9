@@ -69,10 +69,20 @@ export default function ProjectDetailDialog({
         toast.error('User not authenticated');
         return;
       }
-      await projectService.updateProjectStatus(projectId, 'active', user.id);
+      
+      // Optimistic UI update
       toast.success('Project approved');
-      onSuccess();
       onOpenChange(false);
+      
+      // Update in background
+      projectService.updateProjectStatus(projectId, 'active', user.id)
+        .then(() => {
+          onSuccess(); // Refresh list in background
+        })
+        .catch(error => {
+          console.error('Error approving project:', error);
+          toast.error('Failed to approve project');
+        });
     } catch (error) {
       console.error('Error approving project:', error);
       toast.error('Failed to approve project');
@@ -95,12 +105,22 @@ export default function ProjectDetailDialog({
         toast.error('User not authenticated');
         return;
       }
-      await projectService.updateProjectStatus(projectId, 'rejected', user.id, rejectionReason);
+      
+      // Optimistic UI update
       toast.success('Project rejected');
-      onSuccess();
       onOpenChange(false);
       setShowRejectForm(false);
       setRejectionReason('');
+      
+      // Update in background
+      projectService.updateProjectStatus(projectId, 'rejected', user.id, rejectionReason)
+        .then(() => {
+          onSuccess(); // Refresh list in background
+        })
+        .catch(error => {
+          console.error('Error rejecting project:', error);
+          toast.error('Failed to reject project');
+        });
     } catch (error) {
       console.error('Error rejecting project:', error);
       toast.error('Failed to reject project');
@@ -137,20 +157,22 @@ export default function ProjectDetailDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-6xl w-[95vw] max-h-[85vh] overflow-hidden flex flex-col">
+        <DialogContent className="!max-w-[1800px] w-[96vw] min-w-[900px] max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <div className="flex items-center justify-between gap-4">
               <DialogTitle>{project.name}</DialogTitle>
               <div className="flex items-center gap-2">
-                {canEdit && (
-                  <Button variant="outline" size="sm" onClick={() => setEditDialogOpen(true)}>
-                    <Edit className="mr-2 h-4 w-4" />
-                    Edit
-                  </Button>
-                )}
                 <Badge variant={project.status === 'active' ? 'default' : project.status === 'awaiting_approval' ? 'secondary' : project.status === 'rejected' ? 'destructive' : 'outline'}>
                   {project.status.replace('_', ' ').toUpperCase()}
                 </Badge>
+                {userRole !== 'employee' && (
+                  <Button variant="outline" size="sm" onClick={() => {
+                    // TODO: Open project-level history view
+                    console.log('View project history');
+                  }}>
+                    View History
+                  </Button>
+                )}
               </div>
             </div>
           </DialogHeader>
@@ -167,35 +189,62 @@ export default function ProjectDetailDialog({
             <TabsContent value="overview" className="mt-0">
               <ProjectOverviewTab project={project} />
             </TabsContent>
-            <TabsContent value="members" className="mt-0">
-              <ProjectMembersTab project={project} />
+            <TabsContent value="members" className="mt-0 h-full overflow-hidden">
+              <ProjectMembersTab project={project} isEmployeeView={userRole === 'employee'} />
             </TabsContent>
             <TabsContent value="skills" className="mt-0">
               <ProjectSkillsTab project={project} />
             </TabsContent>
-            <TabsContent value="history" className="mt-0">
-              <ProjectHistoryTab projectId={project.id} />
-            </TabsContent>
+            {userRole === 'employee' ? (
+              <TabsContent value="history" className="mt-0">
+                <ProjectHistoryTab 
+                  projectId={project.id} 
+                  isEmployeeView={true}
+                />
+              </TabsContent>
+            ) : (
+              <TabsContent value="history" className="mt-0">
+                <ProjectHistoryTab projectId={project.id} isEmployeeView={false} />
+              </TabsContent>
+            )}
           </div>
         </Tabs>
 
-        {canApprove && (
-          <div className="flex-shrink-0 pt-4 border-t space-y-3">
-            {showRejectForm ? (
+        {userRole !== 'employee' && (
+          <div className="flex-shrink-0 pt-4 border-t">
+            {canApprove && (
               <div className="space-y-3">
-                <div className="space-y-2">
-                  <Label>Rejection Reason</Label>
-                  <Textarea value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} placeholder="Explain why..." rows={3} />
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => setShowRejectForm(false)}>Cancel</Button>
-                  <Button variant="destructive" onClick={handleReject} disabled={!rejectionReason.trim()}><X className="mr-2 h-4 w-4" />Confirm Rejection</Button>
-                </div>
+                {showRejectForm ? (
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <Label>Rejection Reason</Label>
+                      <Textarea value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} placeholder="Explain why..." rows={3} />
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" onClick={() => setShowRejectForm(false)}>Cancel</Button>
+                      <Button variant="destructive" onClick={handleReject} disabled={!rejectionReason.trim()}><X className="mr-2 h-4 w-4" />Confirm Rejection</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex justify-end gap-2">
+                    {canEdit && (
+                      <Button variant="outline" size="sm" onClick={() => setEditDialogOpen(true)}>
+                        <Edit className="mr-2 h-4 w-4" />
+                        Edit
+                      </Button>
+                    )}
+                    <Button variant="outline" onClick={() => setShowRejectForm(true)}><X className="mr-2 h-4 w-4" />Reject</Button>
+                    <Button onClick={handleApprove}><Check className="mr-2 h-4 w-4" />Approve</Button>
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className="flex gap-2">
-                <Button onClick={handleApprove}><Check className="mr-2 h-4 w-4" />Approve</Button>
-                <Button variant="outline" onClick={() => setShowRejectForm(true)}><X className="mr-2 h-4 w-4" />Reject</Button>
+            )}
+            {canEdit && !canApprove && (
+              <div className="flex justify-end">
+                <Button variant="outline" size="sm" onClick={() => setEditDialogOpen(true)}>
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit
+                </Button>
               </div>
             )}
           </div>

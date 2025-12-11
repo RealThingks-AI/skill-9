@@ -16,7 +16,7 @@ interface CriteriaModalProps {
 export const CriteriaModal = ({ open, onOpenChange }: CriteriaModalProps) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-[min(672px,90vw)] w-full max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Skill Rating Criteria</DialogTitle>
         </DialogHeader>

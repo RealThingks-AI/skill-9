@@ -42,38 +42,34 @@ export const useTechLeadStats = () => {
   const [loading, setLoading] = useState(false);
   const [techLeadStats, setTechLeadStats] = useState<TechLeadStats[]>([]);
 
-  const fetchTechLeadStats = async () => {
+  const fetchTechLeadStats = async (showLoading = false) => {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
 
-      // First, get all unique tech lead IDs who have approved/rejected ratings
-      const { data: techLeadData, error: techLeadError } = await supabase
-        .from('employee_ratings')
-        .select('approved_by')
-        .in('status', ['approved', 'rejected'])
-        .not('approved_by', 'is', null);
-
-      if (techLeadError) {
-        console.error('Error fetching tech leads:', techLeadError);
-        throw techLeadError;
-      }
-
-      const uniqueTechLeadIds = [...new Set((techLeadData || []).map(r => r.approved_by).filter(Boolean) as string[])];
-      console.log('Found unique tech leads:', uniqueTechLeadIds.length);
-
-      // Fetch profiles for all tech leads
+      // Fetch ALL users with tech_lead, management, or admin roles
       const { data: techLeadProfiles, error: profileError } = await supabase
         .from('profiles')
         .select('*')
-        .in('user_id', uniqueTechLeadIds);
+        .in('role', ['tech_lead', 'management', 'admin'])
+        .eq('status', 'active')
+        .order('full_name');
 
       if (profileError) {
         console.error('Error fetching tech lead profiles:', profileError);
         throw profileError;
       }
 
+      if (!techLeadProfiles || techLeadProfiles.length === 0) {
+        console.log('No tech leads found');
+        setTechLeadStats([]);
+        return;
+      }
+
+      console.log('Found tech leads:', techLeadProfiles.map(p => p.full_name));
+
       // For each tech lead, fetch their rating counts and details
-      const statsPromises = uniqueTechLeadIds.map(async (techLeadId) => {
+      const statsPromises = techLeadProfiles.map(async (techLeadProfile) => {
+        const techLeadId = techLeadProfile.user_id;
         // Get counts for this tech lead
         const { count: approvedCount } = await supabase
           .from('employee_ratings')
@@ -127,13 +123,11 @@ export const useTechLeadStats = () => {
           ...rating as any,
           employee: employeeMap[rating.user_id]
         }));
-
-        const techLeadProfile = techLeadProfiles?.find(p => p.user_id === techLeadId);
         
         return {
           techLeadId,
-          techLeadName: techLeadProfile?.full_name || 'Unknown',
-          techLeadEmail: techLeadProfile?.email || '',
+          techLeadName: techLeadProfile.full_name,
+          techLeadEmail: techLeadProfile.email,
           approvedCount: approvedCount || 0,
           rejectedCount: rejectedCount || 0,
           totalReviews: (approvedCount || 0) + (rejectedCount || 0),
@@ -159,7 +153,7 @@ export const useTechLeadStats = () => {
   };
 
   useEffect(() => {
-    fetchTechLeadStats();
+    fetchTechLeadStats(true); // Show loading only on initial mount
   }, []);
 
   return {

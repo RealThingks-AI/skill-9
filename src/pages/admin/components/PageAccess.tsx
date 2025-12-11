@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Search, CheckCircle2 } from "lucide-react";
+import { dateFormatters } from "@/utils/formatters";
 
 interface Page {
   id: string;
@@ -240,7 +241,7 @@ export function PageAccess() {
                       );
                     })}
                     <TableCell className="text-muted-foreground text-sm">
-                      {new Date(page.updated_at).toLocaleDateString()}
+                      {dateFormatters.formatDate(page.updated_at)}
                     </TableCell>
                   </TableRow>
                 ))}

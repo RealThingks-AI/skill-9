@@ -5,6 +5,7 @@ import { ChevronDown, ChevronRight, Plus, Edit, Trash2 } from "lucide-react";
 import { RatingPill } from "@/components/common/RatingPill";
 import { SubskillRow } from "./SubskillRow";
 import { InlineSubskillRating } from "./InlineSubskillRating";
+import { AdminSubskillSummary } from "./AdminSubskillSummary";
 import { AddSubskillModal } from "./admin/AddSubskillModal";
 import { cn } from "@/lib/utils";
 import type { Skill, Subskill, UserSkill, EmployeeRating } from "@/types/database";
@@ -206,7 +207,7 @@ export const SkillRow = ({
         {/* Column 2: Subskills count or Rating Pills */}
         <div className="flex justify-center">
           {hasSubskills ? (() => {
-            if (isSkillNA) {
+            if (isSkillNA && !isManagerOrAbove) {
               return (
                 <span className="text-sm font-medium text-muted-foreground">
                   (NA)
@@ -224,42 +225,48 @@ export const SkillRow = ({
               </span>
             );
           })() : (
-            <div onClick={e => e.stopPropagation()}>
-              <RatingPill 
-                rating={userSkillRating} 
-                onRatingChange={rating => onSkillRate(skill.id, rating)} 
-                disabled={userSkillStatus === 'submitted' || userSkillStatus === 'approved'} 
-              />
-            </div>
+            !isManagerOrAbove && (
+              <div onClick={e => e.stopPropagation()}>
+                <RatingPill 
+                  rating={userSkillRating} 
+                  onRatingChange={rating => onSkillRate(skill.id, rating)} 
+                  disabled={userSkillStatus === 'submitted' || userSkillStatus === 'approved'} 
+                />
+              </div>
+            )
           )}
         </div>
 
         {/* Column 3: NA Button or Comment Field */}
         <div className="flex justify-center">
           {hasSubskills ? (
-            <Button
-              variant={isSkillNA ? "secondary" : "outline"}
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleNA?.(skill.id, !isSkillNA);
-              }}
-              className="h-6 px-2 text-xs"
-              title="Mark entire skill group as Not Applicable. All subskills will be ignored for this user."
-            >
-              NA
-            </Button>
+            !isManagerOrAbove && (
+              <Button
+                variant={isSkillNA ? "secondary" : "outline"}
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleNA?.(skill.id, !isSkillNA);
+                }}
+                className="h-6 px-2 text-xs"
+                title="Mark entire skill group as Not Applicable. All subskills will be ignored for this user."
+              >
+                NA
+              </Button>
+            )
           ) : (
-            <div className="w-full px-2" onClick={e => e.stopPropagation()}>
-              <input
-                type="text"
-                placeholder="Add your comment..."
-                value={comments[skill.id] || ''}
-                onChange={(e) => handleCommentChange(skill.id, e.target.value)}
-                disabled={userSkillStatus === 'submitted' || userSkillStatus === 'approved'}
-                className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
-              />
-            </div>
+            !isManagerOrAbove && (
+              <div className="w-full px-2" onClick={e => e.stopPropagation()}>
+                <input
+                  type="text"
+                  placeholder="Add your comment..."
+                  value={comments[skill.id] || ''}
+                  onChange={(e) => handleCommentChange(skill.id, e.target.value)}
+                  disabled={userSkillStatus === 'submitted' || userSkillStatus === 'approved'}
+                  className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                />
+              </div>
+            )
           )}
         </div>
 
@@ -355,17 +362,28 @@ export const SkillRow = ({
         <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
           <CollapsibleContent>
             <div className={cn("mt-4 space-y-3", isSkillNA && "opacity-50 pointer-events-none")}>
-              {subskills.map(subskill => (
-                <InlineSubskillRating
-                  key={subskill.id}
-                  subskill={subskill}
-                  userSkills={userSkills as EmployeeRating[]}
-                  pendingRatings={pendingRatings}
-                  onSubskillRate={onSubskillRate}
-                  onCommentChange={handleCommentChange}
-                  comment={comments[subskill.id] || ''}
-                />
-              ))}
+              {isManagerOrAbove ? (
+                // Admin view - show aggregate summary
+                subskills.map(subskill => (
+                  <AdminSubskillSummary
+                    key={subskill.id}
+                    subskill={subskill}
+                  />
+                ))
+              ) : (
+                // Employee view - show individual ratings and comments
+                subskills.map(subskill => (
+                  <InlineSubskillRating
+                    key={subskill.id}
+                    subskill={subskill}
+                    userSkills={userSkills as EmployeeRating[]}
+                    pendingRatings={pendingRatings}
+                    onSubskillRate={onSubskillRate}
+                    onCommentChange={handleCommentChange}
+                    comment={comments[subskill.id] || ''}
+                  />
+                ))
+              )}
               {isSkillNA && (
                 <div className="text-center py-4 text-muted-foreground text-sm">
                   This skill is marked as Not Applicable - all subskills are disabled

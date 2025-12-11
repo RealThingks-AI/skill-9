@@ -8,6 +8,7 @@ import type { GeneratedReport, ExportFormat } from "../types/reportTypes";
 import { useReportsData } from "../hooks/useReportsData";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
 import { useState } from "react";
+import { dateFormatters } from "@/utils/formatters";
 
 interface ReportResultsProps {
   report: GeneratedReport | null;
@@ -88,7 +89,7 @@ export function ReportResults({ report, onExport, onRegenerateReport, loading }:
             <div>
               <CardTitle className="text-xl">{report.name}</CardTitle>
               <CardDescription>
-                Generated on {new Date(report.generated_at).toLocaleDateString()} • {tableData.length} records
+                Generated on {dateFormatters.formatDateTime(report.generated_at)} • {tableData.length} records
               </CardDescription>
             </div>
             <div className="flex flex-wrap items-center gap-2">

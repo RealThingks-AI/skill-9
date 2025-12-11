@@ -38,6 +38,16 @@ export default function FormSelect({
   disabled = false,
   className
 }: FormSelectProps) {
+  // Debug logging for status dropdown
+  if (id === 'status') {
+    console.log('FormSelect Debug:', {
+      value,
+      options: options.length,
+      optionValues: options.map(o => o.value),
+      disabled
+    });
+  }
+  
   return (
     <div className={cn('space-y-2', className)}>
       <Label htmlFor={id} className={required ? "after:content-['*'] after:ml-0.5 after:text-red-500" : ''}>

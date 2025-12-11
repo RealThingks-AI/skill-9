@@ -16,6 +16,8 @@ interface UserResult {
     rating: string;
   }[];
   last_updated: string;
+  available_capacity: number;
+  current_total_allocation: number;
 }
 
 export const useSkillExplorerResults = (
@@ -91,6 +93,21 @@ export const useSkillExplorerResults = (
         .in("user_id", userIds);
       
       if (profilesError) throw profilesError;
+
+      // Fetch project allocations for these users
+      const { data: allocationsData, error: allocationsError } = await supabase
+        .from("project_assignments")
+        .select("user_id, allocation_percentage")
+        .in("user_id", userIds);
+      
+      if (allocationsError) throw allocationsError;
+
+      // Calculate total allocation per user
+      const allocationMap = new Map<string, number>();
+      (allocationsData || []).forEach((allocation) => {
+        const current = allocationMap.get(allocation.user_id) || 0;
+        allocationMap.set(allocation.user_id, current + allocation.allocation_percentage);
+      });
       
       const profileMap = new Map(profilesData?.map((p) => [p.user_id, p]) || []);
       const userMap = new Map<string, UserResult>();
@@ -110,6 +127,9 @@ export const useSkillExplorerResults = (
         if (!matchingSelection) return;
 
         if (!userMap.has(userId)) {
+          const totalAllocation = allocationMap.get(userId) || 0;
+          const availableCapacity = Math.max(0, 100 - totalAllocation);
+          
           userMap.set(userId, {
             user_id: userId,
             full_name: profile.full_name,
@@ -118,6 +138,8 @@ export const useSkillExplorerResults = (
             total_skills: pendingSelections.length,
             approved_skills: [],
             last_updated: rating.approved_at,
+            available_capacity: availableCapacity,
+            current_total_allocation: totalAllocation,
           });
         }
         
@@ -134,7 +156,12 @@ export const useSkillExplorerResults = (
         }
       });
 
-      setResults(Array.from(userMap.values()));
+      // Sort by available capacity (highest first)
+      const sortedResults = Array.from(userMap.values()).sort((a, b) => 
+        b.available_capacity - a.available_capacity
+      );
+      
+      setResults(sortedResults);
     } catch (error) {
       console.error("Error loading results:", error);
       toast({

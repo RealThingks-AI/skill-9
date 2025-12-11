@@ -257,6 +257,42 @@ export type Database = {
         }
         Relationships: []
       }
+      classification_rules: {
+        Row: {
+          conditions: Json
+          created_at: string
+          created_by: string | null
+          display_order: number
+          id: string
+          is_active: boolean
+          level: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          conditions?: Json
+          created_at?: string
+          created_by?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          level: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          conditions?: Json
+          created_at?: string
+          created_by?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          level?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       employee_ratings: {
         Row: {
           approved_at: string | null
@@ -429,6 +465,9 @@ export type Database = {
           message: string
           performed_by: string | null
           read: boolean
+          related_record_id: string | null
+          related_record_route: string | null
+          related_record_type: string | null
           title: string
           type: string
           user_id: string
@@ -439,6 +478,9 @@ export type Database = {
           message: string
           performed_by?: string | null
           read?: boolean
+          related_record_id?: string | null
+          related_record_route?: string | null
+          related_record_type?: string | null
           title: string
           type?: string
           user_id: string
@@ -449,6 +491,9 @@ export type Database = {
           message?: string
           performed_by?: string | null
           read?: boolean
+          related_record_id?: string | null
+          related_record_route?: string | null
+          related_record_type?: string | null
           title?: string
           type?: string
           user_id?: string
@@ -715,6 +760,44 @@ export type Database = {
           },
         ]
       }
+      project_member_monthly_allocations: {
+        Row: {
+          allocation_percentage: number
+          created_at: string
+          id: string
+          month: string
+          project_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          allocation_percentage: number
+          created_at?: string
+          id?: string
+          month: string
+          project_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          allocation_percentage?: number
+          created_at?: string
+          id?: string
+          month?: string
+          project_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_member_monthly_allocations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_reminders: {
         Row: {
           created_at: string
@@ -866,13 +949,18 @@ export type Database = {
           approved_by: string | null
           created_at: string
           created_by: string
+          customer_name: string | null
           description: string | null
           end_date: string | null
           id: string
+          manpower_limit: number | null
+          month_wise_manpower: Json | null
           name: string
+          pending_changes: Json | null
           rejected_at: string | null
           rejected_by: string | null
           rejection_reason: string | null
+          requested_status: string | null
           start_date: string | null
           status: string
           tech_lead_id: string | null
@@ -883,13 +971,18 @@ export type Database = {
           approved_by?: string | null
           created_at?: string
           created_by: string
+          customer_name?: string | null
           description?: string | null
           end_date?: string | null
           id?: string
+          manpower_limit?: number | null
+          month_wise_manpower?: Json | null
           name: string
+          pending_changes?: Json | null
           rejected_at?: string | null
           rejected_by?: string | null
           rejection_reason?: string | null
+          requested_status?: string | null
           start_date?: string | null
           status?: string
           tech_lead_id?: string | null
@@ -900,13 +993,18 @@ export type Database = {
           approved_by?: string | null
           created_at?: string
           created_by?: string
+          customer_name?: string | null
           description?: string | null
           end_date?: string | null
           id?: string
+          manpower_limit?: number | null
+          month_wise_manpower?: Json | null
           name?: string
+          pending_changes?: Json | null
           rejected_at?: string | null
           rejected_by?: string | null
           rejection_reason?: string | null
+          requested_status?: string | null
           start_date?: string | null
           status?: string
           tech_lead_id?: string | null
@@ -1458,10 +1556,38 @@ export type Database = {
         Returns: boolean
       }
       cleanup_old_notifications: { Args: never; Returns: undefined }
+      delete_member_monthly_allocation: {
+        Args: { p_month: string; p_project_id: string; p_user_id: string }
+        Returns: undefined
+      }
+      delete_project_member_allocations: {
+        Args: { p_project_id: string }
+        Returns: undefined
+      }
+      delete_user_project_allocations: {
+        Args: { p_project_id: string; p_user_id: string }
+        Returns: undefined
+      }
       get_current_user_role: { Args: never; Returns: string }
       get_my_tech_lead_id: { Args: never; Returns: string }
+      get_project_member_allocations: {
+        Args: { p_project_id: string }
+        Returns: {
+          allocation_percentage: number
+          month: string
+          user_id: string
+        }[]
+      }
       get_user_available_capacity: {
         Args: { user_id_param: string }
+        Returns: number
+      }
+      get_user_monthly_allocation: {
+        Args: { month_param: string; user_id_param: string }
+        Returns: number
+      }
+      get_user_monthly_available_capacity: {
+        Args: { month_param: string; user_id_param: string }
         Returns: number
       }
       get_user_total_allocation: {
@@ -1475,6 +1601,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_project_teammate: {
+        Args: { _target_user_id: string }
+        Returns: boolean
+      }
       send_goal_reminders: { Args: never; Returns: undefined }
       test_employee_rating_insert: {
         Args: {
@@ -1486,6 +1616,15 @@ export type Database = {
         Returns: undefined
       }
       update_leaderboard_history: { Args: never; Returns: undefined }
+      upsert_member_monthly_allocation: {
+        Args: {
+          p_allocation_percentage: number
+          p_month: string
+          p_project_id: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "employee" | "tech_lead" | "management" | "admin"

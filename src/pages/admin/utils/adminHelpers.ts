@@ -1,3 +1,5 @@
+import { dateFormatters } from '@/utils/formatters';
+
 export const getRoleColor = (role: string): string => {
   switch (role) {
     case 'Admin':
@@ -50,5 +52,5 @@ export const formatLastLogin = (lastLogin?: string): string => {
   if (diffInDays === 1) return 'Yesterday';
   if (diffInDays < 7) return `${diffInDays} days ago`;
   
-  return date.toLocaleDateString();
+  return dateFormatters.formatDate(lastLogin);
 };

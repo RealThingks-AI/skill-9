@@ -10,6 +10,11 @@ export interface ResourceAllocation {
   active_projects_count: number;
 }
 
+export interface MonthlyAllocation {
+  month: string;
+  allocation_percentage: number;
+}
+
 export interface UserProject {
   project_id: string;
   project_name: string;
@@ -32,7 +37,72 @@ export interface ProjectHistory {
 }
 
 export const resourceService = {
-  async getAllResourceAllocations(): Promise<ResourceAllocation[]> {
+  async getAvailableMonths(): Promise<string[]> {
+    // Fetch all projects to determine the full date range
+    const { data: projects, error: projectsError } = await supabase
+      .from('projects')
+      .select('start_date, end_date')
+      .in('status', ['active', 'awaiting_approval', 'completed']);
+
+    if (projectsError) throw projectsError;
+
+    // Find earliest start date and latest end date across all projects
+    let earliestStart: Date | null = null;
+    let latestEnd: Date | null = null;
+
+    (projects || []).forEach((project: { start_date: string | null; end_date: string | null }) => {
+      if (project.start_date) {
+        const startDate = new Date(project.start_date);
+        if (!earliestStart || startDate < earliestStart) {
+          earliestStart = startDate;
+        }
+      }
+      if (project.end_date) {
+        const endDate = new Date(project.end_date);
+        if (!latestEnd || endDate > latestEnd) {
+          latestEnd = endDate;
+        }
+      }
+    });
+
+    // Default to current month if no projects found
+    const currentDate = new Date();
+    const currentMonth = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+
+    if (!earliestStart && !latestEnd) {
+      return [currentMonth];
+    }
+
+    // Use current month as start if no earliest start
+    const startMonth = earliestStart 
+      ? new Date(earliestStart.getFullYear(), earliestStart.getMonth(), 1)
+      : new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    
+    // Use current month as end if no latest end
+    const endMonth = latestEnd 
+      ? new Date(latestEnd.getFullYear(), latestEnd.getMonth(), 1)
+      : new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+
+    // Generate all months between start and end (inclusive)
+    const months: string[] = [];
+    const iterDate = new Date(startMonth);
+    
+    while (iterDate <= endMonth) {
+      const monthStr = `${iterDate.getFullYear()}-${String(iterDate.getMonth() + 1).padStart(2, '0')}`;
+      months.push(monthStr);
+      iterDate.setMonth(iterDate.getMonth() + 1);
+    }
+
+    // Ensure current month is included
+    if (!months.includes(currentMonth)) {
+      months.push(currentMonth);
+      months.sort();
+    }
+
+    return months;
+  },
+
+  async getAllResourceAllocations(selectedMonth?: string): Promise<ResourceAllocation[]> {
     // Get all active employees and tech leads
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
@@ -44,8 +114,22 @@ export const resourceService = {
 
     const resources = await Promise.all(
       (profiles || []).map(async (profile) => {
-        const { data: totalAllocation } = await supabase
-          .rpc('get_user_total_allocation', { user_id_param: profile.user_id });
+        let totalAllocation = 0;
+        
+        if (selectedMonth) {
+          // Get allocation for specific month
+          const { data: monthlyAlloc } = await supabase
+            .rpc('get_user_monthly_allocation', { 
+              user_id_param: profile.user_id,
+              month_param: selectedMonth 
+            });
+          totalAllocation = monthlyAlloc || 0;
+        } else {
+          // Get overall allocation
+          const { data: overallAlloc } = await supabase
+            .rpc('get_user_total_allocation', { user_id_param: profile.user_id });
+          totalAllocation = overallAlloc || 0;
+        }
 
         // Count active projects
         const { data: assignments } = await supabase
@@ -62,8 +146,8 @@ export const resourceService = {
           full_name: profile.full_name,
           email: profile.email,
           role: profile.role,
-          total_allocation: totalAllocation || 0,
-          available_capacity: 100 - (totalAllocation || 0),
+          total_allocation: totalAllocation,
+          available_capacity: 100 - totalAllocation,
           active_projects_count: activeProjectsCount,
         };
       })
@@ -72,7 +156,34 @@ export const resourceService = {
     return resources.sort((a, b) => b.total_allocation - a.total_allocation);
   },
 
-  async getUserCurrentProjects(userId: string): Promise<UserProject[]> {
+  async getUserCurrentProjects(userId: string, selectedMonth?: string): Promise<UserProject[]> {
+    // If a specific month is selected, get allocations from monthly allocations table
+    if (selectedMonth) {
+      const { data: monthlyAllocations, error: monthlyError } = await supabase
+        .from('project_member_monthly_allocations')
+        .select(`
+          allocation_percentage,
+          project_id,
+          projects!inner(id, name, status, start_date, end_date)
+        `)
+        .eq('user_id', userId)
+        .eq('month', selectedMonth);
+
+      if (monthlyError) throw monthlyError;
+
+      return (monthlyAllocations || [])
+        .filter((a: any) => ['active', 'awaiting_approval'].includes(a.projects.status))
+        .map((a: any) => ({
+          project_id: a.projects.id,
+          project_name: a.projects.name,
+          project_status: a.projects.status,
+          allocation_percentage: a.allocation_percentage,
+          start_date: a.projects.start_date,
+          end_date: a.projects.end_date,
+        }));
+    }
+
+    // Default: get from project_assignments for overall view
     const { data: assignments, error } = await supabase
       .from('project_assignments')
       .select(`

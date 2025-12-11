@@ -49,7 +49,7 @@ export const AddCategorySelectionModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col p-0">
+      <DialogContent className="max-w-[min(896px,90vw)] w-full max-h-[90vh] flex flex-col p-0">
         <div className="p-6 pb-4 border-b border-border">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold text-foreground flex items-center gap-2">

@@ -59,7 +59,7 @@ export const useSkillExplorerData = (hasAccess: boolean) => {
     localStorage.setItem(PENDING_SELECTIONS_KEY, JSON.stringify(pendingSelections));
   }, [pendingSelections]);
 
-  // Load all data for search
+  // Load all data for search silently
   useEffect(() => {
     const loadSearchData = async () => {
       try {
@@ -76,11 +76,11 @@ export const useSkillExplorerData = (hasAccess: boolean) => {
       }
     };
     if (hasAccess) {
-      loadSearchData();
+      loadSearchData(); // Silent load, no loading state
     }
   }, [hasAccess]);
 
-  // Load categories
+  // Load categories silently
   useEffect(() => {
     const loadCategories = async () => {
       try {
@@ -97,7 +97,7 @@ export const useSkillExplorerData = (hasAccess: boolean) => {
       }
     };
     if (hasAccess) {
-      loadCategories();
+      loadCategories(); // Silent load, no loading state
     }
   }, [hasAccess, toast]);
 

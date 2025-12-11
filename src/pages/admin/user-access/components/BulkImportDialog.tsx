@@ -165,7 +165,7 @@ export function BulkImportDialog({ open, onOpenChange, onSuccess }: BulkImportDi
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="max-w-[min(600px,90vw)] w-full max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Bulk Import Users</DialogTitle>
           <DialogDescription>

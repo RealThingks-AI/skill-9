@@ -45,11 +45,11 @@ export const useApprovalHistory = () => {
   const [loading, setLoading] = useState(false);
   const [groupedHistory, setGroupedHistory] = useState<GroupedHistoricalApproval[]>([]);
 
-  const fetchApprovalHistory = async () => {
+  const fetchApprovalHistory = async (showLoading = false) => {
     if (!user) return;
 
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
 
       // Fetch ALL approved or rejected ratings using pagination helper
       const { data: allRatings, error: ratingsError } = await fetchAllRows(
@@ -132,7 +132,7 @@ export const useApprovalHistory = () => {
 
   useEffect(() => {
     if (user) {
-      fetchApprovalHistory();
+      fetchApprovalHistory(true); // Show loading only on initial mount
     }
   }, [user]);
 

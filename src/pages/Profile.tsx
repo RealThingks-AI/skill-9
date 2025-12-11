@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { User, Mail, Shield, KeyRound, Activity, Clock } from 'lucide-react';
 import { ChangePasswordDialog } from '@/components/common/ChangePasswordDialog';
+import { dateFormatters } from '@/utils/formatters';
 
 export default function Profile() {
   const { profile } = useAuth();
@@ -126,11 +127,7 @@ export default function Profile() {
                   <p className="font-medium text-foreground">Last Login</p>
                   <p className="text-muted-foreground mt-1">
                     {profile.last_login 
-                      ? new Date(profile.last_login).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        })
+                      ? dateFormatters.formatDateTime(profile.last_login)
                       : 'Never'
                     }
                   </p>

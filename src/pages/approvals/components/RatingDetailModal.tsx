@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
+import { dateFormatters } from "@/utils/formatters";
 import type { TechLeadRating } from "../hooks/useTechLeadStats";
 interface RatingDetailModalProps {
   open: boolean;
@@ -34,7 +34,7 @@ export const RatingDetailModal = ({
     return status === "approved" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800";
   };
   return <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-[min(672px,90vw)] w-full max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">Rating Details</DialogTitle>
         </DialogHeader>
@@ -83,7 +83,7 @@ export const RatingDetailModal = ({
               <span className="font-medium">{techLeadName}</span>
             </p>
             <p className="text-sm text-muted-foreground">
-              {format(new Date(rating.approved_at), "MMM d, yyyy 'at' h:mm a")}
+              {dateFormatters.formatDateTime(rating.approved_at)}
             </p>
           </div>
         </div>

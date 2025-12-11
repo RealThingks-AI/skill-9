@@ -190,6 +190,7 @@ export function useActivityLogs({
       // Normalize module names in new logs
       const normalizedNewLogs: ActivityLog[] = (newLogsData || []).map((log: any) => ({
         ...log,
+        username: profileMap.get(log.user_id) || 'Unknown User',
         module: normalizeModule(log.module),
       }));
 
@@ -233,6 +234,10 @@ export function useActivityLogs({
         .from("password_change_logs")
         .select("*")
         .gte("created_at", dateFrom.toISOString());
+      const projectHistoryQuery = supabase
+        .from("project_allocation_history")
+        .select("*")
+        .gte("created_at", dateFrom.toISOString());
 
       if (userId) {
         approvalQuery.eq("approver_id", userId);
@@ -240,6 +245,7 @@ export function useActivityLogs({
         reportQuery.eq("generated_by", userId);
         // show changes triggered for a specific user or by a specific user
         passwordQuery.or(`user_id.eq.${userId},changed_by_id.eq.${userId}`);
+        projectHistoryQuery.or(`changed_by.eq.${userId},user_id.eq.${userId}`);
       }
 
       const [
@@ -247,17 +253,20 @@ export function useActivityLogs({
         { data: importExportData, error: importExportError },
         { data: reportData, error: reportError },
         { data: passwordData, error: passwordError },
+        { data: projectHistoryData, error: projectHistoryError },
       ] = await Promise.all([
         approvalQuery,
         importExportQuery,
         reportQuery,
         passwordQuery,
+        projectHistoryQuery,
       ]);
 
       if (approvalError) throw approvalError;
       if (importExportError) throw importExportError;
       if (reportError) throw reportError;
       if (passwordError) throw passwordError;
+      if (projectHistoryError) throw projectHistoryError;
 
       const mapName = (uid: string) => profileMap.get(uid) || "Unknown User";
 
@@ -309,8 +318,20 @@ export function useActivityLogs({
         created_at: p.created_at,
       }));
 
+      const projectHistoryLogs: ActivityLog[] = (projectHistoryData || []).map((h: any) => ({
+        id: h.id,
+        user_id: h.changed_by,
+        username: mapName(h.changed_by),
+        module: "Projects",
+        action_type: "allocation_change",
+        description: `${h.change_reason || 'Project allocation changed'}${h.user_id !== h.changed_by ? ` for ${mapName(h.user_id)}` : ''}`,
+        record_reference: h.project_id,
+        metadata: { change_reason: h.change_reason, affected_user: h.user_id, previous_allocation: h.previous_allocation, new_allocation: h.new_allocation },
+        created_at: h.created_at,
+      }));
+
       // Merge all
-      combinedLogs = [...combinedLogs, ...approvalLogs, ...importExportLogs, ...reportLogs, ...pwdLogs];
+      combinedLogs = [...combinedLogs, ...approvalLogs, ...importExportLogs, ...reportLogs, ...pwdLogs, ...projectHistoryLogs];
 
       // Apply module filter again after merging
       if (module) {

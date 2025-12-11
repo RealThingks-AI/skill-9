@@ -1,3 +1,5 @@
+import { dateFormatters } from '@/utils/formatters';
+
 export const getPriorityColor = (priority: string): string => {
   switch (priority) {
     case 'High':
@@ -23,7 +25,7 @@ export const getActionColor = (action: string): string => {
 };
 
 export const formatDate = (dateString: string): string => {
-  return new Date(dateString).toLocaleDateString();
+  return dateFormatters.formatDate(dateString);
 };
 
 export const isOverdue = (dueDate: string): boolean => {

@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Plus, Info } from "lucide-react";
+import { Plus, Info, LayoutGrid, BarChart3 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/hooks/useAuth";
@@ -13,11 +14,13 @@ import { CriteriaModal } from "./components/CriteriaModal";
 import { AddCategorySelectionModal } from "./components/AddCategorySelectionModal";
 import { HideCategoryConfirmDialog } from "./components/HideCategoryConfirmDialog";
 import { EnhancedSearch } from "./components/EnhancedSearch";
+import { SkillsGraphicalView } from "./components/SkillsGraphicalView";
 import { useSkills } from "./hooks/useSkills";
 import { useCategoryPreferences } from "./hooks/useCategoryPreferences";
 import { calculateCategoryProgress } from "./utils/skillHelpers";
 import type { SkillCategory } from "@/types/database";
 const Skills = () => {
+  const [viewMode, setViewMode] = useState<"cards" | "charts">("cards");
   const [selectedCategory, setSelectedCategory] = useState<SkillCategory | null>(null);
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [showCriteria, setShowCriteria] = useState(false);
@@ -134,6 +137,18 @@ const Skills = () => {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* View Toggle - only show for admin in card mode */}
+            {isManagerOrAbove && visibleCategories.length > 0 && (
+              <ToggleGroup type="single" value={viewMode} onValueChange={(value) => value && setViewMode(value as "cards" | "charts")}>
+                <ToggleGroupItem value="cards" aria-label="Card view">
+                  <LayoutGrid className="h-4 w-4" />
+                </ToggleGroupItem>
+                <ToggleGroupItem value="charts" aria-label="Chart view">
+                  <BarChart3 className="h-4 w-4" />
+                </ToggleGroupItem>
+              </ToggleGroup>
+            )}
+            
             {/* Enhanced Search - only show if there are visible categories */}
             {visibleCategories.length > 0 && <EnhancedSearch categories={skillCategories} skills={skills} subskills={subskills} onResultClick={handleSearchResultClick} placeholder="Search skills & subskills" />}
             <Button variant="outline" size="sm" onClick={() => setShowCriteria(true)} className="flex items-center gap-2">
@@ -144,9 +159,16 @@ const Skills = () => {
           </div>
         </div>
 
-        {/* Category Cards Grid - Scrollable */}
+        {/* Category Cards Grid or Charts - Scrollable */}
         <ScrollArea className="flex-1">
-          {visibleCategories.length === 0 /* Empty State */ ? <motion.div className="flex flex-col items-center justify-center h-full py-16 text-center" initial={{
+          {viewMode === "charts" && isManagerOrAbove ? (
+            <SkillsGraphicalView
+              categories={visibleCategories}
+              skills={skills}
+              subskills={subskills}
+              allEmployeeRatings={userSkills}
+            />
+          ) : visibleCategories.length === 0 /* Empty State */ ? <motion.div className="flex flex-col items-center justify-center h-full py-16 text-center" initial={{
           opacity: 0,
           y: 20
         }} animate={{

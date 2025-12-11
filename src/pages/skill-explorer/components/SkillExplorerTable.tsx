@@ -1,4 +1,4 @@
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowUpDown, Search } from "lucide-react";
@@ -15,6 +15,8 @@ interface UserResult {
     subskill: string;
     rating: string;
   }[];
+  available_capacity: number;
+  current_total_allocation: number;
 }
 
 interface Selection {
@@ -59,11 +61,12 @@ export function SkillExplorerTable({
   }
 
   return (
-    <div className="h-full overflow-auto">
-      <Table>
-        <TableHeader>
+    <div className="h-full relative">
+      <div className="absolute inset-0 overflow-auto">
+        <table className="w-full caption-bottom text-sm">
+        <TableHeader className="sticky top-0 z-30">
           <TableRow className="border-0">
-            <TableHead className="w-12 sticky left-0 bg-muted z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] border-r border-border/20">
+            <TableHead className="w-12 sticky left-0 top-0 bg-muted z-40 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] border-r border-border/20 px-3">
               <Checkbox
                 checked={allSelected}
                 onCheckedChange={onToggleAll}
@@ -72,7 +75,7 @@ export function SkillExplorerTable({
               />
             </TableHead>
             <TableHead
-              className="cursor-pointer font-semibold text-base min-w-[200px] sticky left-12 bg-muted z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] transition-all duration-200 hover:bg-muted/80 border-r border-border/20"
+              className="cursor-pointer font-semibold text-base min-w-[200px] sticky left-12 top-0 bg-muted z-40 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] transition-all duration-200 hover:bg-muted/80 border-r border-border/20 pl-3"
               onClick={() => onSort("name")}
             >
               <div className="flex items-center gap-2 py-1">
@@ -83,20 +86,20 @@ export function SkillExplorerTable({
               </div>
             </TableHead>
             <TableHead
-              className="cursor-pointer font-semibold text-base min-w-[140px] sticky left-[calc(48px+200px)] bg-muted z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] transition-all duration-200 hover:bg-muted/80 border-r border-border/20"
-              onClick={() => onSort("role")}
+              className="cursor-pointer font-semibold text-base min-w-[120px] sticky left-[calc(48px+200px)] top-0 bg-muted z-40 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] transition-all duration-200 hover:bg-muted/80 border-r border-border/20"
+              onClick={() => onSort("availability")}
             >
               <div className="flex items-center gap-2 py-1">
-                Role
+                Available
                 <ArrowUpDown
-                  className={`h-4 w-4 transition-opacity ${sortField === "role" ? "opacity-100" : "opacity-50"}`}
+                  className={`h-4 w-4 transition-opacity ${sortField === "availability" ? "opacity-100" : "opacity-50"}`}
                 />
               </div>
             </TableHead>
             {selections.map((selection) => (
               <TableHead
                 key={selection.id}
-                className="font-semibold text-sm min-w-[120px] text-center cursor-pointer bg-muted hover:bg-muted/80 transition-all duration-200 border-r border-border/20"
+                className="font-semibold text-sm min-w-[120px] text-center cursor-pointer sticky top-0 bg-muted hover:bg-muted/80 transition-all duration-200 border-r border-border/20 z-30"
                 onClick={() => onSort(selection.subskill)}
               >
                 <div className="flex flex-col items-center gap-1 py-1">
@@ -135,18 +138,29 @@ export function SkillExplorerTable({
                 key={user.user_id}
                 className="hover:bg-muted/30 transition-all duration-200 animate-fade-in border-b hover:border-primary/20"
               >
-                <TableCell className="sticky left-0 bg-card z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.05)] py-4 border-r border-border/20">
+                <TableCell className="sticky left-0 bg-card z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.05)] py-4 border-r border-border/20 px-3">
                   <Checkbox
                     checked={selectedEngineers.includes(user.user_id)}
                     onCheckedChange={() => onToggleEngineer(user.user_id)}
                     aria-label={`Select ${user.full_name}`}
                   />
                 </TableCell>
-                <TableCell className="font-medium text-base sticky left-12 bg-card z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.05)] py-4 border-r border-border/20">
+                <TableCell className="font-medium text-base sticky left-12 bg-card z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.05)] py-4 border-r border-border/20 pl-3">
                   {user.full_name}
                 </TableCell>
                 <TableCell className="sticky left-[calc(48px+200px)] bg-card z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.05)] py-4 border-r border-border/20">
-                  <span className="text-base">{formatRole(user.role)}</span>
+                  <Badge 
+                    variant="secondary"
+                    className={`font-semibold text-sm ${
+                      user.available_capacity >= 50 
+                        ? 'bg-green-500/20 text-green-700 dark:text-green-400 border-green-500/30' 
+                        : user.available_capacity >= 25 
+                        ? 'bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 border-yellow-500/30' 
+                        : 'bg-red-500/20 text-red-700 dark:text-red-400 border-red-500/30'
+                    }`}
+                  >
+                    {user.available_capacity}%
+                  </Badge>
                 </TableCell>
                 {selections.map((selection) => {
                   const userSkill = user.approved_skills.find((s) => s.subskill === selection.subskill);
@@ -168,7 +182,8 @@ export function SkillExplorerTable({
             ))
           )}
         </TableBody>
-      </Table>
+        </table>
+      </div>
     </div>
   );
 }

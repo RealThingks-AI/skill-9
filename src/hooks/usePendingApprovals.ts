@@ -43,17 +43,32 @@ export const usePendingApprovals = () => {
         return;
       }
 
-      // Get profiles for all rating submitters
-      const userIds = (allRatings || []).map(r => r.user_id);
+      if (!allRatings || allRatings.length === 0) {
+        setPendingCount(0);
+        setLoading(false);
+        return;
+      }
+
+      // Get unique user IDs from ratings
+      const userIds = [...new Set(allRatings.map(r => r.user_id))];
+      
+      // Get profiles for all rating submitters (only for users with ratings)
       const { data: profiles } = await supabase
         .from('profiles')
         .select('user_id, role')
         .in('user_id', userIds);
 
-      // Filter out self-approvals for tech leads
-      const filteredRatings = (allRatings || []).filter(rating => {
+      // Filter out ratings without profiles AND self-approvals for tech leads
+      const filteredRatings = allRatings.filter(rating => {
         const submitterProfile = profiles?.find(p => p.user_id === rating.user_id);
-        const submitterRole = submitterProfile?.role || 'employee';
+        
+        // Exclude if no profile exists
+        if (!submitterProfile) {
+          console.warn('⚠️ Excluding rating - no profile for user_id:', rating.user_id);
+          return false;
+        }
+        
+        const submitterRole = submitterProfile.role || 'employee';
         
         // If submitter is an employee, any tech lead can approve
         if (submitterRole === 'employee') {
@@ -68,7 +83,7 @@ export const usePendingApprovals = () => {
         return true;
       });
 
-      console.log('📊 Found pending ratings:', filteredRatings.length, 'out of', allRatings?.length || 0);
+      console.log('📊 Found pending ratings:', filteredRatings.length, 'out of', allRatings.length);
       setPendingCount(filteredRatings.length);
     } catch (error) {
       console.error('Error in fetchPendingCount:', error);

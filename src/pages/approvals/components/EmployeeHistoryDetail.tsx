@@ -2,7 +2,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, Trash2 } from "lucide-react";
-import { format } from "date-fns";
+import { dateFormatters } from "@/utils/formatters";
 import type { GroupedHistoricalApproval } from "../hooks/useApprovalHistory";
 
 interface EmployeeHistoryDetailProps {
@@ -47,7 +47,7 @@ export const EmployeeHistoryDetail = ({ employee, isExpanded, onToggle, onDelete
               <div className="text-sm text-muted-foreground">{employee.employeeEmail}</div>
               <div className="text-xs text-muted-foreground">
                 {employee.ratings[0]?.approved_at 
-                  ? format(new Date(employee.ratings[0].approved_at), "MMM d, yyyy")
+                  ? dateFormatters.formatDate(employee.ratings[0].approved_at)
                   : "N/A"}
               </div>
               <div className="justify-self-end">
@@ -128,7 +128,7 @@ export const EmployeeHistoryDetail = ({ employee, isExpanded, onToggle, onDelete
                                 <>
                                   {rating.status === "approved" ? "Approved" : "Rejected"} by{" "}
                                   {rating.approver?.full_name || "Unknown"} on{" "}
-                                  {format(new Date(rating.approved_at), "MMM d, yyyy 'at' h:mm a")}
+                                  {dateFormatters.formatDateTime(rating.approved_at)}
                                 </>
                               )}
                             </div>

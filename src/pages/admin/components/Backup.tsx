@@ -7,6 +7,7 @@ import LoadingSpinner from "@/components/common/LoadingSpinner";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 interface BackupProps {
   onBack: () => void;
 }
@@ -573,41 +574,43 @@ export default function Backup({
         <CardContent>
           {loadingHistory ? <div className="flex items-center justify-center p-4 min-h-32">
               <LoadingSpinner />
-            </div> : backupHistory.length === 0 ? <p className="text-center text-muted-foreground py-4">No backup history yet</p> : <div className="space-y-2">
-              {backupHistory.map(backup => <div key={backup.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="font-medium truncate">{backup.backup_name}</p>
-                      {!backup.storage_path && <span className="px-2 py-0.5 text-xs rounded bg-destructive/10 text-destructive font-medium">
-                          Missing File
-                        </span>}
+            </div> : backupHistory.length === 0 ? <p className="text-center text-muted-foreground py-4">No backup history yet</p> : <ScrollArea className="h-[400px]">
+              <div className="space-y-2 pr-4">
+                {backupHistory.map(backup => <div key={backup.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="font-medium truncate">{backup.backup_name}</p>
+                        {!backup.storage_path && <span className="px-2 py-0.5 text-xs rounded bg-destructive/10 text-destructive font-medium">
+                            Missing File
+                          </span>}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(backup.created_at).toLocaleString()} • {' '}
+                        {backup.backup_type === 'auto' ? '🤖 Auto' : '👤 Manual'} • {' '}
+                        {backup.table_count} tables • {backup.record_count.toLocaleString()} records • {' '}
+                        {formatFileSize(backup.file_size)}
+                      </p>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(backup.created_at).toLocaleString()} • {' '}
-                      {backup.backup_type === 'auto' ? '🤖 Auto' : '👤 Manual'} • {' '}
-                      {backup.table_count} tables • {backup.record_count.toLocaleString()} records • {' '}
-                      {formatFileSize(backup.file_size)}
-                    </p>
-                  </div>
-                  <div className="flex items-center justify-between gap-4">
-                    {backup.storage_path ? <>
-                        <Button size="sm" variant="outline" onClick={() => handleDownloadBackup(backup)}>
-                          <Download className="mr-2 h-4 w-4" />
-                          Download
-                        </Button>
-                        <Button size="sm" onClick={() => handleRestoreBackup(backup)}>
-                          <Database className="mr-2 h-4 w-4" />
-                          Restore
-                        </Button>
-                      </> : <span className="text-xs text-muted-foreground italic px-2">
-                        File not available in storage
-                      </span>}
-                    <Button size="icon" variant="ghost" onClick={() => handleDeleteBackupRecord(backup)} title={backup.storage_path ? "Delete backup" : "Remove invalid record"}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>)}
-            </div>}
+                    <div className="flex items-center justify-between gap-4">
+                      {backup.storage_path ? <>
+                          <Button size="sm" variant="outline" onClick={() => handleDownloadBackup(backup)}>
+                            <Download className="mr-2 h-4 w-4" />
+                            Download
+                          </Button>
+                          <Button size="sm" onClick={() => handleRestoreBackup(backup)}>
+                            <Database className="mr-2 h-4 w-4" />
+                            Restore
+                          </Button>
+                        </> : <span className="text-xs text-muted-foreground italic px-2">
+                          File not available in storage
+                        </span>}
+                      <Button size="icon" variant="ghost" onClick={() => handleDeleteBackupRecord(backup)} title={backup.storage_path ? "Delete backup" : "Remove invalid record"}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>)}
+              </div>
+            </ScrollArea>}
         </CardContent>
       </Card>
 

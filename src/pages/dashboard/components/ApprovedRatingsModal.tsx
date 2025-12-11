@@ -8,7 +8,7 @@ import { CheckCircle, Clock, User, Filter, TrendingUp, Minus, TrendingDown } fro
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { dateFormatters } from "@/utils/formatters";
 
 interface ApprovedRating {
   id: string;
@@ -128,7 +128,7 @@ export const ApprovedRatingsModal = ({ isOpen, onClose, categoryId, categoryName
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[80vh]">
+      <DialogContent className="max-w-[min(896px,90vw)] w-full max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <CheckCircle className="h-5 w-5 text-emerald-600" />
@@ -194,7 +194,7 @@ export const ApprovedRatingsModal = ({ isOpen, onClose, categoryId, categoryName
                               </Badge>
                               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                 <Clock className="h-3 w-3" />
-                                {format(new Date(rating.approved_at), 'MMM dd, yyyy')}
+                                {dateFormatters.formatDate(rating.approved_at)}
                               </div>
                               {rating.approver_name && (
                                 <div className="flex items-center gap-1 text-xs text-muted-foreground">

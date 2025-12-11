@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Lock, Database, FileText } from "lucide-react";
+import { Users, Lock, Database, FileText, RefreshCw } from "lucide-react";
 import UserAccess from "./user-access";
 import { PageAccess } from "./components/PageAccess";
 import Backup from "./components/Backup";
 import Logs from "./components/Logs";
+import { DataSync } from "./components/DataSync";
 
 const Admin = () => {
   const [activeTab, setActiveTab] = useState("users");
@@ -18,7 +19,7 @@ const Admin = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden p-6 pt-4">
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto flex-shrink-0">
+        <TabsList className="grid w-full grid-cols-5 lg:w-auto flex-shrink-0">
           <TabsTrigger value="users" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
             User & Access Management
@@ -34,6 +35,10 @@ const Admin = () => {
           <TabsTrigger value="logs" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
             Logs
+          </TabsTrigger>
+          <TabsTrigger value="sync" className="flex items-center gap-2">
+            <RefreshCw className="h-4 w-4" />
+            Data Sync
           </TabsTrigger>
         </TabsList>
 
@@ -51,6 +56,10 @@ const Admin = () => {
 
         <TabsContent value="logs" className="flex-1 overflow-hidden">
           <Logs onBack={() => setActiveTab("users")} />
+        </TabsContent>
+
+        <TabsContent value="sync" className="flex-1 overflow-hidden">
+          <DataSync />
         </TabsContent>
       </Tabs>
     </div>

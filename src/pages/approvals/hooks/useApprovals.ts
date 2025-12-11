@@ -46,10 +46,10 @@ export const useApprovals = () => {
   const [recentActions, setRecentActions] = useState<RecentAction[]>([]);
   const { user } = useAuthContext();
 
-  const fetchPendingApprovals = async () => {
+  const fetchPendingApprovals = async (showLoading = false) => {
     if (!user) return;
     
-    setLoading(true);
+    if (showLoading) setLoading(true);
     try {
       // Fetch ALL employee ratings using pagination helper
       const { data: allRatings, error: ratingsError } = await fetchAllRows(
@@ -81,14 +81,26 @@ export const useApprovals = () => {
         throw ratingsError;
       }
 
+      // Get user IDs from ratings to fetch only needed profiles
+      const userIds = [...new Set((allRatings || []).map(r => r.user_id))];
+      
       // Get ALL profiles to map user info (including tech leads for self-ratings)
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('user_id, full_name, email, tech_lead_id, role');
+        .select('user_id, full_name, email, tech_lead_id, role')
+        .in('user_id', userIds);
 
       if (profilesError) {
         console.error('Error fetching profiles:', profilesError);
         throw profilesError;
+      }
+
+      // Log if any ratings have missing profiles
+      const missingProfiles = (allRatings || []).filter(
+        r => !profiles?.find(p => p.user_id === r.user_id)
+      );
+      if (missingProfiles.length > 0) {
+        console.warn('⚠️ Found ratings without profiles:', missingProfiles.map(r => r.user_id));
       }
 
       // Filter ratings based on approval logic:
@@ -97,7 +109,9 @@ export const useApprovals = () => {
       const currentUserProfile = profiles?.find(p => p.user_id === user.id);
       const filteredRatings = (allRatings || []).filter(rating => {
         const submitterProfile = profiles?.find(p => p.user_id === rating.user_id);
-        const submitterRole = submitterProfile?.role || 'employee';
+        // Exclude ratings where the submitter has no profile
+        if (!submitterProfile) return false;
+        const submitterRole = submitterProfile.role || 'employee';
         
         // If submitter is an employee, any tech lead can approve
         if (submitterRole === 'employee') {
@@ -119,9 +133,13 @@ export const useApprovals = () => {
 
       for (const rating of filteredRatings) {
         const employeeProfile = profiles?.find(p => p.user_id === rating.user_id);
+        if (!employeeProfile) {
+          // Skip approvals for users without profiles to keep counts consistent
+          continue;
+        }
         
         // Determine the type based on the role of the person who submitted the rating
-        const submitterRole = employeeProfile?.role || 'employee';
+        const submitterRole = employeeProfile.role || 'employee';
         const isTeamLead = submitterRole === 'tech_lead';
         
         approvals.push({
@@ -151,7 +169,12 @@ export const useApprovals = () => {
         const employeeProfile = profiles?.find(p => p.user_id === rating.user_id);
         
         if (!employeeProfile) {
-          console.warn('⚠️ No profile found for user_id:', rating.user_id);
+          console.warn('⚠️ Skipping rating - no profile found for user_id:', rating.user_id);
+          // Still try to get basic info from auth.users if profile is missing
+          const { data: authUser } = await supabase.auth.admin.getUserById(rating.user_id);
+          if (authUser?.user) {
+            console.log('Found user in auth.users:', authUser.user.email);
+          }
           continue;
         }
         
@@ -365,7 +388,8 @@ export const useApprovals = () => {
           updated.user_id,
           approverProfile?.full_name || 'A tech lead',
           skillName,
-          user.id
+          user.id,
+          approvalId
         );
       }
 
@@ -484,7 +508,8 @@ export const useApprovals = () => {
           approverProfile?.full_name || 'A tech lead',
           skillName,
           comment,
-          user.id
+          user.id,
+          approvalId
         );
       }
 
@@ -497,7 +522,7 @@ export const useApprovals = () => {
 
   useEffect(() => {
     if (user) {
-      fetchPendingApprovals();
+      fetchPendingApprovals(true); // Show loading only on initial mount
       fetchRecentActions();
     }
   }, [user]);

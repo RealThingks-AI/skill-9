@@ -25,7 +25,7 @@ export function SkillSelectionModal({
 }: SkillSelectionModalProps) {
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-[min(1152px,90vw)] w-full max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-semibold">
             Select Skill from{" "}

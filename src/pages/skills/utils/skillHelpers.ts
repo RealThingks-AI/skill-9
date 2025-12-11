@@ -167,7 +167,7 @@ export const calculateCategoryProgress = (
 };
 
 // Admin view: Aggregate stats across all users for a category
-// IMPORTANT: Only count approved ratings for High/Medium/Low, and only submitted (pending) for Pending
+// Count unique users for each rating level, not individual subskills
 export const calculateAdminCategoryStats = (
   categoryId: string,
   skills: any[],
@@ -176,47 +176,62 @@ export const calculateAdminCategoryStats = (
 ) => {
   const categorySkills = skills.filter(skill => skill.category_id === categoryId);
   
-  let ratingCounts = { high: 0, medium: 0, low: 0 };
-  let pendingCount = 0;
+  // Use Sets to track unique users for each rating level
+  const highUsers = new Set<string>();
+  const mediumUsers = new Set<string>();
+  const lowUsers = new Set<string>();
+  const pendingUsers = new Set<string>();
   
   categorySkills.forEach(skill => {
     const skillSubskills = subskills.filter(subskill => subskill.skill_id === skill.id);
     
     if (skillSubskills.length > 0) {
-      // Skill has subskills - count only approved subskill ratings
+      // Skill has subskills - count unique users with approved subskill ratings
       skillSubskills.forEach(subskill => {
         const approvedRatings = allEmployeeRatings.filter(
           r => r.subskill_id === subskill.id && r.status === 'approved'
         );
         approvedRatings.forEach(rating => {
-          ratingCounts[rating.rating as 'high' | 'medium' | 'low']++;
+          if (rating.rating === 'high') highUsers.add(rating.user_id);
+          else if (rating.rating === 'medium') mediumUsers.add(rating.user_id);
+          else if (rating.rating === 'low') lowUsers.add(rating.user_id);
         });
         
-        // Count only submitted (pending approval) ratings
+        // Count unique users with submitted (pending approval) ratings
         const pendingRatings = allEmployeeRatings.filter(
           r => r.subskill_id === subskill.id && r.status === 'submitted'
         );
-        pendingCount += pendingRatings.length;
+        pendingRatings.forEach(rating => {
+          pendingUsers.add(rating.user_id);
+        });
       });
     } else {
-      // Skill has no subskills - count only approved skill ratings
+      // Skill has no subskills - count unique users with approved skill ratings
       const approvedRatings = allEmployeeRatings.filter(
         r => r.skill_id === skill.id && !r.subskill_id && r.status === 'approved'
       );
       approvedRatings.forEach(rating => {
-        ratingCounts[rating.rating as 'high' | 'medium' | 'low']++;
+        if (rating.rating === 'high') highUsers.add(rating.user_id);
+        else if (rating.rating === 'medium') mediumUsers.add(rating.user_id);
+        else if (rating.rating === 'low') lowUsers.add(rating.user_id);
       });
       
-      // Count only submitted (pending approval) ratings
+      // Count unique users with submitted (pending approval) ratings
       const pendingRatings = allEmployeeRatings.filter(
         r => r.skill_id === skill.id && !r.subskill_id && r.status === 'submitted'
       );
-      pendingCount += pendingRatings.length;
+      pendingRatings.forEach(rating => {
+        pendingUsers.add(rating.user_id);
+      });
     }
   });
   
   return {
-    ratingCounts,
-    pendingCount
+    ratingCounts: {
+      high: highUsers.size,
+      medium: mediumUsers.size,
+      low: lowUsers.size
+    },
+    pendingCount: pendingUsers.size
   };
 };

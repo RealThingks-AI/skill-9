@@ -16,11 +16,11 @@ export const useSkills = () => {
   const { profile } = useAuth();
   const { toast } = useToast();
 
-  const fetchData = async () => {
+  const fetchData = async (showLoading = false) => {
     if (!profile) return;
     
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       console.log('🔍 Fetching data for user:', profile.user_id);
 
       // Fetch skill categories
@@ -137,38 +137,38 @@ export const useSkills = () => {
   };
 
   useEffect(() => {
-    fetchData();
+    fetchData(true); // Show loading only on initial mount
 
-    // Set up real-time subscriptions for instant updates
+    // Set up real-time subscriptions for silent background updates
     const categoriesChannel = supabase
       .channel('skill_categories_changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'skill_categories' }, () => {
-        console.log('📡 Category change detected - refreshing data');
-        fetchData();
+        console.log('📡 Category change detected - syncing silently');
+        fetchData(false); // Silent background update
       })
       .subscribe();
 
     const skillsChannel = supabase
       .channel('skills_changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'skills' }, () => {
-        console.log('📡 Skill change detected - refreshing data');
-        fetchData();
+        console.log('📡 Skill change detected - syncing silently');
+        fetchData(false); // Silent background update
       })
       .subscribe();
 
     const subskillsChannel = supabase
       .channel('subskills_changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'subskills' }, () => {
-        console.log('📡 Subskill change detected - refreshing data');
-        fetchData();
+        console.log('📡 Subskill change detected - syncing silently');
+        fetchData(false); // Silent background update
       })
       .subscribe();
 
     const ratingsChannel = supabase
       .channel('employee_ratings_changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'employee_ratings' }, () => {
-        console.log('📡 Rating change detected - refreshing data');
-        fetchData();
+        console.log('📡 Rating change detected - syncing silently');
+        fetchData(false); // Silent background update
       })
       .subscribe();
 
@@ -258,8 +258,8 @@ export const useSkills = () => {
         });
       }
       
-      // Refresh data
-      await fetchData();
+      // Refresh data silently
+      await fetchData(false);
       
       toast({
         title: isNA ? "Skill marked as NA" : "Skill NA status removed",

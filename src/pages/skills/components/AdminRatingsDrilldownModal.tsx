@@ -2,10 +2,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useState, useMemo } from "react";
-import { format } from "date-fns";
-import { Search, ChevronDown, ChevronRight } from "lucide-react";
+import { dateFormatters } from "@/utils/formatters";
+import { Search, ChevronDown, ChevronRight, Trash2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 interface EmployeeRating {
   id: string;
   user_id: string;
@@ -29,16 +33,22 @@ interface AdminRatingsDrilldownModalProps {
   categoryName: string;
   ratingType: 'high' | 'medium' | 'low' | 'pending';
   records: EmployeeRating[];
+  onRefresh?: () => void;
 }
 export const AdminRatingsDrilldownModal = ({
   open,
   onOpenChange,
   categoryName,
   ratingType,
-  records
+  records,
+  onRefresh
 }: AdminRatingsDrilldownModalProps) => {
+  const { toast } = useToast();
   const [expandedSkills, setExpandedSkills] = useState<Set<string>>(new Set());
   const [expandedSubskills, setExpandedSubskills] = useState<Set<string>>(new Set());
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [ratingToDelete, setRatingToDelete] = useState<EmployeeRating | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Group data: Skill → Subskills → Users
   const hierarchicalData = useMemo(() => {
@@ -123,10 +133,54 @@ export const AdminRatingsDrilldownModal = ({
         return 'bg-slate-100 text-slate-700 border-slate-300';
     }
   };
+
+  const handleDeleteClick = (rating: EmployeeRating) => {
+    setRatingToDelete(rating);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!ratingToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('employee_ratings')
+        .delete()
+        .eq('id', ratingToDelete.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Rating deleted successfully",
+      });
+
+      setDeleteDialogOpen(false);
+      setRatingToDelete(null);
+      
+      // Close the modal and refresh the data
+      onOpenChange(false);
+      
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (error) {
+      console.error('Error deleting rating:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete rating",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const title = ratingType === 'pending' ? `Pending Ratings - ${categoryName}` : `${ratingType.charAt(0).toUpperCase() + ratingType.slice(1)} Ratings - ${categoryName}`;
   const totalCount = records.length;
   return <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[67.5vw] max-h-[90vh]">
+      <DialogContent className="max-w-[min(1080px,90vw)] w-full max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="text-lg">{title}</DialogTitle>
           <p className="text-xs text-muted-foreground mt-0.5">
@@ -178,18 +232,28 @@ export const AdminRatingsDrilldownModal = ({
                                           {user.employee_name || 'Unknown Employee'}
                                         </div>
                                         <div className="text-sm text-muted-foreground">
-                                          {user.status === 'approved' && user.approved_at && <>Approved: {format(new Date(user.approved_at), 'MMM d, yyyy')}</>}
-                                          {user.status === 'submitted' && user.submitted_at && <>Submitted: {format(new Date(user.submitted_at), 'MMM d, yyyy')}</>}
+                                          {user.status === 'approved' && user.approved_at && <>Approved: {dateFormatters.formatDate(user.approved_at)}</>}
+                                          {user.status === 'submitted' && user.submitted_at && <>Submitted: {dateFormatters.formatDate(user.submitted_at)}</>}
                                           {user.approver_name && ` • ${user.approver_name}`}
                                         </div>
                                       </div>
-                                      <div className="flex gap-1.5">
-                                        <Badge className={`${getRatingBadgeColor(user.rating)} text-xs`}>
-                                          {user.rating.toUpperCase()}
-                                        </Badge>
-                                        <Badge className={`${getStatusBadgeColor(user.status)} text-xs`}>
-                                          {user.status}
-                                        </Badge>
+                                      <div className="flex items-center gap-2">
+                                        <div className="flex gap-1.5">
+                                          <Badge className={`${getRatingBadgeColor(user.rating)} text-xs`}>
+                                            {user.rating.toUpperCase()}
+                                          </Badge>
+                                          <Badge className={`${getStatusBadgeColor(user.status)} text-xs`}>
+                                            {user.status}
+                                          </Badge>
+                                        </div>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => handleDeleteClick(user)}
+                                          className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
                                       </div>
                                     </div>
                                   </div>)}
@@ -223,18 +287,28 @@ export const AdminRatingsDrilldownModal = ({
                                                   {user.employee_name || 'Unknown Employee'}
                                                 </div>
                                                 <div className="text-sm text-muted-foreground">
-                                                  {user.status === 'approved' && user.approved_at && <>Approved: {format(new Date(user.approved_at), 'MMM d, yyyy')}</>}
-                                                  {user.status === 'submitted' && user.submitted_at && <>Submitted: {format(new Date(user.submitted_at), 'MMM d, yyyy')}</>}
+                                                  {user.status === 'approved' && user.approved_at && <>Approved: {dateFormatters.formatDate(user.approved_at)}</>}
+                                                  {user.status === 'submitted' && user.submitted_at && <>Submitted: {dateFormatters.formatDate(user.submitted_at)}</>}
                                                   {user.approver_name && ` • ${user.approver_name}`}
                                                 </div>
                                               </div>
-                                              <div className="flex gap-1">
-                                                <Badge className={`${getRatingBadgeColor(user.rating)} text-xs`}>
-                                                  {user.rating.toUpperCase()}
-                                                </Badge>
-                                                <Badge className={`${getStatusBadgeColor(user.status)} text-xs`}>
-                                                  {user.status}
-                                                </Badge>
+                                              <div className="flex items-center gap-2">
+                                                <div className="flex gap-1">
+                                                  <Badge className={`${getRatingBadgeColor(user.rating)} text-xs`}>
+                                                    {user.rating.toUpperCase()}
+                                                  </Badge>
+                                                  <Badge className={`${getStatusBadgeColor(user.status)} text-xs`}>
+                                                    {user.status}
+                                                  </Badge>
+                                                </div>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  onClick={() => handleDeleteClick(user)}
+                                                  className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                >
+                                                  <Trash2 className="h-4 w-4" />
+                                                </Button>
                                               </div>
                                             </div>
                                           </div>)}
@@ -252,5 +326,26 @@ export const AdminRatingsDrilldownModal = ({
           </ScrollArea>
         </div>
       </DialogContent>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Rating</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the {ratingToDelete?.rating} rating for {ratingToDelete?.employee_name}? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>;
 };

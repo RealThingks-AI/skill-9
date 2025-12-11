@@ -204,7 +204,7 @@ export const ActionMenu = ({
 
       {/* Import Dialog */}
       <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-[min(672px,90vw)] w-full max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>Import Skills Hierarchy from CSV</DialogTitle>
           </DialogHeader>

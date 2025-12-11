@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { toast } from '@/hooks/use-toast';
 
 export interface Notification {
   id: string;
@@ -11,6 +12,9 @@ export interface Notification {
   read: boolean;
   created_at: string;
   performed_by: string | null;
+  related_record_id?: string | null;
+  related_record_type?: string | null;
+  related_record_route?: string | null;
 }
 
 interface NotificationWithPerformer extends Notification {
@@ -25,6 +29,7 @@ export function useNotifications() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const { profile } = useAuth();
+  const prevCountRef = useRef(0);
 
   const loadNotifications = useCallback(async () => {
     if (!profile?.user_id) {
@@ -197,6 +202,16 @@ export function useNotifications() {
         },
         (payload) => {
           console.log('🔔 Real-time update:', payload.eventType);
+          
+          // Show toast for new notifications
+          if (payload.eventType === 'INSERT' && payload.new) {
+            const newNotification = payload.new as Notification;
+            toast({
+              title: newNotification.title,
+              description: newNotification.message,
+            });
+          }
+          
           loadNotifications();
         }
       )

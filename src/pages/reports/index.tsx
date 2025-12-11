@@ -6,6 +6,7 @@ import { ReportResults } from "./components/ReportResults";
 import { useReportsData } from "./hooks/useReportsData";
 import { useState } from "react";
 import type { GeneratedReport } from "./types/reportTypes";
+import { dateFormatters } from "@/utils/formatters";
 import { 
   Download,
   FileText,
@@ -145,7 +146,7 @@ export default function Reports() {
                         <div className="space-y-1 min-w-0 flex-1">
                           <h4 className="text-sm font-medium truncate">{log.report_name}</h4>
                           <p className="text-xs text-muted-foreground">
-                            {log.report_type} • {new Date(log.created_at).toLocaleDateString()}
+                            {log.report_type} • {dateFormatters.formatDate(log.created_at)}
                             {log.records_processed && ` • ${log.records_processed} records`}
                           </p>
                         </div>

@@ -39,30 +39,30 @@ export default function ProjectSkillsTab({
   };
   const coveredCount = skillCoverage.filter(s => s.covered).length;
   const totalCount = skillCoverage.length;
-  return <div className="space-y-4">
+  const getRatingColor = (rating: string) => {
+    if (rating === 'high') return 'bg-[hsl(var(--success))] text-white';
+    if (rating === 'medium') return 'bg-[hsl(var(--info))] text-white';
+    return 'bg-[hsl(var(--warning))] text-white';
+  };
+
+  const getRatingLabel = (rating: string) => {
+    if (rating === 'high') return 'H';
+    if (rating === 'medium') return 'M';
+    return 'L';
+  };
+
+  return <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold">Skills Coverage</h3>
-        
+        <h3 className="font-semibold text-sm">Skills Coverage</h3>
       </div>
 
-      <div className="space-y-2">
-        {skillCoverage.map(skill => <div key={skill.subskill_id} className="p-3 border rounded-lg">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="font-medium">{skill.subskill_name}</p>
-                  <Badge variant="outline" className="text-xs">
-                    {skill.required_rating.toUpperCase()}
-                  </Badge>
-                  {skill.covered ? <Check className="h-4 w-4 text-green-600" /> : <X className="h-4 w-4 text-red-600" />}
-                </div>
-                
-                {skill.covered_by.length > 0 && <p className="text-xs text-muted-foreground mt-1">
-                    Covered by: {skill.covered_by.join(', ')}
-                  </p>}
-              </div>
-              
-            </div>
+      <div className="flex flex-wrap gap-2">
+        {skillCoverage.map(skill => <div key={skill.subskill_id} className="flex items-center gap-1.5 px-3 py-1.5 bg-background border rounded-lg shadow-sm">
+            <span className="text-sm font-medium">{skill.subskill_name}</span>
+            <Badge className={`text-xs h-5 px-2 ${getRatingColor(skill.required_rating)}`}>
+              {getRatingLabel(skill.required_rating)}
+            </Badge>
+            {skill.covered ? <Check className="h-3.5 w-3.5 text-green-600" /> : <X className="h-3.5 w-3.5 text-red-600" />}
           </div>)}
       </div>
     </div>;

@@ -4,6 +4,10 @@ import { toZonedTime } from 'date-fns-tz';
 // IST timezone constant
 const IST_TIMEZONE = 'Asia/Kolkata';
 
+// Standard date format used across the app: "06-Dec-2025"
+const STANDARD_DATE_FORMAT = 'dd-MMM-yyyy';
+const STANDARD_DATETIME_FORMAT = "dd-MMM-yyyy 'at' h:mm a";
+
 /**
  * Convert any date to IST timezone
  */
@@ -15,48 +19,48 @@ const toIST = (date: string | Date): Date => {
 // Date formatting utilities
 export const dateFormatters = {
   /**
-   * Format date to readable string in IST (e.g., "Jan 15, 2024")
+   * Format date to readable string in IST (e.g., "06-Dec-2025")
    */
   formatDate(date: string | Date): string {
     try {
       const istDate = toIST(date);
-      return isValid(istDate) ? format(istDate, 'MMM dd, yyyy') : 'Invalid date';
+      return isValid(istDate) ? format(istDate, STANDARD_DATE_FORMAT) : 'Invalid date';
     } catch {
       return 'Invalid date';
     }
   },
 
   /**
-   * Format date with time in IST (e.g., "Jan 15, 2024 at 2:30 PM IST")
+   * Format date with time in IST (e.g., "06-Dec-2025 at 2:30 PM IST")
    */
   formatDateTime(date: string | Date): string {
     try {
       const istDate = toIST(date);
-      return isValid(istDate) ? format(istDate, 'MMM dd, yyyy \'at\' h:mm a') + ' IST' : 'Invalid date';
+      return isValid(istDate) ? format(istDate, STANDARD_DATETIME_FORMAT) + ' IST' : 'Invalid date';
     } catch {
       return 'Invalid date';
     }
   },
 
   /**
-   * Format date with time in compact format for tables (e.g., "28/10/2025 16:25")
+   * Format date with time in compact format for tables (e.g., "06-Dec-2025 16:25")
    */
   formatDateTimeCompact(date: string | Date): string {
     try {
       const istDate = toIST(date);
-      return isValid(istDate) ? format(istDate, 'dd/MM/yyyy HH:mm') : 'Invalid date';
+      return isValid(istDate) ? format(istDate, 'dd-MMM-yyyy HH:mm') : 'Invalid date';
     } catch {
       return 'Invalid date';
     }
   },
 
   /**
-   * Format date with time with seconds (e.g., "28/10/2025 16:25:34")
+   * Format date with time with seconds (e.g., "06-Dec-2025 16:25:34")
    */
   formatDateTimeWithSeconds(date: string | Date): string {
     try {
       const istDate = toIST(date);
-      return isValid(istDate) ? format(istDate, 'dd/MM/yyyy HH:mm:ss') : 'Invalid date';
+      return isValid(istDate) ? format(istDate, 'dd-MMM-yyyy HH:mm:ss') : 'Invalid date';
     } catch {
       return 'Invalid date';
     }
@@ -75,7 +79,7 @@ export const dateFormatters = {
   },
 
   /**
-   * Format date for form inputs (YYYY-MM-DD)
+   * Format date for form inputs (YYYY-MM-DD) - required for HTML date inputs
    */
   formatForInput(date: string | Date): string {
     try {
@@ -83,6 +87,18 @@ export const dateFormatters = {
       return isValid(dateObj) ? format(dateObj, 'yyyy-MM-dd') : '';
     } catch {
       return '';
+    }
+  },
+
+  /**
+   * Format month year (e.g., "Dec-2025")
+   */
+  formatMonthYear(date: string | Date): string {
+    try {
+      const istDate = toIST(date);
+      return isValid(istDate) ? format(istDate, 'MMM-yyyy') : 'Invalid date';
+    } catch {
+      return 'Invalid date';
     }
   }
 };

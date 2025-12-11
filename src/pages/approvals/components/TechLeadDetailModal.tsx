@@ -4,7 +4,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown } from "lucide-react";
-import { format } from "date-fns";
+import { dateFormatters } from "@/utils/formatters";
 import type { TechLeadStats, TechLeadRating } from "../hooks/useTechLeadStats";
 import { RatingDetailModal } from "./RatingDetailModal";
 interface TechLeadDetailModalProps {
@@ -70,7 +70,7 @@ export const TechLeadDetailModal = ({
   };
   return <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-5xl max-h-[85vh]">
+        <DialogContent className="max-w-[min(1024px,90vw)] w-full max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold">
               {techLead.techLeadName}'s Reviews
@@ -117,7 +117,7 @@ export const TechLeadDetailModal = ({
                                 </Badge>
                               </div>
                               <span className="text-xs text-muted-foreground">
-                                {format(new Date(rating.approved_at), "MMM d, yyyy")}
+                                {dateFormatters.formatDate(rating.approved_at)}
                               </span>
                             </div>
                           </div>;

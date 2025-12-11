@@ -12,6 +12,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, Plus, Target, Trophy, Clock, Zap, Star, AlertTriangle, TrendingUp } from "lucide-react";
 import { format, parseISO, isBefore, differenceInDays } from "date-fns";
+import { dateFormatters } from "@/utils/formatters";
 import { cn } from "@/lib/utils";
 import { useGoalsProgress } from "@/hooks/useGoalsProgress";
 import { supabase } from "@/integrations/supabase/client";
@@ -192,7 +193,7 @@ export const EmployeeGoalsDashboard = () => {
                   New Goal
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md">
+              <DialogContent className="max-w-[min(448px,90vw)] w-full max-h-[90vh] overflow-hidden flex flex-col">
                 <DialogHeader>
                   <DialogTitle>🎯 Create Personal Goal</DialogTitle>
                 </DialogHeader>
@@ -241,7 +242,7 @@ export const EmployeeGoalsDashboard = () => {
                           )}
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
-                          {selectedDate ? format(selectedDate, "PPP") : "Pick target date"}
+                          {selectedDate ? dateFormatters.formatDate(selectedDate) : "Pick target date"}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
@@ -389,7 +390,7 @@ export const EmployeeGoalsDashboard = () => {
                     <h4 className="font-semibold text-emerald-900">{goal.skill?.name}</h4>
                   </div>
                   <p className="text-xs text-emerald-700">
-                    Completed {goal.completed_at ? format(parseISO(goal.completed_at), 'MMM dd, yyyy') : ''}
+                    Completed {goal.completed_at ? dateFormatters.formatDate(goal.completed_at) : ''}
                   </p>
                 </div>
               ))}

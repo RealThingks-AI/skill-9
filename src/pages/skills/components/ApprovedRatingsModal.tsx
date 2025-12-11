@@ -86,7 +86,7 @@ export const ApprovedRatingsModal = ({
   
   const title = filterRating ? `${categoryName} - ${filterRating.charAt(0).toUpperCase() + filterRating.slice(1)} Rated Skills` : `${categoryName} - All Approved Skills`;
   return <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh]">
+      <DialogContent className="max-w-[min(672px,90vw)] w-full max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {filterRating && getRatingIcon(filterRating)}

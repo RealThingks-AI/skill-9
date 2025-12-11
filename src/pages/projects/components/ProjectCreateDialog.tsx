@@ -1,25 +1,40 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
-import { ProjectFormData, Project, RequiredSkill } from '../types/projects';
+import { ProjectFormData, Project, RequiredSkill, MemberMonthlyAllocation, AllocationPercentage } from '../types/projects';
 import { useAuth } from '@/hooks/useAuth';
 import { projectService } from '../services/projectService';
 import { toast } from 'sonner';
+import StepOneWithDates from './create-steps/StepOneWithDates';
 import StepOne from './create-steps/StepOne';
 import StepTwo from './create-steps/StepTwo';
 import StepThree from './create-steps/StepThree';
 import { supabase } from '@/integrations/supabase/client';
-
+import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Edit, Check, X, Loader2, History } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import ProjectOverviewTab from './detail-tabs/ProjectOverviewTab';
+import ProjectMembersTab from './detail-tabs/ProjectMembersTab';
+import ProjectSkillsTab from './detail-tabs/ProjectSkillsTab';
+import ProjectHistoryTab from './detail-tabs/ProjectHistoryTab';
+import ProjectViewMembersList from './detail-tabs/ProjectViewMembersList';
 interface ProjectCreateDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
-  prefilledSubskills?: { skill_id: string; subskill_id: string }[];
+  prefilledSubskills?: {
+    skill_id: string;
+    subskill_id: string;
+  }[];
   prefilledUserIds?: string[];
   editMode?: Project;
+  viewMode?: boolean;
+  projectId?: string | null;
+  userRole?: string;
 }
-
 export default function ProjectCreateDialog({
   open,
   onOpenChange,
@@ -27,38 +42,116 @@ export default function ProjectCreateDialog({
   prefilledSubskills = [],
   prefilledUserIds = [],
   editMode,
+  viewMode = false,
+  projectId,
+  userRole = ''
 }: ProjectCreateDialogProps) {
-  const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
-  const { profile } = useAuth();
-
+  const [isEditingFromView, setIsEditingFromView] = useState(false);
+  const [project, setProject] = useState<Project | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [showRejectForm, setShowRejectForm] = useState(false);
+  const [approvalComment, setApprovalComment] = useState('');
+  const [showApprovalForm, setShowApprovalForm] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [showSkillsAndTeam, setShowSkillsAndTeam] = useState(false);
+  const [memberToExpand, setMemberToExpand] = useState<string | null>(null);
+  const {
+    profile
+  } = useAuth();
+  const stepTwoRef = useRef<HTMLDivElement>(null);
+  const stepThreeRef = useRef<HTMLDivElement>(null);
   const [formData, setFormData] = useState<ProjectFormData>({
     name: '',
     description: '',
+    customer_name: '',
+    tech_lead_id: '',
     start_date: '',
     end_date: '',
+    month_wise_manpower: [],
     required_skills: [],
-    members: [],
+    members: []
   });
+  const [projectStatus, setProjectStatus] = useState<string>('active');
 
-  // Populate form data when in edit mode
+  // Load project data when in view mode
   useEffect(() => {
-    if (open && editMode) {
-      setFormData({
-        name: editMode.name,
-        description: editMode.description || '',
-        start_date: editMode.start_date || '',
-        end_date: editMode.end_date || '',
-        required_skills: editMode.required_skills,
-        members: editMode.members.map(m => ({
-          user_id: m.user_id,
-          allocation_percentage: m.allocation_percentage,
-        })),
-      });
+    if (open && viewMode && projectId) {
+      loadProject();
     } else if (!open) {
       resetForm();
+      setIsEditingFromView(false);
+      setProject(null);
+      setShowRejectForm(false);
+      setRejectionReason('');
+      setShowApprovalForm(false);
+      setApprovalComment('');
+      setShowSkillsAndTeam(false);
+      setMemberToExpand(null);
     }
-  }, [open, editMode]);
+  }, [open, viewMode, projectId]);
+
+  // Populate form data when in edit mode (including monthly allocations)
+  useEffect(() => {
+    const loadFormDataWithAllocations = async () => {
+      if (open && (editMode || isEditingFromView && project)) {
+        const dataToEdit = editMode || project;
+        if (dataToEdit) {
+          // Load existing monthly allocations
+          let monthlyAllocationsMap: Map<string, MemberMonthlyAllocation[]> = new Map();
+          try {
+            const existingAllocations = await projectService.getProjectMemberMonthlyAllocations(dataToEdit.id);
+            // Group by user_id
+            for (const alloc of existingAllocations) {
+              if (!monthlyAllocationsMap.has(alloc.user_id)) {
+                monthlyAllocationsMap.set(alloc.user_id, []);
+              }
+              monthlyAllocationsMap.get(alloc.user_id)!.push({
+                month: alloc.month,
+                allocation_percentage: alloc.allocation_percentage as AllocationPercentage
+              });
+            }
+          } catch (err) {
+            console.error('Error loading monthly allocations:', err);
+          }
+
+          // Get project months from month_wise_manpower
+          const projectMonths = (dataToEdit.month_wise_manpower || []).map(m => m.month);
+
+          // Only include members that actually have monthly allocations saved
+          // This prevents auto-populating members that were never assigned to specific months
+          const membersWithAllocations = dataToEdit.members.filter(m => {
+            const existingMonthlyAllocations = monthlyAllocationsMap.get(m.user_id) || [];
+            return existingMonthlyAllocations.length > 0;
+          }).map(m => ({
+            user_id: m.user_id,
+            allocation_percentage: m.allocation_percentage,
+            monthly_allocations: monthlyAllocationsMap.get(m.user_id) || []
+          }));
+          setFormData({
+            name: dataToEdit.name,
+            description: dataToEdit.description || '',
+            customer_name: dataToEdit.customer_name || '',
+            tech_lead_id: dataToEdit.tech_lead_id || '',
+            start_date: dataToEdit.start_date || '',
+            end_date: dataToEdit.end_date || '',
+            month_wise_manpower: dataToEdit.month_wise_manpower || [],
+            required_skills: dataToEdit.required_skills,
+            members: membersWithAllocations
+          });
+          setProjectStatus(dataToEdit.status);
+          // Auto-show skills and team sections for active projects
+          if (dataToEdit.status === 'active') {
+            setShowSkillsAndTeam(true);
+          }
+        }
+      } else if (!open) {
+        resetForm();
+      }
+    };
+    loadFormDataWithAllocations();
+  }, [open, editMode, isEditingFromView, project]);
 
   // Update formData when prefilled data changes and dialog opens
   useEffect(() => {
@@ -66,151 +159,392 @@ export default function ProjectCreateDialog({
       // Load subskills data to map prefilled IDs to full skill data
       const loadPrefilledSkills = async () => {
         if (prefilledSubskills.length > 0) {
-          const { data: subskillsData } = await supabase
-            .from('subskills')
-            .select('id, name, skills!inner(id, name)')
-            .in('id', prefilledSubskills.map(ps => ps.subskill_id));
-
-          const prefilledSkills: RequiredSkill[] = prefilledSubskills
-            .map(ps => {
-              const subskill = subskillsData?.find((s: any) => s.id === ps.subskill_id);
-              if (!subskill) return null;
-              return {
-                skill_id: ps.skill_id,
-                skill_name: (subskill as any).skills.name,
-                subskill_id: ps.subskill_id,
-                subskill_name: (subskill as any).name,
-                required_rating: 'medium',
-              } as RequiredSkill;
-            })
-            .filter((s): s is RequiredSkill => s !== null);
-
+          const {
+            data: subskillsData
+          } = await supabase.from('subskills').select('id, name, skills!inner(id, name)').in('id', prefilledSubskills.map(ps => ps.subskill_id));
+          const prefilledSkills: RequiredSkill[] = prefilledSubskills.map(ps => {
+            const subskill = subskillsData?.find((s: any) => s.id === ps.subskill_id);
+            if (!subskill) return null;
+            return {
+              skill_id: ps.skill_id,
+              skill_name: (subskill as any).skills.name,
+              subskill_id: ps.subskill_id,
+              subskill_name: (subskill as any).name,
+              required_rating: 'medium'
+            } as RequiredSkill;
+          }).filter((s): s is RequiredSkill => s !== null);
           setFormData(prev => ({
             ...prev,
             required_skills: prefilledSkills,
             members: prefilledUserIds.map(userId => ({
               user_id: userId,
-              allocation_percentage: 50 as const,
-            })),
+              allocation_percentage: 25 as const
+            }))
           }));
-
-          // Skip to step 2 if we have prefilled skills
-          setStep(2);
         } else {
           setFormData(prev => ({
             ...prev,
             members: prefilledUserIds.map(userId => ({
               user_id: userId,
-              allocation_percentage: 50 as const,
-            })),
+              allocation_percentage: 25 as const
+            }))
           }));
         }
       };
-
       loadPrefilledSkills();
     }
   }, [open, prefilledSubskills, prefilledUserIds, editMode]);
 
-  const handleNext = () => setStep(prev => Math.min(prev + 1, 3));
-  const handleBack = () => setStep(prev => Math.max(prev - 1, 1));
+  // Auto-scroll to next section when current section is complete
+  useEffect(() => {
+    if (formData.name && formData.description && formData.start_date && stepTwoRef.current) {
+      setTimeout(() => {
+        stepTwoRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+      }, 300);
+    }
+  }, [formData.name, formData.description, formData.start_date]);
+  useEffect(() => {
+    if (formData.required_skills.length > 0 && stepThreeRef.current) {
+      setTimeout(() => {
+        stepThreeRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+      }, 300);
+    }
+  }, [formData.required_skills.length]);
+  const loadProject = async () => {
+    if (!projectId) return;
+    try {
+      setLoading(true);
+      const data = await projectService.getProjectById(projectId);
+      setProject(data);
+    } catch (error) {
+      console.error('Error loading project:', error);
+      toast.error('Failed to load project details');
+    } finally {
+      setLoading(false);
+    }
+  };
+  const handleApprove = async () => {
+    if (!projectId || !project) return;
+    try {
+      setLoading(true);
+      const {
+        data: {
+          user
+        }
+      } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('User not authenticated');
+        return;
+      }
 
-  const canProceedToStep2 = formData.required_skills.length > 0;
-  const canProceedToStep3 = formData.name && formData.description && formData.start_date;
+      // Optimistic UI update
+      toast.success('Project approved');
+      onOpenChange(false);
+      setShowApprovalForm(false);
+      setApprovalComment('');
 
-  const handleSubmit = async () => {
-    if (!profile) return;
-
-    if (formData.members.length === 0) {
-      toast.error('Please assign at least one team member');
+      // Update in background
+      projectService.updateProjectStatus(projectId, 'active', user.id, approvalComment.trim() || undefined).then(() => {
+        onSuccess(); // Refresh list in background
+      }).catch(error => {
+        console.error('Error approving project:', error);
+        toast.error('Failed to approve project');
+      });
+    } catch (error) {
+      console.error('Error approving project:', error);
+      toast.error('Failed to approve project');
+    } finally {
+      setLoading(false);
+    }
+  };
+  const handleReject = async () => {
+    if (!projectId || !project || !rejectionReason.trim()) {
+      toast.error('Please provide a rejection reason');
       return;
     }
+    try {
+      setLoading(true);
+      const {
+        data: {
+          user
+        }
+      } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('User not authenticated');
+        return;
+      }
 
+      // Optimistic UI update
+      toast.success('Project rejected');
+      onOpenChange(false);
+      setShowRejectForm(false);
+      setRejectionReason('');
+
+      // Update in background
+      projectService.updateProjectStatus(projectId, 'rejected', user.id, rejectionReason).then(() => {
+        onSuccess(); // Refresh list in background
+      }).catch(error => {
+        console.error('Error rejecting project:', error);
+        toast.error('Failed to reject project');
+      });
+    } catch (error) {
+      console.error('Error rejecting project:', error);
+      toast.error('Failed to reject project');
+    } finally {
+      setLoading(false);
+    }
+  };
+  const handleSubmit = async () => {
+    if (!profile) return;
+    const projectToUpdate = editMode || isEditingFromView && project;
+
+    // Validate monthly allocations against limits before saving
+    if (formData.month_wise_manpower && formData.month_wise_manpower.length > 0) {
+      const validation = projectService.validateMonthlyAllocationsAgainstLimits(formData.members, formData.month_wise_manpower);
+      if (!validation.valid) {
+        toast.error(validation.errors[0] || 'Monthly allocation exceeds limit');
+        return;
+      }
+    }
+
+    // For create mode with members, validate members exist
+    // For update mode, members are preserved from loaded project data
+    if (!projectToUpdate && formData.members.length === 0) {
+      // Allow empty members array for initial project creation
+    }
     try {
       setSubmitting(true);
-      if (editMode) {
-        await projectService.updateProject(editMode.id, formData);
-        toast.success('Project updated successfully');
+      const projectToUpdate = editMode || isEditingFromView && project;
+      if (projectToUpdate) {
+        // Update project
+        const statusToUpdate = projectStatus !== projectToUpdate.status ? projectStatus as any : undefined;
+        const currentUserRole = userRole || profile?.role;
+        try {
+          await projectService.updateProject(projectToUpdate.id, formData, statusToUpdate, currentUserRole);
+          toast.success('Project updated successfully');
+        } catch (err) {
+          console.error('Update failed:', err);
+          toast.error('Failed to save project changes');
+          return;
+        }
+        if (isEditingFromView) {
+          setIsEditingFromView(false);
+          loadProject();
+        }
       } else {
-        await projectService.createProject(formData, profile.user_id);
+        // Create in background
+        const projectId = await projectService.createProject(formData, profile.user_id);
         toast.success('Project created and sent for approval');
+
+        // Fetch the newly created project silently in background
+        projectService.getProjectById(projectId).catch(err => {
+          console.error('Failed to fetch new project:', err);
+        });
       }
-      onOpenChange(false);
+      if (!isEditingFromView) {
+        onOpenChange(false);
+      }
+
+      // Call onSuccess immediately for optimistic UI update
       onSuccess();
       resetForm();
     } catch (error) {
-      console.error(`Error ${editMode ? 'updating' : 'creating'} project:`, error);
-      toast.error(`Failed to ${editMode ? 'update' : 'create'} project`);
+      console.error(`Error ${editMode || isEditingFromView ? 'updating' : 'creating'} project:`, error);
+      toast.error(`Failed to ${editMode || isEditingFromView ? 'update' : 'create'} project`);
     } finally {
       setSubmitting(false);
     }
   };
-
   const resetForm = () => {
     setFormData({
       name: '',
       description: '',
+      customer_name: '',
+      tech_lead_id: '',
       start_date: '',
       end_date: '',
+      month_wise_manpower: [],
       required_skills: [],
-      members: [],
+      members: []
     });
-    setStep(1);
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl w-[95vw] max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{editMode ? 'Edit Project' : 'Create New Project'} - Step {step} of 3</DialogTitle>
+  // For create mode: only require basic info; for edit mode: require basic info (members/skills preserved from loaded data)
+  const projectToUpdate = editMode || isEditingFromView && project;
+  const canSubmit = formData.name && formData.description && formData.customer_name && formData.start_date && formData.end_date;
+  const canApprove = ['management', 'admin'].includes(userRole) && project?.status === 'awaiting_approval';
+  const canEdit = ['tech_lead', 'admin'].includes(userRole) && project?.status === 'awaiting_approval' || ['tech_lead', 'admin'].includes(userRole) && project?.status === 'active';
+
+  // View mode - show loading or project details
+  if (viewMode && !isEditingFromView) {
+    if (loading || !project) {
+      return <Dialog open={open} onOpenChange={onOpenChange}>
+          <DialogContent className="max-w-[680px] w-full">
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          </DialogContent>
+        </Dialog>;
+    }
+    return <>
+        <Dialog open={open} onOpenChange={onOpenChange}>
+          <DialogContent className="max-w-[min(1296px,90vw)] w-full h-[85vh] overflow-hidden flex flex-col">
+            <DialogHeader className="flex-shrink-0">
+              <DialogTitle>{project.name}</DialogTitle>
+            </DialogHeader>
+
+            <div className="flex-1 min-h-0 py-4 px-1">
+              <div className="grid grid-cols-1 lg:grid-cols-[40%_60%] gap-4 h-full">
+                {/* Left Column: Project Details (same as edit mode but read-only) */}
+                <div className="space-y-4 min-h-0 overflow-y-auto pr-2">
+                  <StepOneWithDates formData={{
+                  name: project.name,
+                  description: project.description || '',
+                  customer_name: project.customer_name || '',
+                  tech_lead_id: project.tech_lead_id || '',
+                  start_date: project.start_date || '',
+                  end_date: project.end_date || '',
+                  month_wise_manpower: project.month_wise_manpower || [],
+                  required_skills: project.required_skills || [],
+                  members: []
+                }} setFormData={() => {}} isEditMode={true} readOnly={true} />
+                </div>
+
+                {/* Right Column: Team Members (read-only list) */}
+                <div className="flex flex-col h-full min-h-[500px]">
+                  <ProjectViewMembersList project={project} onEditMember={canEdit ? userId => {
+                  setMemberToExpand(userId);
+                  setShowSkillsAndTeam(true);
+                  setIsEditingFromView(true);
+                } : undefined} onRemoveMember={canEdit ? async userId => {
+                  try {
+                    await projectService.removeMemberFromProject(project.id, userId);
+                    toast.success('Member removed from project');
+                    loadProject();
+                    onSuccess();
+                  } catch (error) {
+                    console.error('Error removing member:', error);
+                    toast.error('Failed to remove member');
+                  }
+                } : undefined} readOnly={!canEdit} />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex-shrink-0 pt-4 border-t">
+              {showApprovalForm ? <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label>Approval Comment (Optional)</Label>
+                    <Textarea value={approvalComment} onChange={e => setApprovalComment(e.target.value)} placeholder="Add any comments..." rows={3} />
+                  </div>
+                <div className="flex gap-2 justify-end">
+                    <Button variant="outline" onClick={() => setShowApprovalForm(false)}>Cancel</Button>
+                    <Button onClick={handleApprove}>
+                      <Check className="mr-2 h-4 w-4" />
+                      Confirm Approval
+                    </Button>
+                  </div>
+                </div> : showRejectForm ? <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label>Rejection Reason</Label>
+                    <Textarea value={rejectionReason} onChange={e => setRejectionReason(e.target.value)} placeholder="Explain why..." rows={3} />
+                  </div>
+                <div className="flex gap-2 justify-end">
+                    <Button variant="outline" onClick={() => setShowRejectForm(false)}>Cancel</Button>
+                    <Button variant="destructive" onClick={handleReject} disabled={!rejectionReason.trim()}>
+                      <X className="mr-2 h-4 w-4" />
+                      Confirm Rejection
+                    </Button>
+                  </div>
+                </div> : <div className="flex justify-end gap-2">
+                  {userRole !== 'employee' && <Button variant="outline" onClick={() => setShowHistoryModal(true)}>
+                      <History className="mr-2 h-4 w-4" />
+                      View History
+                    </Button>}
+                  {canEdit && <Button variant="outline" onClick={() => setIsEditingFromView(true)}>
+                      <Edit className="mr-2 h-4 w-4" />
+                      Edit
+                    </Button>}
+                  {canApprove && <>
+                      <Button variant="outline" onClick={() => setShowRejectForm(true)}>
+                        <X className="mr-2 h-4 w-4" />
+                        Reject
+                      </Button>
+                      <Button onClick={() => setShowApprovalForm(true)}>
+                        <Check className="mr-2 h-4 w-4" />
+                        Approve
+                      </Button>
+                    </>}
+                </div>}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* History Modal */}
+        <Dialog open={showHistoryModal} onOpenChange={setShowHistoryModal}>
+          <DialogContent className="max-w-[min(896px,90vw)] w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <DialogHeader>
+              <DialogTitle>Project History</DialogTitle>
+            </DialogHeader>
+            <div className="max-h-[70vh] overflow-y-auto">
+              <ProjectHistoryTab projectId={project.id} />
+            </div>
+          </DialogContent>
+        </Dialog>
+      </>;
+  }
+
+  // Create/Edit mode
+  const isEditMode = !!(editMode || isEditingFromView);
+  const showExpandedView = showSkillsAndTeam;
+  return <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className={`${showExpandedView ? 'max-w-[min(1296px,90vw)]' : 'max-w-[680px]'} w-full ${showExpandedView ? 'h-[85vh]' : 'max-h-[90vh]'} overflow-hidden flex flex-col`}>
+        <DialogHeader className="flex-shrink-0">
+          <DialogTitle>
+            {isEditingFromView ? `Edit ${project?.name || 'Project'}` : editMode ? `Edit ${editMode.name}` : 'Create New Project'}
+          </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
-          {step === 1 && (
-            <StepOne 
-              formData={formData} 
-              setFormData={setFormData}
-              prefilledSubskills={prefilledSubskills}
-            />
-          )}
-          {step === 2 && (
-            <StepTwo formData={formData} setFormData={setFormData} />
-          )}
-          {step === 3 && (
-            <StepThree formData={formData} setFormData={setFormData} />
-          )}
+        <div className="flex-1 min-h-0 py-4 px-1">
+          {showExpandedView ? <div className="grid grid-cols-1 lg:grid-cols-[40%_60%] gap-4 h-full">
+              {/* Left Column: Project Details (40%) */}
+              <div className="space-y-4 min-h-0 overflow-y-auto pr-2">
+                <div className="space-y-3">
+                  <StepOneWithDates formData={formData} setFormData={setFormData} isEditMode={isEditMode} />
+                </div>
+              </div>
+
+              {/* Right Column: Team Members (60%) */}
+              <div ref={stepThreeRef} className="flex flex-col h-full min-h-[500px]">
+                <h3 className="flex-shrink-0 mb-2 text-xl font-medium">Team Members</h3>
+                <div className="flex-1 min-h-0 overflow-y-auto">
+                  <StepThree formData={formData} setFormData={setFormData} projectId={project?.id} initialExpandedMemberId={memberToExpand} />
+                </div>
+              </div>
+            </div> : <div className="overflow-y-auto max-h-[calc(90vh-180px)] space-y-4">
+              <StepOneWithDates formData={formData} setFormData={setFormData} isEditMode={isEditMode} />
+              
+            </div>}
         </div>
 
-        <div className="flex items-center justify-between pt-4 border-t">
-          <Button
-            variant="outline"
-            onClick={handleBack}
-            disabled={step === 1}
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
+        <div className="flex-shrink-0 flex justify-end gap-2 pt-3 border-t">
+          {isEditingFromView && <Button variant="outline" onClick={() => setIsEditingFromView(false)}>
+              Back to View
+            </Button>}
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
           </Button>
-
-          <div className="flex gap-2">
-            {step < 3 && (
-              <Button
-                onClick={handleNext}
-                disabled={
-                  (step === 1 && !canProceedToStep2) ||
-                  (step === 2 && !canProceedToStep3)
-                }
-              >
-                Next
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            )}
-            {step === 3 && (
-              <Button onClick={handleSubmit} disabled={submitting}>
-                {submitting ? (editMode ? 'Updating...' : 'Creating...') : (editMode ? 'Update Project' : 'Create Project')}
-              </Button>
-            )}
-          </div>
+          
+          <Button onClick={handleSubmit} disabled={submitting || !canSubmit}>
+            {submitting ? editMode || isEditingFromView ? 'Updating...' : 'Creating...' : editMode || isEditingFromView ? 'Update Project' : 'Create Project'}
+          </Button>
         </div>
       </DialogContent>
-    </Dialog>
-  );
+    </Dialog>;
 }

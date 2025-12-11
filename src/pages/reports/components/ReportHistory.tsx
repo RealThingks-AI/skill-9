@@ -9,6 +9,7 @@ import LoadingSpinner from "@/components/common/LoadingSpinner";
 import { ReportResults } from "./ReportResults";
 import type { ReportLog, GeneratedReport } from "../types/reportTypes";
 import { toast } from "sonner";
+import { dateFormatters } from "@/utils/formatters";
 
 interface ReportHistoryProps {
   isOpen?: boolean;
@@ -90,7 +91,7 @@ export function ReportHistory({ isOpen, onOpenChange }: ReportHistoryProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-[min(896px,90vw)] w-full max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
@@ -126,7 +127,7 @@ export function ReportHistory({ isOpen, onOpenChange }: ReportHistoryProps) {
                         <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
                           <div className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
-                            {new Date(log.created_at).toLocaleDateString()}
+                            {dateFormatters.formatDate(log.created_at)}
                           </div>
                           {log.records_processed !== null && (
                             <span>{log.records_processed} records</span>
@@ -189,7 +190,7 @@ export function ReportHistory({ isOpen, onOpenChange }: ReportHistoryProps) {
 
         {selectedReport && (
           <Dialog open={!!selectedReport} onOpenChange={() => setSelectedReport(null)}>
-            <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+            <DialogContent className="max-w-[min(1152px,90vw)] w-full max-h-[90vh] overflow-hidden flex flex-col">
               <DialogHeader>
                 <DialogTitle>Report Details - {selectedReport.name}</DialogTitle>
               </DialogHeader>
