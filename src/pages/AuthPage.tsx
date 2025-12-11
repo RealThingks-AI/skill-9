@@ -92,8 +92,7 @@ export default function AuthPage() {
 
         <Card className="shadow-lg border border-border bg-card">
           <CardHeader className="text-center">
-            <CardTitle>Welcome to Skill Matrix</CardTitle>
-            
+            <h1 className="text-2xl font-semibold leading-none tracking-tight">Welcome to Skill Matrix</h1>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSignIn} className="space-y-4">
