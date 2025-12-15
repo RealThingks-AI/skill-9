@@ -88,7 +88,7 @@ export default function ProjectViewMembersList({
       setMemberToDelete(null);
     }
   };
-  return <div className="flex flex-col h-full">
+  return <div className="flex flex-col">
       <div className="flex-shrink-0 mb-2 flex items-center justify-between gap-3">
         <h3 className="text-lg font-medium">
           Assigned Members ({project.members.length})
@@ -105,7 +105,7 @@ export default function ProjectViewMembersList({
         </ToggleGroup>
       </div>
       
-      <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5">
+      <div className="space-y-1.5 max-h-[50vh] lg:max-h-[60vh] overflow-y-auto">
         {viewMode === 'user' ? membersWithMonthCount.length > 0 ? membersWithMonthCount.map(member => {
         const isExpanded = expandedUsers.has(member.user_id);
         return <Collapsible key={member.user_id} open={isExpanded} onOpenChange={() => toggleUserExpanded(member.user_id)}>

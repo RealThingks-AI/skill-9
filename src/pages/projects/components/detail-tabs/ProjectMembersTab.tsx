@@ -24,7 +24,7 @@ export default function ProjectMembersTab({
         <h3 className="font-semibold text-sm">Team Members ({project.members.length})</h3>
       </div>
 
-      <div className="flex-1 overflow-y-auto space-y-2 pr-2">
+      <div className="flex-1 overflow-y-auto space-y-2 pr-2 max-h-[400px]">
         {project.members.map(member => <div key={member.user_id} className="p-3 border rounded-lg transition-smooth hover:border-primary/50">
             <div className="flex items-start justify-between mb-2">
               <div className="flex-1">
