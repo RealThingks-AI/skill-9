@@ -168,7 +168,7 @@ const Skills = () => {
               subskills={subskills}
               allEmployeeRatings={userSkills}
             />
-          ) : visibleCategories.length === 0 /* Empty State */ ? <motion.div className="flex flex-col items-center justify-center h-full py-16 text-center" initial={{
+          ) : visibleCategories.length === 0 /* Empty State */ ? <motion.div className="flex flex-col items-center justify-center min-h-[calc(100vh-8rem)] text-center" initial={{
           opacity: 0,
           y: 20
         }} animate={{
