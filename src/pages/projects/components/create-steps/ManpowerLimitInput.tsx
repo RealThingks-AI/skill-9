@@ -293,14 +293,12 @@ export default function ManpowerLimitInput({
                       )}
                       disabled={readOnly}
                     />
-                    {currentAllocation > 0 && (
-                      <span className={cn(
-                        "text-[9px]",
-                        isOverLimit ? "text-destructive font-medium" : "text-muted-foreground"
-                      )}>
-                        {currentAllocation.toFixed(2)} used
-                      </span>
-                    )}
+                    <span className={cn(
+                      "text-[9px]",
+                      isOverLimit ? "text-destructive font-medium" : "text-muted-foreground"
+                    )}>
+                      {currentAllocation.toFixed(2)} used
+                    </span>
                   </Card>
                 </TooltipTrigger>
                 {isOverLimit && (
