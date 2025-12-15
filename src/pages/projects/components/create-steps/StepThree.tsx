@@ -764,8 +764,8 @@ export default function StepThree({
                   Rem: {monthRemaining.toFixed(2)}
                 </div>
                 <Select value={currentValue?.toString() || ''} onValueChange={val => updatePendingAllocation(match.user_id, month.month, val ? Number(val) as AllocationPercentage : null)} disabled={isDisabled}>
-                  <SelectTrigger className="h-6 text-[10px] px-1">
-                    <SelectValue placeholder={isDisabled ? 'N/A' : 'Select'} />
+                  <SelectTrigger className="h-6 text-[10px] px-1" title={isDisabled ? 'No capacity available for this month' : undefined}>
+                    <SelectValue placeholder={isDisabled ? 'Full' : 'Select'} />
                   </SelectTrigger>
                   <SelectContent>
                     {allowedOptions.map(opt => <SelectItem key={opt} value={opt.toString()} className="text-xs">
