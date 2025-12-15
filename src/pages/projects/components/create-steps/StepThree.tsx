@@ -175,6 +175,33 @@ export default function StepThree({
     }
   };
 
+  // Check if user already has an allocation for a specific month
+  const getExistingAllocationForMonth = useCallback((userId: string, month: string): AllocationPercentage | null => {
+    const member = formData.members.find(m => m.user_id === userId);
+    if (!member) return null;
+    const monthAlloc = member.monthly_allocations?.find(a => a.month === month);
+    return monthAlloc?.allocation_percentage ?? null;
+  }, [formData.members]);
+
+  // Get count of already allocated months for a user
+  const getAllocatedMonthsCount = useCallback((userId: string): number => {
+    const member = formData.members.find(m => m.user_id === userId);
+    if (!member) return 0;
+    return (member.monthly_allocations || []).filter(a => 
+      monthlyLimits.some(ml => ml.month === a.month) && 
+      a.allocation_percentage !== null && 
+      a.allocation_percentage !== undefined
+    ).length;
+  }, [formData.members, monthlyLimits]);
+
+  // Get allocation status for a user (for UI label)
+  const getAllocationStatus = useCallback((userId: string): 'none' | 'partial' | 'full' => {
+    const allocatedCount = getAllocatedMonthsCount(userId);
+    if (allocatedCount === 0) return 'none';
+    if (allocatedCount >= monthlyLimits.length) return 'full';
+    return 'partial';
+  }, [getAllocatedMonthsCount, monthlyLimits.length]);
+
   // Initialize pending allocations with smart defaults based on limits
   const initializePendingAllocations = async (users: EmployeeMatch[]) => {
     const newPendingAllocations: Record<string, Record<string, AllocationPercentage | null>> = {};
@@ -185,6 +212,14 @@ export default function StepThree({
 
       // For each month, get user's monthly availability and calculate best default
       for (const month of monthlyLimits) {
+        // Check if this month is already allocated for this user
+        const existingAllocation = getExistingAllocationForMonth(user.user_id, month.month);
+        if (existingAllocation !== null) {
+          // Month already allocated - set to null to indicate it's locked
+          newPendingAllocations[user.user_id][month.month] = null;
+          continue;
+        }
+
         // Get user's availability for this specific month
         const monthlyAvailability = await getUserMonthlyAvailability(user.user_id, month.month);
         const projectRemaining = getMonthRemainingCapacity(month.month);
@@ -433,10 +468,19 @@ export default function StepThree({
       return;
     }
 
-    // Build allocations - automatically skip months that are now full
+    // Build allocations - automatically skip months that are already allocated or full
     const allocationsToApply: MonthlyAllocationType[] = [];
     const skippedMonths: string[] = [];
+    const alreadyAllocatedMonths: string[] = [];
+    
     for (const month of monthlyLimits) {
+      // Check if this month is already allocated for this user
+      const existingAllocation = getExistingAllocationForMonth(userId, month.month);
+      if (existingAllocation !== null) {
+        alreadyAllocatedMonths.push(formatMonth(month.month));
+        continue; // Skip months that are already allocated
+      }
+
       let allocation = userPendingAllocations[month.month];
 
       // Check current remaining capacity for this month
@@ -732,17 +776,43 @@ export default function StepThree({
   // Render search result card with month-wise allocation row
   const renderSearchResultCard = (match: EmployeeMatch) => {
     const userPending = pendingAllocations[match.user_id] || {};
-    const hasAnyValidAllocation = Object.values(userPending).some(v => v !== null);
-    return <div key={match.user_id} className="border rounded-lg p-4 bg-card min-h-[120px]">
+    const allocationStatus = getAllocationStatus(match.user_id);
+    const allocatedMonthsCount = getAllocatedMonthsCount(match.user_id);
+    
+    // Check if there are any unallocated months with valid capacity
+    const hasAnyValidNewAllocation = monthlyLimits.some(month => {
+      const existingAllocation = getExistingAllocationForMonth(match.user_id, month.month);
+      if (existingAllocation !== null) return false; // Already allocated
+      const pendingValue = userPending[month.month];
+      return pendingValue !== null && pendingValue !== undefined;
+    });
+
+    const isFullyAllocated = allocationStatus === 'full';
+    
+    return <div key={match.user_id} className={`border rounded-lg p-4 bg-card min-h-[120px] ${isFullyAllocated ? 'opacity-60' : ''}`}>
         {/* User info row */}
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <span className="text-xs font-medium">{match.full_name}</span>
-            
-            
-            
+            {allocationStatus === 'full' && (
+              <Badge variant="secondary" className="text-[9px] px-1.5 py-0 bg-primary/20 text-primary">
+                Already added (all months)
+              </Badge>
+            )}
+            {allocationStatus === 'partial' && (
+              <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-yellow-500 text-yellow-600">
+                Partially allocated ({allocatedMonthsCount}/{monthlyLimits.length})
+              </Badge>
+            )}
           </div>
-          <Button size="sm" variant="default" className="h-6 px-2 text-xs" onClick={() => addMemberWithAllocations(match.user_id)} disabled={!hasAnyValidAllocation}>
+          <Button 
+            size="sm" 
+            variant="default" 
+            className="h-6 px-2 text-xs" 
+            onClick={() => addMemberWithAllocations(match.user_id)} 
+            disabled={!hasAnyValidNewAllocation || isFullyAllocated}
+            title={isFullyAllocated ? 'User is already allocated for all months' : !hasAnyValidNewAllocation ? 'No available months to allocate' : undefined}
+          >
             <Plus className="h-3 w-3 mr-1" />
             Add Member
           </Button>
@@ -751,30 +821,60 @@ export default function StepThree({
         {/* Month-wise allocation row */}
         <div className="flex gap-1 overflow-x-auto pb-1">
           {monthlyLimits.map(month => {
-          const allowedOptions = getAllowedAllocations(match.user_id, month.month);
-          const currentValue = userPending[month.month];
-          const isDisabled = allowedOptions.length === 0;
-          const monthUsage = calculateMonthManpower(month.month, formData.members);
-          const monthRemaining = month.limit - monthUsage;
-          return <div key={month.month} className={`flex-shrink-0 border rounded p-1.5 min-w-[90px] ${isDisabled ? 'opacity-50 bg-muted' : 'bg-background'}`}>
-                <div className="text-xs font-semibold text-center mb-1 truncate text-foreground">
-                  {formatMonth(month.month)}
+            const existingAllocation = getExistingAllocationForMonth(match.user_id, month.month);
+            const isAlreadyAllocated = existingAllocation !== null;
+            const allowedOptions = isAlreadyAllocated ? [] : getAllowedAllocations(match.user_id, month.month);
+            const currentValue = isAlreadyAllocated ? existingAllocation : userPending[month.month];
+            const isDisabled = isAlreadyAllocated || allowedOptions.length === 0;
+            const monthUsage = calculateMonthManpower(month.month, formData.members);
+            const monthRemaining = month.limit - monthUsage;
+            
+            return <div 
+              key={month.month} 
+              className={`flex-shrink-0 border rounded p-1.5 min-w-[90px] ${
+                isAlreadyAllocated 
+                  ? 'bg-primary/10 border-primary/30' 
+                  : isDisabled 
+                    ? 'opacity-50 bg-muted' 
+                    : 'bg-background'
+              }`}
+            >
+              <div className="text-xs font-semibold text-center mb-1 truncate text-foreground">
+                {formatMonth(month.month)}
+              </div>
+              <div className="text-[11px] text-foreground/70 text-center mb-1 font-medium">
+                Rem: {monthRemaining.toFixed(2)}
+              </div>
+              {isAlreadyAllocated ? (
+                <div 
+                  className="h-6 flex items-center justify-center text-[10px] font-medium text-primary bg-primary/5 rounded border border-primary/20"
+                  title="Already allocated for this month"
+                >
+                  {existingAllocation}% ✓
                 </div>
-                <div className="text-[11px] text-foreground/70 text-center mb-1 font-medium">
-                  Rem: {monthRemaining.toFixed(2)}
-                </div>
-                <Select value={currentValue?.toString() || ''} onValueChange={val => updatePendingAllocation(match.user_id, month.month, val ? Number(val) as AllocationPercentage : null)} disabled={isDisabled}>
-                  <SelectTrigger className="h-6 text-[10px] px-1" title={isDisabled ? 'No capacity available for this month' : undefined}>
+              ) : (
+                <Select 
+                  value={currentValue?.toString() || ''} 
+                  onValueChange={val => updatePendingAllocation(match.user_id, month.month, val ? Number(val) as AllocationPercentage : null)} 
+                  disabled={isDisabled}
+                >
+                  <SelectTrigger 
+                    className="h-6 text-[10px] px-1" 
+                    title={isDisabled ? 'No capacity available for this month' : undefined}
+                  >
                     <SelectValue placeholder={isDisabled ? 'Full' : 'Select'} />
                   </SelectTrigger>
                   <SelectContent>
-                    {allowedOptions.map(opt => <SelectItem key={opt} value={opt.toString()} className="text-xs">
+                    {allowedOptions.map(opt => (
+                      <SelectItem key={opt} value={opt.toString()} className="text-xs">
                         {opt}%
-                      </SelectItem>)}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
-              </div>;
-        })}
+              )}
+            </div>;
+          })}
         </div>
       </div>;
   };
@@ -797,8 +897,14 @@ export default function StepThree({
 
       {/* Search Results - show with month-wise allocation */}
       {searchTerm.trim().length >= 1 && <div className="flex-shrink-0 max-h-[400px] overflow-y-auto space-y-1.5 border rounded-lg p-1.5 bg-muted/30">
-          {searching ? <div className="text-center py-3 text-xs text-muted-foreground">Searching...</div> : searchResults.length > 0 ? searchResults.filter(m => !isUserFullyAssigned(m.user_id)).map(match => renderSearchResultCard(match)) : <div className="text-center py-3 text-xs text-muted-foreground">No users found</div>}
-          {searchResults.length > 0 && searchResults.filter(m => !isUserFullyAssigned(m.user_id)).length === 0 && <div className="text-center py-3 text-xs text-muted-foreground">All found users are already assigned</div>}
+          {searching ? (
+            <div className="text-center py-3 text-xs text-muted-foreground">Searching...</div>
+          ) : searchResults.length > 0 ? (
+            // Show all users including partially allocated ones, but not fully assigned
+            searchResults.map(match => renderSearchResultCard(match))
+          ) : (
+            <div className="text-center py-3 text-xs text-muted-foreground">No users found</div>
+          )}
         </div>}
 
 
