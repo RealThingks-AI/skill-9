@@ -177,33 +177,37 @@ export default function ProjectDetailDialog({
             </div>
           </DialogHeader>
 
-        <Tabs defaultValue="overview" className="flex-1 min-h-0 flex flex-col">
+        <Tabs defaultValue="overview" className="flex-1 overflow-hidden flex flex-col">
           <TabsList className="flex-shrink-0">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="members">Members</TabsTrigger>
+            {project.status !== 'awaiting_approval' && (
+              <TabsTrigger value="members">Members</TabsTrigger>
+            )}
             <TabsTrigger value="skills">Skills</TabsTrigger>
             <TabsTrigger value="history">History</TabsTrigger>
           </TabsList>
 
-          <div className="flex-1 min-h-0 overflow-y-auto mt-4">
-            <TabsContent value="overview" className="mt-0 h-full">
+          <div className="flex-1 overflow-y-auto mt-4">
+            <TabsContent value="overview" className="mt-0">
               <ProjectOverviewTab project={project} />
             </TabsContent>
-            <TabsContent value="members" className="mt-0 h-full">
-              <ProjectMembersTab project={project} isEmployeeView={userRole === 'employee'} />
-            </TabsContent>
-            <TabsContent value="skills" className="mt-0 h-full">
+            {project.status !== 'awaiting_approval' && (
+              <TabsContent value="members" className="mt-0 h-full overflow-hidden">
+                <ProjectMembersTab project={project} isEmployeeView={userRole === 'employee'} />
+              </TabsContent>
+            )}
+            <TabsContent value="skills" className="mt-0">
               <ProjectSkillsTab project={project} />
             </TabsContent>
             {userRole === 'employee' ? (
-              <TabsContent value="history" className="mt-0 h-full">
+              <TabsContent value="history" className="mt-0">
                 <ProjectHistoryTab 
                   projectId={project.id} 
                   isEmployeeView={true}
                 />
               </TabsContent>
             ) : (
-              <TabsContent value="history" className="mt-0 h-full">
+              <TabsContent value="history" className="mt-0">
                 <ProjectHistoryTab projectId={project.id} isEmployeeView={false} />
               </TabsContent>
             )}

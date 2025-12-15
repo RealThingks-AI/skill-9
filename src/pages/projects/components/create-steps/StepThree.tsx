@@ -733,11 +733,14 @@ export default function StepThree({
   const renderSearchResultCard = (match: EmployeeMatch) => {
     const userPending = pendingAllocations[match.user_id] || {};
     const hasAnyValidAllocation = Object.values(userPending).some(v => v !== null);
-    return <div key={match.user_id} className="border rounded-lg p-2 bg-card">
+    return <div key={match.user_id} className="border rounded-lg p-4 bg-card min-h-[120px]">
         {/* User info row */}
-        <div className="flex items-center justify-between mb-1.5">
+        <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <span className="text-xs font-medium">{match.full_name}</span>
+            
+            
+            
           </div>
           <Button size="sm" variant="default" className="h-6 px-2 text-xs" onClick={() => addMemberWithAllocations(match.user_id)} disabled={!hasAnyValidAllocation}>
             <Plus className="h-3 w-3 mr-1" />
@@ -746,7 +749,7 @@ export default function StepThree({
         </div>
 
         {/* Month-wise allocation row */}
-        <div className="flex gap-1 overflow-x-auto">
+        <div className="flex gap-1 overflow-x-auto pb-1">
           {monthlyLimits.map(month => {
           const allowedOptions = getAllowedAllocations(match.user_id, month.month);
           const currentValue = userPending[month.month];
@@ -757,8 +760,8 @@ export default function StepThree({
                 <div className="text-xs font-semibold text-center mb-1 truncate text-foreground">
                   {formatMonth(month.month)}
                 </div>
-                <div className="text-xs text-foreground text-center mb-1 font-medium">
-                  Rem: {monthRemaining.toFixed(1)}
+                <div className="text-[11px] text-foreground/70 text-center mb-1 font-medium">
+                  Rem: {monthRemaining.toFixed(2)}
                 </div>
                 <Select value={currentValue?.toString() || ''} onValueChange={val => updatePendingAllocation(match.user_id, month.month, val ? Number(val) as AllocationPercentage : null)} disabled={isDisabled}>
                   <SelectTrigger className="h-6 text-[10px] px-1">
@@ -810,25 +813,21 @@ export default function StepThree({
           const match = matches.find(m => m.user_id === member.user_id) || searchResults.find(m => m.user_id === member.user_id) || assignedMemberProfiles.find(m => m.user_id === member.user_id);
           if (!match) return null;
           const isExpanded = expandedMembers.has(member.user_id);
-          const activeAllocations = member.monthly_allocations?.filter(a => a.allocation_percentage !== null && a.allocation_percentage !== undefined) || [];
+          const totalMonths = monthlyLimits.length;
+          const allocatedMonthsCount = member.monthly_allocations?.filter(a => monthlyLimits.some(ml => ml.month === a.month) && a.allocation_percentage !== null && a.allocation_percentage !== undefined && a.allocation_percentage > 0).length || 0;
           return <div key={member.user_id} className="border rounded bg-muted/30">
                 {/* Collapsed View - Just name + edit + delete */}
-                <div className="p-2 flex items-center justify-between cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => toggleMemberExpanded(member.user_id)}>
-                  <div className="flex items-center min-w-0 flex-1">
-                    <p className="font-medium truncate text-xs flex-1">{match.full_name}</p>
-                    
-                    <span className="text-muted-foreground text-sm flex-1 text-center">
-                      ({activeAllocations.length} month{activeAllocations.length !== 1 ? 's' : ''})
+                <div className="p-2 grid grid-cols-3 items-center cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => toggleMemberExpanded(member.user_id)}>
+                  <p className="text-sm font-medium truncate">{match.full_name}</p>
+                  
+                  <span className="text-xs text-muted-foreground text-center">
+                    ({allocatedMonthsCount}/{totalMonths} month{totalMonths !== 1 ? 's' : ''})
+                  </span>
+                  
+                  <div className="flex items-center gap-1 justify-end">
+                    <span className="h-6 w-6 flex items-center justify-center">
+                      {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                     </span>
-                    <span className="flex-1"></span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={e => {
-                  e.stopPropagation();
-                  toggleMemberExpanded(member.user_id);
-                }} title={isExpanded ? "Collapse" : "Edit allocations"}>
-                      {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <Pencil className="h-3.5 w-3.5" />}
-                    </Button>
                     <Button size="sm" variant="ghost" className="h-6 w-6 p-0 hover:bg-destructive/20 hover:text-destructive" onClick={e => {
                   e.stopPropagation();
                   removeMemberCompletely(member.user_id);
@@ -848,12 +847,12 @@ export default function StepThree({
                   const monthUsage = calculateMonthManpower(month.month, formData.members);
                   const existingAlloc = currentAllocation || 0;
                   const usageWithoutMember = monthUsage - existingAlloc / 100;
-                  return <div key={month.month} className="border rounded p-2 min-w-[110px] bg-card shadow-sm">
-                            <div className="text-xs font-semibold text-foreground text-center mb-1.5">
+                  return <div key={month.month} className="border rounded p-1.5 min-w-[100px] bg-background">
+                            <div className="text-[10px] font-medium text-center mb-1">
                               {formatMonth(month.month)}
                             </div>
-                            <div className="text-xs text-center mb-1.5 text-[#00040a]">
-                              Limit: {month.limit} | Used: {monthUsage.toFixed(1)}
+                            <div className="text-[9px] text-muted-foreground text-center mb-1">
+                              Limit: {month.limit} | Used: {monthUsage.toFixed(2)}
                             </div>
                             <Select value={currentAllocation?.toString() || 'none'} onValueChange={val => {
                       if (val === 'none') {

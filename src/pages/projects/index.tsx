@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Clock, CheckCircle, Target, XCircle, Users, Trash2, Calendar } from 'lucide-react';
+import { Plus, Clock, CheckCircle, Target, XCircle, Users, Trash2, Briefcase, Calendar } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useProjects } from './hooks/useProjects';
 import { useAuth } from '@/hooks/useAuth';
@@ -137,26 +137,26 @@ const Projects = () => {
 
           {/* Stats Grid */}
           <div className="grid grid-cols-3 gap-3">
-            <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/30 min-w-0 overflow-hidden">
-              
-              <div className="flex flex-col min-w-0 flex-1">
-                <span className="text-sm text-muted-foreground">Customer</span>
-                <span className="text-base font-semibold truncate">{project.customer_name || 'N/A'}</span>
+            <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/30 min-w-0">
+              <Briefcase className="h-4 w-4 text-primary flex-shrink-0" />
+              <div className="flex flex-col min-w-0">
+                <span className="text-xs text-muted-foreground">Customer</span>
+                <span className="text-sm font-semibold truncate">{project.customer_name || 'N/A'}</span>
               </div>
             </div>
-            <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/30 min-w-0 overflow-hidden">
-              
-              <div className="flex flex-col min-w-0 flex-1">
-                <span className="text-sm text-muted-foreground">Tech Lead</span>
-                <span className="text-base font-semibold truncate">{project.tech_lead?.full_name || 'Unassigned'}</span>
+            <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/30 min-w-0">
+              <Users className="h-4 w-4 text-primary flex-shrink-0" />
+              <div className="flex flex-col min-w-0">
+                <span className="text-xs text-muted-foreground">Tech Lead</span>
+                <span className="text-sm font-semibold truncate">{project.tech_lead?.full_name || 'Unassigned'}</span>
               </div>
             </div>
-            <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/30 min-w-0 overflow-hidden">
-              
-              <div className="flex flex-col min-w-0 flex-1">
-                <span className="text-sm text-muted-foreground">Manpower</span>
-                <span className={`text-base font-semibold truncate ${getLoadColor(currentMonthLimit * 100 / (project.manpower_limit || 1))}`}>
-                  {currentMonthLimit.toFixed(1)}
+            <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/30 min-w-0">
+              <Briefcase className="h-4 w-4 text-primary flex-shrink-0" />
+              <div className="flex flex-col min-w-0">
+                <span className="text-xs text-muted-foreground">Manpower</span>
+                <span className={`text-sm font-semibold ${getLoadColor(currentMonthLimit * 100 / (project.manpower_limit || 1))}`}>
+                  {currentMonthLimit.toFixed(2)}
                 </span>
               </div>
             </div>
@@ -179,27 +179,9 @@ const Projects = () => {
   };
   const canCreateProject = ['tech_lead', 'management', 'admin'].includes(profile?.role || '');
   return <div className="h-full flex flex-col">
-      <div className="flex-shrink-0 flex items-center justify-between h-16 px-6 border-b border-sidebar-border">
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Projects</h1>
-        </div>
-        <div className="flex items-center gap-2">
-          {canCreateProject && <>
-              <Button variant="outline" size="sm" onClick={() => setResourceInsightsOpen(true)}>
-                <Users className="mr-2 h-4 w-4" />
-                Resource Insights
-              </Button>
-              <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                New Project
-              </Button>
-            </>}
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-auto p-6">
-        <Tabs value={activeTab} onValueChange={v => setActiveTab(v as any)} className="h-full flex flex-col">
-          <TabsList className="flex-shrink-0 justify-start">
+      <Tabs value={activeTab} onValueChange={v => setActiveTab(v as any)} className="h-full flex flex-col">
+        <div className="flex-shrink-0 flex items-center justify-between h-16 px-6 border-b border-sidebar-border">
+          <TabsList className="justify-start">
             {!isEmployee && <TabsTrigger value="awaiting">
                 <Clock className="mr-2 h-4 w-4" />
                 Pending ({stats.awaiting})
@@ -217,8 +199,21 @@ const Projects = () => {
                 Rejected ({stats.rejected})
               </TabsTrigger>}
           </TabsList>
+          <div className="flex items-center gap-2">
+            {canCreateProject && <>
+                <Button variant="outline" size="sm" onClick={() => setResourceInsightsOpen(true)}>
+                  <Users className="mr-2 h-4 w-4" />
+                  Resource Insights
+                </Button>
+                <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  New Project
+                </Button>
+              </>}
+          </div>
+        </div>
 
-          <div className="flex-1 overflow-auto mt-4">
+        <div className="flex-1 overflow-auto p-6">
             {!isEmployee && <TabsContent value="awaiting" className="mt-0">
                 {awaitingProjects.length > 0 ? <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {awaitingProjects.map(renderProjectCard)}
@@ -236,7 +231,7 @@ const Projects = () => {
                   <p className="text-lg text-muted-foreground mb-4">No active projects</p>
                   {canCreateProject && <Button onClick={() => setCreateDialogOpen(true)}>
                       <Plus className="mr-2 h-4 w-4" />
-                      Create First Project
+                      Create New Project
                     </Button>}
                 </div>}
             </TabsContent>
@@ -258,9 +253,8 @@ const Projects = () => {
                     <p className="text-lg text-muted-foreground">No rejected projects</p>
                   </div>}
               </TabsContent>}
-          </div>
-        </Tabs>
-      </div>
+        </div>
+      </Tabs>
 
       <ProjectCreateDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} onSuccess={refreshProjects} />
 
