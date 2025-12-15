@@ -180,7 +180,9 @@ export default function ProjectDetailDialog({
         <Tabs defaultValue="overview" className="flex-1 overflow-hidden flex flex-col">
           <TabsList className="flex-shrink-0">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="members">Members</TabsTrigger>
+            {project.status !== 'awaiting_approval' && (
+              <TabsTrigger value="members">Members</TabsTrigger>
+            )}
             <TabsTrigger value="skills">Skills</TabsTrigger>
             <TabsTrigger value="history">History</TabsTrigger>
           </TabsList>
@@ -189,9 +191,11 @@ export default function ProjectDetailDialog({
             <TabsContent value="overview" className="mt-0">
               <ProjectOverviewTab project={project} />
             </TabsContent>
-            <TabsContent value="members" className="mt-0 h-full overflow-hidden">
-              <ProjectMembersTab project={project} isEmployeeView={userRole === 'employee'} />
-            </TabsContent>
+            {project.status !== 'awaiting_approval' && (
+              <TabsContent value="members" className="mt-0 h-full overflow-hidden">
+                <ProjectMembersTab project={project} isEmployeeView={userRole === 'employee'} />
+              </TabsContent>
+            )}
             <TabsContent value="skills" className="mt-0">
               <ProjectSkillsTab project={project} />
             </TabsContent>

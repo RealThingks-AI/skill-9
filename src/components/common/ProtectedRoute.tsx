@@ -14,6 +14,22 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Get the first accessible page for the user
+  const getFirstAccessiblePage = (): string => {
+    // Priority order for finding accessible page
+    const priorityRoutes = ['/dashboard', '/skills', '/approvals', '/projects', '/skill-explorer', '/reports'];
+    
+    for (const route of priorityRoutes) {
+      if (accessMap[route]) {
+        return route;
+      }
+    }
+    
+    // Fallback to any accessible route
+    const accessibleRoute = Object.entries(accessMap).find(([, hasPageAccess]) => hasPageAccess);
+    return accessibleRoute ? accessibleRoute[0] : '/no-access';
+  };
+
   useEffect(() => {
     if (!authLoading && !isLoading && profile) {
       const currentRoute = location.pathname;
@@ -26,25 +42,17 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       // This prevents redirect during initial page load/refresh
       const accessMapLoaded = Object.keys(accessMap).length > 0;
       
-      // For admin users, redirect root to dashboard
-      if (currentRoute === '/' && profile.role === 'admin') {
-        navigate('/dashboard', { replace: true });
-        return;
-      }
-      
-      // For non-admin users, redirect root to skills
-      if (currentRoute === '/' && profile.role !== 'admin') {
-        navigate('/skills', { replace: true });
+      // Redirect root to first accessible page
+      if (currentRoute === '/' && accessMapLoaded) {
+        const firstAccessiblePage = getFirstAccessiblePage();
+        navigate(firstAccessiblePage, { replace: true });
         return;
       }
       
       if (!isUtilityRoute && accessMapLoaded && !hasAccess(currentRoute)) {
-        // Redirect based on role
-        if (profile.role === 'admin') {
-          navigate('/dashboard', { replace: true });
-        } else {
-          navigate('/skills', { replace: true });
-        }
+        // Redirect to first accessible page
+        const firstAccessiblePage = getFirstAccessiblePage();
+        navigate(firstAccessiblePage, { replace: true });
       }
     }
   }, [hasAccess, authLoading, isLoading, location.pathname, navigate, profile, accessMap]);

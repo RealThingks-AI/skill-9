@@ -34,7 +34,7 @@ export default function MonthlyManpowerCard({ monthlyLimits, totalAllocation }: 
                   {dateFormatters.formatMonthYear(month.month + '-01')}
                 </span>
                 <span className={`text-xs font-semibold ${isOverLimit ? 'text-destructive' : 'text-muted-foreground'}`}>
-                  {totalManpower.toFixed(1)} / {month.limit.toFixed(1)}
+                  {totalManpower.toFixed(2)} / {month.limit.toFixed(2)}
                 </span>
               </div>
               <Progress 
@@ -53,7 +53,7 @@ export default function MonthlyManpowerCard({ monthlyLimits, totalAllocation }: 
           <p className="text-sm font-medium">Total Project Manpower</p>
           <p className="text-xs text-muted-foreground">Across all months</p>
         </div>
-        <span className="text-lg font-bold text-primary">{totalManpower.toFixed(1)}</span>
+        <span className="text-lg font-bold text-primary">{totalManpower.toFixed(2)}</span>
       </div>
     </div>
   );

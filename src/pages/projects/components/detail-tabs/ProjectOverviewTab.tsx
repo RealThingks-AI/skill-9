@@ -71,7 +71,7 @@ function MembersByMonth({
                 <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
                 <span className="font-medium">{formatMonth(month)}</span>
                 <span className="text-xs text-muted-foreground">
-                  (Limit: {limit} | Used: {totalAllocation.toFixed(1)})
+                  (Limit: {limit} | Used: {totalAllocation.toFixed(2)})
                 </span>
               </div>
               
@@ -109,94 +109,119 @@ export default function ProjectOverviewTab({
 
   // Check if this is a Tech Lead update awaiting approval
   const hasPendingChanges = project.pending_changes && project.status === 'awaiting_approval' && project.requested_status === 'active';
-  return <div className={hideTeamMembers ? "space-y-4" : "grid grid-cols-1 lg:grid-cols-2 gap-6 h-full min-h-full"}>
-      {/* Left Section: Project Details */}
-      <div className="space-y-4 overflow-y-auto">
-        {/* Show pending changes if this is a Tech Lead update */}
-        {hasPendingChanges && project.pending_changes && <PendingChangesDisplay pendingChanges={project.pending_changes} currentValues={{
-        name: project.name,
-        description: project.description,
-        customer_name: project.customer_name,
-        tech_lead_id: project.tech_lead_id,
-        start_date: project.start_date,
-        end_date: project.end_date,
-        month_wise_manpower: project.month_wise_manpower
-      }} />}
+  return (
+    <div className="flex flex-col gap-4 h-full min-h-0">
+      {/* Show pending changes prominently at the top if this is a Tech Lead update */}
+      {hasPendingChanges && project.pending_changes && (
+        <PendingChangesDisplay 
+          pendingChanges={project.pending_changes} 
+          currentValues={{
+            name: project.name,
+            description: project.description,
+            customer_name: project.customer_name,
+            tech_lead_id: project.tech_lead_id,
+            start_date: project.start_date,
+            end_date: project.end_date,
+            month_wise_manpower: project.month_wise_manpower
+          }} 
+        />
+      )}
 
-        <div>
-          <Label>Customer Name *</Label>
-          <Input value={project.customer_name || ''} disabled />
-        </div>
-
-        <div>
-          <Label>Description *</Label>
-          <Textarea value={project.description || ''} disabled rows={3} />
-        </div>
-
-        <div>
-          <Label>Tech Lead</Label>
-          <Input value={techLeadName || 'Loading...'} disabled className="bg-muted" />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
+      {/* Main content area - two columns on large screens */}
+      <div className={hideTeamMembers ? "space-y-4" : "flex flex-col lg:flex-row gap-6 flex-1 min-h-0"}>
+        {/* Left Section: Project Details */}
+        <div className="space-y-4 lg:w-1/2 flex-shrink-0 overflow-y-auto max-h-[50vh] lg:max-h-full">
           <div>
-            <Label>Start Date *</Label>
-            <Input type="text" value={project.start_date ? dateFormatters.formatDate(project.start_date) : 'Not set'} disabled />
+            <Label>Customer Name *</Label>
+            <Input value={project.customer_name || ''} disabled />
           </div>
 
           <div>
-            <Label>End Date *</Label>
-            <Input type="text" value={project.end_date ? dateFormatters.formatDate(project.end_date) : 'Not set'} disabled />
+            <Label>Description *</Label>
+            <Textarea value={project.description || ''} disabled rows={1} className="min-h-[36px] resize-none" />
           </div>
-        </div>
 
-        {project.month_wise_manpower && project.month_wise_manpower.length > 0 && <div className="space-y-2">
-            <Label>Monthly Manpower Limits</Label>
-            <div className="grid grid-cols-3 lg:grid-cols-4 gap-2">
-              {(project.month_wise_manpower as any[]).map((month: any, index: number) => <div key={index} className="space-y-1">
-                  <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                    
-                    {formatMonth(month.month)}
-                  </Label>
-                  <Input type="number" value={month.limit} disabled className="h-9" />
-                </div>)}
+          <div>
+            <Label>Tech Lead</Label>
+            <Input value={techLeadName || 'Loading...'} disabled className="bg-muted" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Start Date *</Label>
+              <Input type="text" value={project.start_date ? dateFormatters.formatDate(project.start_date) : 'Not set'} disabled />
             </div>
-          </div>}
 
-        {project.rejection_reason && <div className="p-4 border border-destructive/50 rounded-lg bg-destructive/5">
-            <h3 className="font-semibold text-destructive mb-2">Rejection Reason</h3>
-            <p className="text-sm text-muted-foreground">{project.rejection_reason}</p>
-          </div>}
+            <div>
+              <Label>End Date *</Label>
+              <Input type="text" value={project.end_date ? dateFormatters.formatDate(project.end_date) : 'Not set'} disabled />
+            </div>
+          </div>
+
+          {project.month_wise_manpower && project.month_wise_manpower.length > 0 && (
+            <div className="space-y-2">
+              <Label>Monthly Manpower Limits</Label>
+              <div className="grid grid-cols-3 lg:grid-cols-4 gap-2">
+                {(project.month_wise_manpower as any[]).map((month: any, index: number) => (
+                  <div key={index} className="space-y-1">
+                    <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                      {formatMonth(month.month)}
+                    </Label>
+                    <Input type="number" value={month.limit} disabled className="h-9" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {project.rejection_reason && (
+            <div className="p-4 border border-destructive/50 rounded-lg bg-destructive/5">
+              <h3 className="font-semibold text-destructive mb-2">Rejection Reason</h3>
+              <p className="text-sm text-muted-foreground">{project.rejection_reason}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Right Section: Team Members - only show if not hidden */}
+        {!hideTeamMembers && (
+          <div className="flex flex-col lg:w-1/2 flex-1 min-h-0 max-h-[50vh] lg:max-h-full overflow-y-auto">
+            {/* Members by Month */}
+            {project.members && project.members.length > 0 && project.month_wise_manpower && project.month_wise_manpower.length > 0 && (
+              <MembersByMonth project={project} />
+            )}
+
+            {/* Fallback: Show members without monthly breakdown if no monthly manpower */}
+            {project.members && project.members.length > 0 && (!project.month_wise_manpower || project.month_wise_manpower.length === 0) && (
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Team Members ({project.members.length})
+                </Label>
+                <div className="flex flex-wrap gap-2 p-3 border rounded-lg bg-muted/30">
+                  {project.members.map(member => (
+                    <Badge key={member.user_id} variant="secondary" className="px-3 py-1">
+                      {member.full_name} ({member.allocation_percentage}%)
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Show empty state if no members */}
+            {(!project.members || project.members.length === 0) && (
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Team Members (0)
+                </Label>
+                <div className="p-4 border rounded-lg bg-muted/30 text-center text-sm text-muted-foreground">
+                  No team members assigned
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
-
-      {/* Right Section: Team Members - only show if not hidden */}
-      {!hideTeamMembers && <div className="flex flex-col h-full flex-1 min-h-0">
-          {/* Members by Month */}
-          {project.members && project.members.length > 0 && project.month_wise_manpower && project.month_wise_manpower.length > 0 && <MembersByMonth project={project} />}
-
-          {/* Fallback: Show members without monthly breakdown if no monthly manpower */}
-          {project.members && project.members.length > 0 && (!project.month_wise_manpower || project.month_wise_manpower.length === 0) && <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                Team Members ({project.members.length})
-              </Label>
-              <div className="flex flex-wrap gap-2 p-3 border rounded-lg bg-muted/30">
-                {project.members.map(member => <Badge key={member.user_id} variant="secondary" className="px-3 py-1">
-                    {member.full_name} ({member.allocation_percentage}%)
-                  </Badge>)}
-              </div>
-            </div>}
-
-          {/* Show empty state if no members */}
-          {(!project.members || project.members.length === 0) && <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                Team Members (0)
-              </Label>
-              <div className="p-4 border rounded-lg bg-muted/30 text-center text-sm text-muted-foreground">
-                No team members assigned
-              </div>
-            </div>}
-        </div>}
-    </div>;
+    </div>
+  );
 }
