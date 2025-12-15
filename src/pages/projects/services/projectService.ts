@@ -364,60 +364,6 @@ export const projectService = {
     return { valid: errors.length === 0, errors };
   },
 
-  // Validate that all member allocation months exist within project months
-  validateMemberMonthsConsistency(
-    members: ProjectFormData['members'],
-    monthlyManpower: { month: string; limit: number }[]
-  ): { valid: boolean; errors: string[] } {
-    const errors: string[] = [];
-    const validMonths = new Set(monthlyManpower.map(m => m.month));
-
-    for (const member of members) {
-      if (!member.monthly_allocations) continue;
-      
-      for (const monthAlloc of member.monthly_allocations) {
-        if (monthAlloc.allocation_percentage === null) continue;
-        
-        if (!validMonths.has(monthAlloc.month)) {
-          errors.push(`Member has allocation in ${monthAlloc.month} which is outside the project date range`);
-        }
-      }
-    }
-
-    return { valid: errors.length === 0, errors };
-  },
-
-  // Validate total allocation per month doesn't exceed limit
-  validateTotalMonthlyAllocations(
-    members: ProjectFormData['members'],
-    monthlyManpower: { month: string; limit: number }[]
-  ): { valid: boolean; errors: string[] } {
-    const errors: string[] = [];
-    const monthTotals = new Map<string, number>();
-
-    // Sum up all allocations per month
-    for (const member of members) {
-      if (!member.monthly_allocations) continue;
-      
-      for (const monthAlloc of member.monthly_allocations) {
-        if (monthAlloc.allocation_percentage === null) continue;
-        
-        const current = monthTotals.get(monthAlloc.month) || 0;
-        monthTotals.set(monthAlloc.month, current + monthAlloc.allocation_percentage / 100);
-      }
-    }
-
-    // Check against limits
-    for (const [month, total] of monthTotals) {
-      const limit = monthlyManpower.find(m => m.month === month)?.limit || 0;
-      if (limit > 0 && total > limit) {
-        errors.push(`Total allocation for ${month} (${total.toFixed(2)}) exceeds manpower limit (${limit})`);
-      }
-    }
-
-    return { valid: errors.length === 0, errors };
-  },
-
   async createProject(formData: ProjectFormData, userId: string): Promise<string> {
     // Create project - tech_lead_id defaults to creator if not set
     const techLeadId = formData.tech_lead_id || userId;
@@ -731,57 +677,17 @@ export const projectService = {
       }
     }
 
-    // Get valid months from the current project configuration
-    const validMonthsSet = new Set((formData.month_wise_manpower || []).map(m => m.month));
-    
-    // Get all existing monthly allocations for this project to find months to delete
-    const { data: existingMonthlyAllocations } = await supabase
-      .from('project_member_monthly_allocations')
-      .select('user_id, month')
-      .eq('project_id', projectId);
-
-    // Find allocations for months that are no longer in the project date range
-    const monthsToDeleteFromDB: { user_id: string; month: string }[] = [];
-    if (existingMonthlyAllocations) {
-      for (const alloc of existingMonthlyAllocations) {
-        if (!validMonthsSet.has(alloc.month)) {
-          monthsToDeleteFromDB.push({
-            user_id: alloc.user_id,
-            month: alloc.month
-          });
-        }
-      }
-    }
-
-    // Delete allocations for months that were removed from project date range
-    console.log('[updateProject] Months removed from project date range:', monthsToDeleteFromDB.length);
-    for (const toDelete of monthsToDeleteFromDB) {
-      const { error: deleteError } = await supabase.rpc('delete_member_monthly_allocation', {
-        p_project_id: projectId,
-        p_user_id: toDelete.user_id,
-        p_month: toDelete.month
-      });
-      if (deleteError) {
-        console.error('Error deleting monthly allocation for removed month:', deleteError);
-      } else {
-        console.log(`[updateProject] Deleted allocation for ${toDelete.user_id} (${toDelete.month}) - month removed from project`);
-      }
-    }
-
-    // Collect allocations to upsert and months to delete (null allocations from user actions)
+    // Collect allocations to upsert and months to delete (null allocations)
     const monthlyAllocationsToUpsert: { project_id: string; user_id: string; month: string; allocation_percentage: number }[] = [];
     const allocationsToDelete: { user_id: string; month: string }[] = [];
     
     console.log('[updateProject] Processing members:', formData.members.length, 'members');
+    console.log('[updateProject] Members data:', JSON.stringify(formData.members, null, 2));
     
     for (const member of formData.members) {
+      console.log(`[updateProject] Member ${member.user_id}: allocations =`, member.monthly_allocations);
       if (member.monthly_allocations) {
         for (const monthAlloc of member.monthly_allocations) {
-          // Only process allocations for valid months
-          if (!validMonthsSet.has(monthAlloc.month)) {
-            continue; // Skip allocations for months not in project date range
-          }
-          
           if (monthAlloc.allocation_percentage !== null && monthAlloc.allocation_percentage !== undefined) {
             monthlyAllocationsToUpsert.push({
               project_id: projectId,
@@ -801,7 +707,7 @@ export const projectService = {
     }
     
     console.log('[updateProject] Allocations to upsert:', monthlyAllocationsToUpsert.length);
-    console.log('[updateProject] Allocations to delete (user action):', allocationsToDelete.length);
+    console.log('[updateProject] Allocations to delete:', allocationsToDelete.length);
 
     // Delete allocations where member was removed from specific months using RPC
     for (const toDelete of allocationsToDelete) {
@@ -1489,55 +1395,6 @@ export const projectService = {
         metadata: {
           project_id: projectId,
           removed_user_id: userId
-        }
-      });
-    }
-
-    return true;
-  },
-
-  async removeMemberFromMonth(projectId: string, userId: string, month: string) {
-    // Delete only the specific month allocation
-    const { error } = await supabase.rpc('delete_member_monthly_allocation', {
-      p_project_id: projectId,
-      p_user_id: userId,
-      p_month: month
-    });
-
-    if (error) throw error;
-
-    // Check if user has any remaining allocations for this project
-    const { data: remainingAllocations, error: checkError } = await supabase
-      .from('project_member_monthly_allocations')
-      .select('id')
-      .eq('project_id', projectId)
-      .eq('user_id', userId)
-      .gt('allocation_percentage', 0);
-
-    if (checkError) throw checkError;
-
-    // If no remaining allocations, remove the project assignment too
-    if (!remainingAllocations || remainingAllocations.length === 0) {
-      const { error: assignError } = await supabase
-        .from('project_assignments')
-        .delete()
-        .eq('project_id', projectId)
-        .eq('user_id', userId);
-
-      if (assignError) throw assignError;
-    }
-
-    // Log the activity
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      await logActivity({
-        actionType: 'UPDATE',
-        module: 'Projects',
-        description: `Removed member allocation for ${month}`,
-        metadata: {
-          project_id: projectId,
-          removed_user_id: userId,
-          month
         }
       });
     }

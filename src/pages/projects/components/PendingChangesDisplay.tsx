@@ -1,9 +1,8 @@
 import { Badge } from '@/components/ui/badge';
-import { ArrowRight, AlertCircle } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import type { PendingChanges, MonthlyManpower } from '../types/projects';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { dateFormatters } from '@/utils/formatters';
 
 interface PendingChangesDisplayProps {
   pendingChanges: PendingChanges;
@@ -24,25 +23,6 @@ interface FieldChange {
   newValue: string;
 }
 
-// Helper to format date for display
-const formatDate = (dateStr: string | undefined): string => {
-  if (!dateStr) return 'Not set';
-  try {
-    return dateFormatters.formatDate(dateStr);
-  } catch {
-    return dateStr;
-  }
-};
-
-// Helper to format month for display
-const formatMonth = (month: string): string => {
-  try {
-    return dateFormatters.formatMonthYear(month + '-01');
-  } catch {
-    return month;
-  }
-};
-
 export default function PendingChangesDisplay({ pendingChanges, currentValues }: PendingChangesDisplayProps) {
   const [currentTechLeadName, setCurrentTechLeadName] = useState<string>('');
   const changes: FieldChange[] = [];
@@ -62,7 +42,6 @@ export default function PendingChangesDisplay({ pendingChanges, currentValues }:
   }, [currentValues.tech_lead_id]);
 
   // Compare fields and build changes list
-  // pendingChanges contains the OLD values, currentValues contains the NEW values
   if (pendingChanges.name !== undefined && pendingChanges.name !== currentValues.name) {
     changes.push({
       label: 'Project Name',
@@ -98,16 +77,16 @@ export default function PendingChangesDisplay({ pendingChanges, currentValues }:
   if (pendingChanges.start_date !== undefined && pendingChanges.start_date !== currentValues.start_date) {
     changes.push({
       label: 'Start Date',
-      oldValue: formatDate(pendingChanges.start_date),
-      newValue: formatDate(currentValues.start_date),
+      oldValue: pendingChanges.start_date || 'Not set',
+      newValue: currentValues.start_date || 'Not set',
     });
   }
 
   if (pendingChanges.end_date !== undefined && pendingChanges.end_date !== currentValues.end_date) {
     changes.push({
       label: 'End Date',
-      oldValue: formatDate(pendingChanges.end_date),
-      newValue: formatDate(currentValues.end_date),
+      oldValue: pendingChanges.end_date || 'Not set',
+      newValue: currentValues.end_date || 'Not set',
     });
   }
 
@@ -130,7 +109,7 @@ export default function PendingChangesDisplay({ pendingChanges, currentValues }:
       
       if (oldMonth?.limit !== newMonth?.limit) {
         changes.push({
-          label: `Manpower (${formatMonth(month)})`,
+          label: `Manpower (${month})`,
           oldValue: oldMonth?.limit?.toString() || 'Not set',
           newValue: newMonth?.limit?.toString() || 'Not set',
         });
@@ -143,28 +122,31 @@ export default function PendingChangesDisplay({ pendingChanges, currentValues }:
   }
 
   return (
-    <div className="rounded-lg border-2 border-amber-500 bg-amber-50 dark:bg-amber-950/30 p-3 space-y-2">
-      <div className="flex items-center gap-2 flex-wrap">
-        <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-        <Badge variant="outline" className="bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300 border-amber-400 font-semibold text-xs">
-          Pending Changes for Approval
+    <div className="rounded-lg border border-amber-500/50 bg-amber-50 dark:bg-amber-950/20 p-4 space-y-3">
+      <div className="flex items-center gap-2">
+        <Badge variant="outline" className="bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300 border-amber-300">
+          Pending Changes
         </Badge>
-        <span className="text-xs text-amber-700 dark:text-amber-300">
-          ({changes.length} field{changes.length > 1 ? 's' : ''} updated)
+        <span className="text-sm text-muted-foreground">
+          The following fields were updated and require approval:
         </span>
       </div>
       
-      <div className="flex flex-wrap gap-2">
+      <div className="space-y-2">
         {changes.map((change, index) => (
-          <div key={index} className="inline-flex items-center gap-1.5 text-xs bg-background/80 rounded px-2 py-1 border border-amber-200 dark:border-amber-800">
-            <span className="font-medium text-muted-foreground">{change.label}:</span>
-            <span className="text-destructive line-through">
-              {change.oldValue.length > 30 ? `${change.oldValue.substring(0, 30)}...` : change.oldValue}
-            </span>
-            <ArrowRight className="h-3 w-3 text-amber-600 dark:text-amber-400" />
-            <span className="text-green-700 dark:text-green-400 font-medium">
-              {change.newValue.length > 30 ? `${change.newValue.substring(0, 30)}...` : change.newValue}
-            </span>
+          <div key={index} className="flex items-start gap-2 text-sm bg-background/50 rounded p-2">
+            <Badge variant="secondary" className="shrink-0 text-xs">
+              {change.label}
+            </Badge>
+            <div className="flex items-center gap-2 flex-wrap min-w-0">
+              <span className="text-destructive line-through break-all">
+                {change.oldValue.length > 100 ? `${change.oldValue.substring(0, 100)}...` : change.oldValue}
+              </span>
+              <ArrowRight className="h-3 w-3 text-muted-foreground shrink-0" />
+              <span className="text-green-600 dark:text-green-400 font-medium break-all">
+                {change.newValue.length > 100 ? `${change.newValue.substring(0, 100)}...` : change.newValue}
+              </span>
+            </div>
           </div>
         ))}
       </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { format, parseISO, isValid } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -35,7 +35,6 @@ export default function DatePickerInput({
   error
 }: DatePickerInputProps) {
   const [open, setOpen] = useState(false);
-  const [month, setMonth] = useState<Date | undefined>(undefined);
   
   // Parse the ISO date string to a Date object
   const selectedDate = value ? parseISO(value) : undefined;
@@ -43,13 +42,6 @@ export default function DatePickerInput({
   
   // Format date for display in DD-MMM-YYYY format
   const displayValue = isValidDate ? format(selectedDate, 'dd-MMM-yyyy') : '';
-  
-  // Reset month to selected date when popover opens
-  useEffect(() => {
-    if (open) {
-      setMonth(isValidDate ? selectedDate : new Date());
-    }
-  }, [open, isValidDate, selectedDate]);
   
   const handleSelect = (date: Date | undefined) => {
     if (date) {
@@ -90,8 +82,6 @@ export default function DatePickerInput({
             mode="single"
             selected={isValidDate ? selectedDate : undefined}
             onSelect={handleSelect}
-            month={month}
-            onMonthChange={setMonth}
             disabled={(date) => {
               if (minDate && date < minDate) return true;
               if (maxDate && date > maxDate) return true;

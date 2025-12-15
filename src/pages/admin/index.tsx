@@ -12,49 +12,53 @@ const Admin = () => {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-        <div className="flex-shrink-0 flex items-center justify-between h-16 px-6 border-b border-sidebar-border">
-          <TabsList className="grid w-full max-w-3xl grid-cols-5">
-            <TabsTrigger value="users" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              User & Access
-            </TabsTrigger>
-            <TabsTrigger value="page-access" className="flex items-center gap-2">
-              <Lock className="h-4 w-4" />
-              Page Access
-            </TabsTrigger>
-            <TabsTrigger value="backup" className="flex items-center gap-2">
-              <Database className="h-4 w-4" />
-              Backup
-            </TabsTrigger>
-            <TabsTrigger value="logs" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Logs
-            </TabsTrigger>
-            <TabsTrigger value="sync" className="flex items-center gap-2">
-              <RefreshCw className="h-4 w-4" />
-              Data Sync
-            </TabsTrigger>
-          </TabsList>
+      <div className="flex-shrink-0 p-6 pb-0">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Admin Panel</h1>
         </div>
+      </div>
 
-        <TabsContent value="users" className="flex-1 overflow-hidden mt-0">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden p-6 pt-4">
+        <TabsList className="grid w-full grid-cols-5 lg:w-auto flex-shrink-0">
+          <TabsTrigger value="users" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            User & Access Management
+          </TabsTrigger>
+          <TabsTrigger value="page-access" className="flex items-center gap-2">
+            <Lock className="h-4 w-4" />
+            Page Access
+          </TabsTrigger>
+          <TabsTrigger value="backup" className="flex items-center gap-2">
+            <Database className="h-4 w-4" />
+            Backup
+          </TabsTrigger>
+          <TabsTrigger value="logs" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Logs
+          </TabsTrigger>
+          <TabsTrigger value="sync" className="flex items-center gap-2">
+            <RefreshCw className="h-4 w-4" />
+            Data Sync
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="users" className="flex-1 overflow-hidden">
           <UserAccess onBack={() => {}} />
         </TabsContent>
 
-        <TabsContent value="page-access" className="flex-1 overflow-hidden mt-0">
+        <TabsContent value="page-access" className="flex-1 overflow-hidden">
           <PageAccess />
         </TabsContent>
 
-        <TabsContent value="backup" className="flex-1 overflow-hidden mt-0">
+        <TabsContent value="backup" className="flex-1 overflow-hidden">
           <Backup onBack={() => setActiveTab("users")} />
         </TabsContent>
 
-        <TabsContent value="logs" className="flex-1 overflow-hidden mt-0">
+        <TabsContent value="logs" className="flex-1 overflow-hidden">
           <Logs onBack={() => setActiveTab("users")} />
         </TabsContent>
 
-        <TabsContent value="sync" className="flex-1 overflow-hidden mt-0">
+        <TabsContent value="sync" className="flex-1 overflow-hidden">
           <DataSync />
         </TabsContent>
       </Tabs>

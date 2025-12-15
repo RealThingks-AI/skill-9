@@ -5,7 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChevronDown, ChevronUp, History, Loader2, Search, ArrowUpDown } from 'lucide-react';
+import { ChevronDown, ChevronUp, History, Loader2, Search, ArrowUpDown, FolderOpen } from 'lucide-react';
 import { resourceService, ResourceAllocation, UserProject, ProjectHistory } from '../services/resourceService';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,6 +32,8 @@ export default function ResourceInsightsModal({
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'projects' | 'allocation'>('name');
   const [availableMonths, setAvailableMonths] = useState<string[]>([]);
+  const [activeProjects, setActiveProjects] = useState<{ id: string; name: string }[]>([]);
+  const [selectedProject, setSelectedProject] = useState<string>('all');
   // Default to current month (YYYY-MM format)
   const currentMonth = new Date().toISOString().substring(0, 7);
   const [selectedMonth, setSelectedMonth] = useState<string>(currentMonth);
@@ -39,6 +41,7 @@ export default function ResourceInsightsModal({
   useEffect(() => {
     if (open) {
       loadAvailableMonths();
+      loadActiveProjects();
       loadResources(true);
     }
   }, [open]);
@@ -75,7 +78,7 @@ export default function ResourceInsightsModal({
   // Reload resources and clear user projects cache when month filter changes
   useEffect(() => {
     if (open) {
-      loadResources(true);
+      loadResources(false); // Background refresh, no loading spinner
       // Clear cached user projects since allocations change by month
       setUserProjects({});
       if (expandedUserId) {
@@ -90,6 +93,21 @@ export default function ResourceInsightsModal({
       setAvailableMonths(months);
     } catch (error) {
       console.error('Error loading available months:', error);
+    }
+  };
+
+  const loadActiveProjects = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('id, name')
+        .eq('status', 'active')
+        .order('name');
+      
+      if (error) throw error;
+      setActiveProjects(data || []);
+    } catch (error) {
+      console.error('Error loading active projects:', error);
     }
   };
 
@@ -169,8 +187,42 @@ export default function ResourceInsightsModal({
   };
 
 
+  const [projectMembers, setProjectMembers] = useState<string[]>([]);
+
+  // Load project members when project filter changes
+  useEffect(() => {
+    const loadProjectMembers = async () => {
+      if (selectedProject === 'all') {
+        setProjectMembers([]);
+        return;
+      }
+      
+      try {
+        const { data, error } = await supabase
+          .from('project_member_monthly_allocations')
+          .select('user_id')
+          .eq('project_id', selectedProject);
+        
+        if (error) throw error;
+        const uniqueUserIds = [...new Set(data?.map(d => d.user_id) || [])];
+        setProjectMembers(uniqueUserIds);
+      } catch (error) {
+        console.error('Error loading project members:', error);
+      }
+    };
+    
+    loadProjectMembers();
+  }, [selectedProject]);
+
   const filteredResources = useMemo(() => {
     let filtered = resources;
+    
+    // Filter by selected project
+    if (selectedProject !== 'all' && projectMembers.length > 0) {
+      filtered = filtered.filter(resource => 
+        projectMembers.includes(resource.user_id)
+      );
+    }
     
     // Filter by search query
     if (searchQuery.trim()) {
@@ -195,7 +247,7 @@ export default function ResourceInsightsModal({
     });
     
     return sorted;
-  }, [resources, searchQuery, sortBy]);
+  }, [resources, searchQuery, sortBy, selectedProject, projectMembers]);
 
   const getAllocationColor = (allocation: number) => {
     if (allocation >= 100) return 'text-red-600 dark:text-red-400';
@@ -221,6 +273,24 @@ export default function ResourceInsightsModal({
                 className="pl-9 h-9"
               />
             </div>
+          </div>
+          <div className="w-44">
+            <Select value={selectedProject} onValueChange={setSelectedProject}>
+              <SelectTrigger className="h-9">
+                <div className="flex items-center gap-2">
+                  <FolderOpen className="h-3.5 w-3.5" />
+                  <SelectValue placeholder="All Projects" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Projects</SelectItem>
+                {activeProjects.map((project) => (
+                  <SelectItem key={project.id} value={project.id}>
+                    {project.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="w-48">
             <Select value={sortBy} onValueChange={(value: 'name' | 'projects' | 'allocation') => setSortBy(value)}>

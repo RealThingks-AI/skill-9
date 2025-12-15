@@ -153,7 +153,7 @@
     --chart-2: 215 20% 65%; /* Intermediate - Amber */
     --chart-3: 215 16% 46%; /* Beginner - Blue */
     --chart-4: 219 8% 46%; /* Purple */
-    --chart-5: 215 19% 34%; /* Red */ --sidebar: 210 40% 98%; --font-serif: 'Crimson Pro', ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif; --font-mono: 'SF Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05); --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05); --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1); --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1); --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25); --tracking-normal: 0em; --spacing: 0.1875rem; /* Scaled down spacing */
+    --chart-5: 215 19% 34%; /* Red */ --sidebar: 210 40% 98%; --font-serif: 'Crimson Pro', ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif; --font-mono: 'SF Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05); --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05); --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1); --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1); --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25); --tracking-normal: 0em; --spacing: 0.25rem;
   }
 
   .dark {
@@ -208,20 +208,31 @@
     @apply border-border;
   }
 
-  html {
-    font-size: 12px; /* Scale down from 16px to ~75% */
-  }
-
   body {
     @apply bg-background text-foreground font-sans;
   }
-}
 
-@layer base {
+  /* Thin scrollbars */
   * {
-    @apply border-border;
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted)) transparent;
   }
-  body {
-    @apply bg-background text-foreground;
+
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted));
+    border-radius: 3px;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.5);
   }
 }

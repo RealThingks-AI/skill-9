@@ -82,7 +82,7 @@ export default function AuthPage() {
       </div>;
   }
   console.log('Rendering auth form');
-  return <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+  return <main className="min-h-screen flex items-center justify-center p-4 bg-background">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           
@@ -92,8 +92,7 @@ export default function AuthPage() {
 
         <Card className="shadow-lg border border-border bg-card">
           <CardHeader className="text-center">
-            <CardTitle>Welcome to Skill Matrix</CardTitle>
-            
+            <h1 className="text-2xl font-semibold leading-none tracking-tight">Welcome to Skill Matrix</h1>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSignIn} className="space-y-4">
@@ -119,5 +118,5 @@ export default function AuthPage() {
           
         </div>
       </div>
-    </div>;
+    </main>;
 }
